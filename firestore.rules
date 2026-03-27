@@ -1,0 +1,145 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: webtoons
+    // Document ID: {webtoonId}
+    // Fields:
+    //   - id: string (required)
+    //   - title: string (required, size < 100)
+    //   - author: string (required, size < 50)
+    //   - genre: string (required, enum)
+    //   - rating: number (required, 0-5)
+    //   - thumbnail: string (required, url)
+    //   - banner: string (required, url)
+    //   - description: string (optional, size < 1000)
+    //   - isHot: bool (optional)
+    //   - isNew: bool (optional)
+    //   - createdAt: timestamp (required, immutable)
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - email: string (required, email)
+    //   - displayName: string (optional, size < 50)
+    //   - photoURL: string (optional, url)
+    //   - role: string (required, enum: user, admin)
+    //   - createdAt: timestamp (required, immutable)
+    //
+    // Collection: webtoons/{webtoonId}/comments
+    // Document ID: {commentId}
+    // Fields:
+    //   - id: string (required)
+    //   - webtoonId: string (required, immutable)
+    //   - uid: string (required, immutable)
+    //   - userName: string (required, size < 50)
+    //   - content: string (required, size < 500)
+    //   - createdAt: timestamp (required, immutable)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "f8001161@gmail.com" && request.auth.token.email_verified == true));
+    }
+    
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+    
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidWebtoon(data) {
+      return hasRequiredFields(['id', 'title', 'author', 'genre', 'rating', 'thumbnail', 'banner', 'createdAt']) &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
+             data.author is string && data.author.size() > 0 && data.author.size() < 50 &&
+             data.genre in ['로맨스', '판타지', '드라마', '액션', '스릴러', '일상', '전체'] &&
+             data.rating is number && data.rating >= 0 && data.rating <= 5 &&
+             isValidUrl(data.thumbnail) && isValidUrl(data.banner) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email', 'role', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             data.role in ['user', 'admin'] &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidComment(data) {
+      return hasRequiredFields(['id', 'webtoonId', 'uid', 'userName', 'content', 'createdAt']) &&
+             data.uid == request.auth.uid &&
+             data.userName is string && data.userName.size() > 0 && data.userName.size() < 50 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 500 &&
+             data.createdAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Webtoons
+    match /webtoons/{webtoonId} {
+      allow read: if true; // Publicly readable
+      allow create: if isAdmin() && isValidWebtoon(request.resource.data);
+      allow update: if isAdmin() && isValidWebtoon(request.resource.data) && 
+                      request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+
+      // Comments
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isAuthenticated() && isValidComment(request.resource.data);
+        allow update: if isAuthenticated() && isOwner(resource.data.uid) && 
+                        isValidComment(request.resource.data) &&
+                        request.resource.data.createdAt == resource.data.createdAt &&
+                        request.resource.data.webtoonId == resource.data.webtoonId;
+        allow delete: if isAuthenticated() && (isOwner(resource.data.uid) || isAdmin());
+      }
+    }
+
+    // Users
+    match /users/{userId} {
+      // "No Mixed Content" Rule: PII is only readable by owner or admin
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
+                      (request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) &&
+                      request.resource.data.createdAt == resource.data.createdAt &&
+                      (request.resource.data.role == resource.data.role || isAdmin());
+      allow delete: if isAdmin();
+    }
+  }
+}

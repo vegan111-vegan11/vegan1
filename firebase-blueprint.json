@@ -1,0 +1,65 @@
+{
+  "entities": {
+    "Webtoon": {
+      "title": "Webtoon",
+      "description": "A webtoon series on the platform.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the webtoon." },
+        "title": { "type": "string", "description": "Title of the webtoon." },
+        "author": { "type": "string", "description": "Author of the webtoon." },
+        "genre": { "type": "string", "description": "Genre of the webtoon." },
+        "rating": { "type": "number", "description": "Average rating." },
+        "thumbnail": { "type": "string", "description": "URL to the thumbnail image." },
+        "banner": { "type": "string", "description": "URL to the banner image." },
+        "description": { "type": "string", "description": "Short description of the story." },
+        "isHot": { "type": "boolean", "description": "Whether it's a popular title." },
+        "isNew": { "type": "boolean", "description": "Whether it's a new release." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Creation timestamp." }
+      },
+      "required": ["id", "title", "author", "genre", "thumbnail", "banner"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID." },
+        "email": { "type": "string", "format": "email", "description": "User email address." },
+        "displayName": { "type": "string", "description": "User display name." },
+        "photoURL": { "type": "string", "description": "User profile photo URL." },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "User role." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp." }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A comment on a webtoon.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier." },
+        "webtoonId": { "type": "string", "description": "ID of the webtoon." },
+        "uid": { "type": "string", "description": "Author UID." },
+        "userName": { "type": "string", "description": "Author display name." },
+        "content": { "type": "string", "description": "Comment text." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp." }
+      },
+      "required": ["id", "webtoonId", "uid", "userName", "content"]
+    }
+  },
+  "firestore": {
+    "/webtoons/{webtoonId}": {
+      "schema": "Webtoon",
+      "description": "Collection of webtoons."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/webtoons/{webtoonId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments for a specific webtoon."
+    }
+  }
+}
