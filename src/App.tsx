@@ -147,8 +147,8 @@ const MOCK_WEBTOONS: Webtoon[] = [
     author: '루나 파크',
     genre: '판타지',
     rating: 4.9,
-    thumbnail: 'https://picsum.photos/seed/webtoon1/300/450',
-    banner: 'https://picsum.photos/seed/banner1/1920/1080',
+    thumbnail: 'https://picsum.photos/seed/webtoon1/200/300',
+    banner: 'https://picsum.photos/seed/banner1/1280/720',
     description: '달이 지지 않는 세계, 한 소녀가 영원한 밤 뒤에 숨겨진 비밀을 발견합니다.',
     isHot: true,
   },
@@ -158,8 +158,8 @@ const MOCK_WEBTOONS: Webtoon[] = [
     author: '사이버 J',
     genre: 'SF',
     rating: 4.7,
-    thumbnail: 'https://picsum.photos/seed/webtoon2/300/450',
-    banner: 'https://picsum.photos/seed/banner2/1920/1080',
+    thumbnail: 'https://picsum.photos/seed/webtoon2/200/300',
+    banner: 'https://picsum.photos/seed/banner2/1280/720',
     description: '네오 서울의 해커가 현실 자체를 재작성할 수 있는 코드를 찾아냅니다.',
     isNew: true,
   },
@@ -169,8 +169,8 @@ const MOCK_WEBTOONS: Webtoon[] = [
     author: 'K. 신',
     genre: '액션',
     rating: 4.8,
-    thumbnail: 'https://picsum.photos/seed/webtoon3/300/450',
-    banner: 'https://picsum.photos/seed/banner3/1920/1080',
+    thumbnail: 'https://picsum.photos/seed/webtoon3/200/300',
+    banner: 'https://picsum.photos/seed/banner3/1280/720',
     description: '제국 최고의 암살자가 은퇴하지만, 과거는 그를 놓아주지 않습니다.',
     isHot: true,
   },
@@ -1119,16 +1119,34 @@ const Navbar: React.FC<{
   );
 };
 
-const Hero = ({ webtoons, onWebtoonClick }: { webtoons: Webtoon[], onWebtoonClick: (w: Webtoon) => void }) => {
+const Hero = ({ webtoons, onWebtoonClick, isLoading }: { webtoons: Webtoon[], onWebtoonClick: (w: Webtoon) => void, isLoading?: boolean }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const current = webtoons[currentIndex];
 
   useEffect(() => {
+    if (webtoons.length === 0 || isLoading) return;
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % webtoons.length);
     }, 8000);
     return () => clearInterval(timer);
-  }, [webtoons.length]);
+  }, [webtoons.length, isLoading]);
+
+  if (isLoading || webtoons.length === 0) {
+    return (
+      <section className="relative h-[70vh] md:h-[85vh] w-full bg-surface overflow-hidden">
+        <Skeleton className="w-full h-full rounded-none" />
+        <div className="absolute inset-0 z-20 flex flex-col justify-center px-6 md:px-16 max-w-3xl space-y-6">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-16 w-3/4" />
+          <Skeleton className="h-24 w-full" />
+          <div className="flex gap-4">
+            <Skeleton className="h-12 w-32 rounded-full" />
+            <Skeleton className="h-12 w-32 rounded-full" />
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative h-[85vh] w-full overflow-hidden">
@@ -1528,7 +1546,14 @@ function App() {
 
     // Fetch Webtoons from Firestore
     const webtoonsQuery = query(collection(db, 'webtoons'), orderBy('createdAt', 'desc'));
+    
+    // Set a timeout to hide loading screen if Firestore takes too long
+    const timeoutId = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+
     const unsubscribeWebtoons = onSnapshot(webtoonsQuery, (snapshot) => {
+      clearTimeout(timeoutId);
       const fetchedWebtoons = snapshot.docs.map(doc => ({
         ...doc.data(),
         id: doc.id
@@ -1542,12 +1567,15 @@ function App() {
       }
       setIsLoading(false);
     }, (error) => {
+      clearTimeout(timeoutId);
       handleFirestoreError(error, OperationType.LIST, 'webtoons');
+      setIsLoading(false);
     });
 
     return () => {
       unsubscribe();
       unsubscribeWebtoons();
+      clearTimeout(timeoutId);
     };
   }, []);
 
@@ -1631,7 +1659,7 @@ function App() {
       />
 
       <main className="pt-0">
-        <Hero webtoons={webtoons.slice(0, 5)} onWebtoonClick={setSelectedWebtoon} />
+        <Hero webtoons={webtoons.slice(0, 5)} onWebtoonClick={setSelectedWebtoon} isLoading={isLoading} />
         
         <div className="relative z-30 -mt-20">
           <Section 
