@@ -423,7 +423,11 @@ const AuthModal: React.FC<{ isOpen: boolean, onClose: () => void, onLogin: (user
       onLogin(result.user);
       onClose();
     } catch (error: any) {
-      toast.error('구글 로그인에 실패했습니다: ' + error.message);
+      let errorMessage = error.message;
+      if (error.code === 'auth/network-request-failed') {
+        errorMessage = '네트워크 연결에 실패했습니다. Firebase 콘솔에서 승인된 도메인에 현재 도메인을 추가했는지 확인해 주세요.';
+      }
+      toast.error('구글 로그인에 실패했습니다: ' + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -486,52 +490,57 @@ const AuthModal: React.FC<{ isOpen: boolean, onClose: () => void, onLogin: (user
             </button>
 
             <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold mb-2">{isLogin ? '다시 만나서 반가워요!' : '새로운 시작을 함께해요'}</h2>
-              <p className="text-white/50 text-sm">{isLogin ? '계정에 로그인하여 계속하세요' : '지금 가입하고 프리미엄 혜택을 누리세요'}</p>
+              <h2 className="text-2xl font-bold mb-2">간편하게 시작하세요</h2>
+              <p className="text-white/50 text-sm">번거로운 회원가입 없이 1초 만에 로그인</p>
             </div>
 
-            <div className="space-y-4 mb-8">
+            <div className="space-y-4 mb-10">
               <button 
                 onClick={handleGoogleLogin}
-                className="w-full bg-white text-black font-bold py-3 rounded-xl flex items-center justify-center gap-3 hover:bg-white/90 transition-all"
+                disabled={loading}
+                className="w-full bg-white text-black font-bold py-4 rounded-2xl flex items-center justify-center gap-4 hover:bg-white/90 transition-all shadow-xl shadow-white/5 active:scale-95 disabled:opacity-50"
               >
-                <Chrome size={20} /> Google로 계속하기
+                <Chrome size={24} className="text-[#4285F4]" /> 
+                <span className="text-lg">Google로 1초 로그인</span>
               </button>
-              <button className="w-full bg-zinc-800 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-3 hover:bg-zinc-700 transition-all border border-white/5">
+              
+              <button 
+                onClick={handleGithubLogin}
+                disabled={loading}
+                className="w-full bg-zinc-800 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-3 hover:bg-zinc-700 transition-all border border-white/5 active:scale-95 disabled:opacity-50"
+              >
                 <Github size={20} /> GitHub로 계속하기
               </button>
             </div>
 
-            <div className="relative flex items-center gap-4 mb-8">
-              <div className="flex-1 h-px bg-white/10" />
-              <span className="text-xs text-white/30 font-bold uppercase">또는 이메일로</span>
-              <div className="flex-1 h-px bg-white/10" />
+            <div className="relative flex items-center gap-4 mb-8 opacity-30">
+              <div className="flex-1 h-px bg-white/20" />
+              <span className="text-[10px] text-white font-bold uppercase tracking-widest">또는 직접 입력</span>
+              <div className="flex-1 h-px bg-white/20" />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-white/50 uppercase tracking-wider ml-1">이메일</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={16} />
                   <input 
                     type="email" 
                     required
-                    placeholder="example@email.com"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 outline-none focus:border-brand transition-all"
+                    placeholder="이메일 주소"
+                    className="w-full bg-white/5 border border-white/5 rounded-xl pl-12 pr-4 py-3 outline-none focus:border-white/20 transition-all text-sm"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-white/50 uppercase tracking-wider ml-1">비밀번호</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={16} />
                   <input 
                     type="password" 
                     required
-                    placeholder="••••••••"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 py-3 outline-none focus:border-brand transition-all"
+                    placeholder="비밀번호"
+                    className="w-full bg-white/5 border border-white/5 rounded-xl pl-12 pr-4 py-3 outline-none focus:border-white/20 transition-all text-sm"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                   />
@@ -540,7 +549,8 @@ const AuthModal: React.FC<{ isOpen: boolean, onClose: () => void, onLogin: (user
 
               <button 
                 type="submit"
-                className="w-full bg-brand hover:bg-brand/90 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-brand/20 mt-4"
+                disabled={loading}
+                className="w-full bg-white/5 hover:bg-white/10 text-white/60 font-bold py-3 rounded-xl transition-all text-sm disabled:opacity-50"
               >
                 {isLogin ? '로그인' : '회원가입'}
               </button>

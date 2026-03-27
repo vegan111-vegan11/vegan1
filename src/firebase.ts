@@ -19,14 +19,15 @@ import {
   getDocFromServer
 } from 'firebase/firestore';
 
-// Firebase configuration using environment variables
+// Firebase configuration using environment variables with fallbacks for testing
+// Note: In production, these should be set via environment variables (VITE_FIREBASE_API_KEY, VITE_FIREBASE_PROJECT_ID)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSy...",
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-app",
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.appspot.com`,
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:abcdef",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCtYG4Lnuq4XYtx_1AZpWs5pDHCJNKA4hk",
+  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "vegan1"}.firebaseapp.com`,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "vegan1",
+  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "vegan1"}.appspot.com`,
+  messagingSenderId: "822051706796", // Derived from the Google Client ID provided by user
+  appId: "1:822051706796:web:7f61s-projects", // Placeholder appId, usually required for full functionality
   firestoreDatabaseId: "(default)"
 };
 
