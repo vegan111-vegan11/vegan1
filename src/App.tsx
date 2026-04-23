@@ -513,7 +513,12 @@ const AdminDashboard: React.FC<{
     try {
       const { id, ...data } = w;
       // 1. Move to webtoons
-      await setDoc(doc(db, 'webtoons', id), { ...data, status: 'approved' });
+      await setDoc(doc(db, 'webtoons', id), {
+        ...data,
+        status: 'approved',
+        approvedAt: serverTimestamp(),
+        createdAt: (data as any).createdAt ?? serverTimestamp(),
+      });
       // 2. Transfer subcollections
       const epRef = collection(db, 'pending_webtoons', id, 'episodes');
       const snap = await getDocs(epRef);
@@ -1483,7 +1488,9 @@ const LoadingScreen: React.FC = () => (
 
 const CustomViewer: React.FC<{ webtoonId: string; episodeId: string; onClose: () => void; }> = ({ webtoonId, episodeId, onClose }) => {
   const [cuts, setCuts] = useState<string[]>([]);
+  const [dialogue, setDialogue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(0);
 
   useEffect(() => {
     const fetchCuts = async () => {
@@ -1491,7 +1498,9 @@ const CustomViewer: React.FC<{ webtoonId: string; episodeId: string; onClose: ()
         const epRef = doc(db, 'webtoons', webtoonId, 'episodes', episodeId);
         const snap = await getDoc(epRef);
         if (snap.exists() && snap.data().cuts) {
-          setCuts(snap.data().cuts);
+          const data = snap.data() as any;
+          setCuts(Array.isArray(data.cuts) ? data.cuts : []);
+          setDialogue(data.dialogue ?? data.dialogues ?? null);
         } else {
           toast.error('에피소드 데이터를 찾을 수 없습니다.');
         }
@@ -1504,24 +1513,105 @@ const CustomViewer: React.FC<{ webtoonId: string; episodeId: string; onClose: ()
     fetchCuts();
   }, [webtoonId, episodeId]);
 
+  useEffect(() => {
+    setVisibleCount(0);
+    if (loading) return;
+    if (cuts.length === 0) return;
+
+    let cancelled = false;
+    const tick = () => {
+      if (cancelled) return;
+      setVisibleCount((prev) => {
+        const next = Math.min(prev + 1, cuts.length);
+        return next;
+      });
+    };
+
+    // 첫 컷은 즉시 보여주고, 이후 1초 간격으로 순차 로딩
+    setVisibleCount(1);
+    const intervalId = window.setInterval(() => {
+      tick();
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [cuts, loading]);
+
+  const getDialogueText = (idx: number): string | null => {
+    if (!dialogue) return null;
+    if (typeof dialogue === 'string') return dialogue;
+    if (Array.isArray(dialogue)) return typeof dialogue[idx] === 'string' ? dialogue[idx] : null;
+    if (typeof dialogue === 'object') {
+      const v = (dialogue as any)[idx] ?? (dialogue as any)[String(idx)] ?? (dialogue as any)[idx + 1] ?? (dialogue as any)[String(idx + 1)];
+      return typeof v === 'string' ? v : null;
+    }
+    return null;
+  };
+
   return (
-    <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-3xl flex flex-col overflow-hidden">
-      <div className="h-16 shrink-0 flex items-center px-4 border-b border-white/10 justify-between bg-black shadow-2xl z-10 w-full text-white">
+    <div className="fixed inset-0 z-[500] bg-[#000000] flex flex-col overflow-hidden">
+      <div className="h-16 shrink-0 flex items-center px-4 border-b border-white/10 justify-between bg-[#000000] shadow-[0_20px_60px_rgba(0,0,0,0.8)] z-10 w-full text-white">
         <button onClick={onClose} className="hover:text-brand transition-colors p-2 rounded-full hover:bg-white/10">
           <ChevronRight className="rotate-180" size={24} />
         </button>
-        <span className="font-bold">웹툰 감상</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-black tracking-[0.35em] text-white/50">VIEW</span>
+          <span className="text-[12px] font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 via-brand to-cyan-300">
+            {webtoonId} · {episodeId}화
+          </span>
+        </div>
         <div className="w-10"></div>
       </div>
-      <div className="flex-1 overflow-y-auto w-full max-w-2xl mx-auto flex flex-col items-center bg-black">
+      <div className="flex-1 overflow-y-auto w-full max-w-2xl mx-auto flex flex-col items-center bg-[#000000]">
         {loading ? (
-          <div className="py-20 text-white/50 text-center animate-pulse">컷을 불러오는 중입니다...</div>
+          <div className="py-24 w-full px-6">
+            <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center">
+              <div className="mx-auto mb-5 h-10 w-10 rounded-full border-2 border-brand border-t-transparent animate-spin" />
+              <p className="text-white/60 font-semibold tracking-tight">컷을 불러오는 중...</p>
+              <p className="mt-2 text-xs text-white/35">이미지는 1초 간격으로 순차 로딩됩니다.</p>
+            </div>
+          </div>
         ) : cuts.length > 0 ? (
           <>
-            {cuts.map((cutURL, idx) => (
-              <img key={idx} src={cutURL} loading="lazy" className="w-full object-cover block m-0 p-0 pointer-events-none fade-in" alt={`cut ${idx}`} referrerPolicy="no-referrer" />
-            ))}
-            <div className="py-20 text-white/30 font-bold text-center">에피소드의 끝입니다.</div>
+            {cuts.slice(0, visibleCount).map((cutURL, idx) => {
+              const line = getDialogueText(idx);
+              return (
+                <div key={idx} className="w-full">
+                  <img
+                    src={cutURL}
+                    loading="lazy"
+                    className="w-full object-cover block m-0 p-0 pointer-events-none fade-in"
+                    alt={`cut ${idx}`}
+                    referrerPolicy="no-referrer"
+                  />
+                  {line && (
+                    <div className="w-full px-5 py-4 border-b border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent">
+                      <div className="rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl px-4 py-3">
+                        <p className="text-[15px] leading-relaxed text-white/85 font-medium tracking-[0.01em]">
+                          {line}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {visibleCount < cuts.length && (
+              <div className="w-full px-6 py-10">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex items-center justify-between">
+                  <p className="text-sm text-white/55 font-semibold tracking-tight">다음 컷 준비 중</p>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-brand animate-pulse" />
+                    <p className="text-xs text-white/35">{visibleCount}/{cuts.length}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {visibleCount >= cuts.length && (
+              <div className="py-24 text-white/30 font-bold text-center">에피소드의 끝입니다.</div>
+            )}
           </>
         ) : (
           <div className="py-20 text-red-500 font-bold text-center">표시할 이미지가 없습니다.</div>
