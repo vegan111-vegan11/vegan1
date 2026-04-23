@@ -53,35 +53,45 @@ const WEBTOONS = [
 ];
 
 async function seed() {
-    console.log("Seeding Database with 3 real webtoons and 420 cuts...");
+    console.log("Seeding Database with 3 real webtoons (Subcollections via Firestore)...");
 
     for (const webtoon of WEBTOONS) {
         const { id, ...data } = webtoon;
 
-        // Generate 70 cuts per episode using Pollinations AI 
         const episodes = [
             {
+                id: "1",
                 vol: 1,
                 title: `${webtoon.title} 1화`,
                 cuts: Array.from({ length: 70 }).map((_, i) => `https://image.pollinations.ai/prompt/webtoon_panel_${id}_episode_1_scene_${i}?width=800&height=1200&nologo=true&seed=${i}`)
             },
             {
+                id: "2",
                 vol: 2,
                 title: `${webtoon.title} 2화`,
                 cuts: Array.from({ length: 70 }).map((_, i) => `https://image.pollinations.ai/prompt/webtoon_panel_${id}_episode_2_scene_${i}?width=800&height=1200&nologo=true&seed=${100 + i}`)
             }
         ];
 
+        // 1. Set main Webtoon details
         await setDoc(doc(db, 'webtoons', id), {
             ...data,
-            episodes,
-            episodeCount: 2 // helper property for quick count later
+            episodeCount: 2
         });
 
-        console.log(`[Success] Seeded [${webtoon.title}] with 2 episodes and 140 total AI cuts.`);
+        // 2. Set Subcollection for massive cuts payload
+        const { collection } = await import('firebase/firestore');
+        const episodesRef = collection(db, 'webtoons', id, 'episodes');
+
+        for (const ep of episodes) {
+            const { id: epId, ...epData } = ep;
+            await setDoc(doc(episodesRef, epId), epData);
+        }
+
+        console.log(`[Success] Seeded [${webtoon.title}] main doc + 2 subcollection episodes (140 cuts total).`);
     }
 
-    console.log("Seed completely finished!");
+    console.log("Subcollection Firebase Seed completely finished!");
     process.exit(0);
 }
 
