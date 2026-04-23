@@ -199,28 +199,43 @@ const CutBlock: React.FC<{ cut: ViewerCut; displayIndex: number }> = ({ cut, dis
 
   return (
     <div style={{ width: '100%', margin: 0, padding: 0 }}>
-      <div style={{ width: '100%', background: '#000000' }}>
-        {showSkeleton && <Skeleton height={520} />}
-        {!failed && (
+      <div style={{ width: '100%', background: '#000000', position: 'relative' }}>
+        {showSkeleton && (
+          <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
+            <Skeleton height={520} />
+          </div>
+        )}
+
+        {/* Always mount the image so the browser can load it reliably */}
+        {!failed ? (
           <img
             src={cut.imageUrl}
             loading="lazy"
+            decoding="async"
             alt={`cut ${displayIndex}`}
-            referrerPolicy="no-referrer"
             onLoad={() => setLoaded(true)}
             onError={() => {
               setFailed(true);
               setLoaded(false);
             }}
             style={{
-              display: loaded ? 'block' : 'none',
+              display: 'block',
               width: '100%',
               maxWidth: 800,
               margin: '0 auto',
               objectFit: 'cover',
               background: '#000000',
+              opacity: loaded ? 1 : 0,
+              transition: 'opacity 180ms ease-out',
+              position: 'relative',
+              zIndex: 2,
             }}
           />
+        ) : (
+          <div style={{ width: '100%', maxWidth: 800, margin: '0 auto', padding: '18px 16px', opacity: 0.7 }}>
+            <div style={{ fontSize: 13 }}>이미지를 불러오지 못했습니다.</div>
+            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 6, wordBreak: 'break-all' }}>{cut.imageUrl}</div>
+          </div>
         )}
       </div>
 
