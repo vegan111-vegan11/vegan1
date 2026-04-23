@@ -5,15 +5,15 @@
 
 import React, { useState, useEffect, Component } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Search, 
-  Menu, 
-  User, 
-  Bell, 
-  ChevronRight, 
-  Star, 
-  TrendingUp, 
-  Clock, 
+import {
+  Search,
+  Menu,
+  User,
+  Bell,
+  ChevronRight,
+  Star,
+  TrendingUp,
+  Clock,
   Flame,
   Play,
   Info,
@@ -33,32 +33,32 @@ import {
 import { Toaster, toast } from 'sonner';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { 
-  onAuthStateChanged, 
-  signInWithPopup, 
-  signOut, 
-  createUserWithEmailAndPassword, 
+import {
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   User as FirebaseUser
 } from 'firebase/auth';
-import { 
-  auth, 
-  db, 
-  googleProvider, 
-  githubProvider, 
-  collection, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  setDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  onSnapshot, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
+import {
+  auth,
+  db,
+  googleProvider,
+  githubProvider,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+  limit,
   serverTimestamp,
   handleFirestoreError,
   OperationType
@@ -106,7 +106,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           </div>
           <h2 className="text-2xl font-bold mb-4">문제가 발생했습니다</h2>
           <p className="text-white/60 mb-8 max-w-md">{errorMessage}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="bg-brand text-white px-8 py-3 rounded-full font-bold hover:bg-brand/80 transition-all"
           >
@@ -129,189 +129,39 @@ function cn(...inputs: ClassValue[]) {
 interface Webtoon {
   id: string;
   title: string;
-  author: string;
-  genre: string;
-  rating: number;
+  author?: string;
+  genre?: string;
+  rating?: number;
   thumbnail: string;
-  banner: string;
-  description: string;
+  banner?: string;
+  description?: string;
   isNew?: boolean;
   isHot?: boolean;
   isCompleted?: boolean;
+  episodes: number;
 }
-
-const MOCK_WEBTOONS: Webtoon[] = [
-  {
-    id: '1',
-    title: '달의 그림자',
-    author: '루나 파크',
-    genre: '판타지',
-    rating: 4.9,
-    thumbnail: 'https://picsum.photos/seed/webtoon1/200/300',
-    banner: 'https://picsum.photos/seed/banner1/1280/720',
-    description: '달이 지지 않는 세계, 한 소녀가 영원한 밤 뒤에 숨겨진 비밀을 발견합니다.',
-    isHot: true,
-  },
-  {
-    id: '2',
-    title: '네온 펄스',
-    author: '사이버 J',
-    genre: 'SF',
-    rating: 4.7,
-    thumbnail: 'https://picsum.photos/seed/webtoon2/200/300',
-    banner: 'https://picsum.photos/seed/banner2/1280/720',
-    description: '네오 서울의 해커가 현실 자체를 재작성할 수 있는 코드를 찾아냅니다.',
-    isNew: true,
-  },
-  {
-    id: '3',
-    title: '침묵의 검',
-    author: 'K. 신',
-    genre: '액션',
-    rating: 4.8,
-    thumbnail: 'https://picsum.photos/seed/webtoon3/200/300',
-    banner: 'https://picsum.photos/seed/banner3/1280/720',
-    description: '제국 최고의 암살자가 은퇴하지만, 과거는 그를 놓아주지 않습니다.',
-    isHot: true,
-  },
-  {
-    id: '4',
-    title: '벨벳 시크릿',
-    author: '로즈 M.',
-    genre: '로맨스',
-    rating: 4.6,
-    thumbnail: 'https://picsum.photos/seed/webtoon4/300/450',
-    banner: 'https://picsum.photos/seed/banner4/1920/1080',
-    description: '상류 사회의 스캔들이 라이벌 사이의 예상치 못한 동맹으로 이어집니다.',
-  },
-  {
-    id: '5',
-    title: '시간의 메아리',
-    author: 'T. 워커',
-    genre: '미스터리',
-    rating: 4.5,
-    thumbnail: 'https://picsum.photos/seed/webtoon5/300/450',
-    banner: 'https://picsum.photos/seed/banner5/1920/1080',
-    description: '잠들 때마다 다른 세기에서 깨어나는 남자. 그는 어떻게 집으로 돌아갈 수 있을까요?',
-    isNew: true,
-  },
-  {
-    id: '6',
-    title: '심야 식당',
-    author: '셰프 김',
-    genre: '일상',
-    rating: 4.9,
-    thumbnail: 'https://picsum.photos/seed/webtoon6/300/450',
-    banner: 'https://picsum.photos/seed/banner6/1920/1080',
-    description: '자정에만 문을 여는 작은 식당, 따뜻한 음식과 함께 이야기를 서빙합니다.',
-  },
-  {
-    id: '7',
-    title: '빗속의 연인',
-    author: '사라 J.',
-    genre: '로맨스',
-    rating: 4.8,
-    thumbnail: 'https://picsum.photos/seed/webtoon7/300/450',
-    banner: 'https://picsum.photos/seed/banner7/1920/1080',
-    description: '폭풍우 속 우연한 만남이 시간을 초월한 사랑으로 이어집니다.',
-    isHot: true,
-  },
-  {
-    id: '8',
-    title: '드래곤의 후계자',
-    author: '마크 T.',
-    genre: '판타지',
-    rating: 4.7,
-    thumbnail: 'https://picsum.photos/seed/webtoon8/300/450',
-    banner: 'https://picsum.photos/seed/banner8/1920/1080',
-    description: '마지막 드래곤이 죽고 세상은 혼돈에 빠집니다. 누가 그 힘을 물려받을 것인가?',
-  },
-  {
-    id: '9',
-    title: '도시 괴담',
-    author: '데이비드 L.',
-    genre: '드라마',
-    rating: 4.6,
-    thumbnail: 'https://picsum.photos/seed/webtoon9/300/450',
-    banner: 'https://picsum.photos/seed/banner9/1920/1080',
-    description: '모두가 알지만 아무도 믿지 않는 이야기들이 현실이 됩니다.',
-    isNew: true,
-  },
-  {
-    id: '10',
-    title: '위대한 강도',
-    author: '알렉스 R.',
-    genre: '액션',
-    rating: 4.9,
-    thumbnail: 'https://picsum.photos/seed/webtoon10/300/450',
-    banner: 'https://picsum.photos/seed/banner10/1920/1080',
-    description: '도둑 무리가 궁극의 강도를 계획하지만, 상황은 계획대로 흘러가지 않습니다.',
-    isHot: true,
-  },
-  {
-    id: '11',
-    title: '달콤한 여름',
-    author: '에밀리 B.',
-    genre: '로맨스',
-    rating: 4.5,
-    thumbnail: 'https://picsum.photos/seed/webtoon11/300/450',
-    banner: 'https://picsum.photos/seed/banner11/1920/1080',
-    description: '그들의 삶을 영원히 바꿀 여름날의 로맨스.',
-  },
-  {
-    id: '12',
-    title: '잃어버린 왕국',
-    author: '크리스 W.',
-    genre: '판타지',
-    rating: 4.8,
-    thumbnail: 'https://picsum.photos/seed/webtoon12/300/450',
-    banner: 'https://picsum.photos/seed/banner12/1920/1080',
-    description: '젊은 탐험가가 수세기 동안 잊혀졌던 숨겨진 왕국을 발견합니다.',
-    isNew: true,
-  },
-  {
-    id: '13',
-    title: '가족의 끈',
-    author: '제시카 K.',
-    genre: '드라마',
-    rating: 4.7,
-    thumbnail: 'https://picsum.photos/seed/webtoon13/300/450',
-    banner: 'https://picsum.photos/seed/banner13/1920/1080',
-    description: '가족을 갈라놓거나 더 가깝게 만들 가족의 비밀.',
-  },
-  {
-    id: '14',
-    title: '스트리트 파이터',
-    author: '마이크 S.',
-    genre: '액션',
-    rating: 4.6,
-    thumbnail: 'https://picsum.photos/seed/webtoon14/300/450',
-    banner: 'https://picsum.photos/seed/banner14/1920/1080',
-    description: '젊은 파이터가 챔피언이 되기 위해 등급을 올리며 성장합니다.',
-  },
-];
 
 const GENRES = ['전체', '로맨스', '판타지', '드라마', '액션', 'SF', '미스터리', '일상'];
 
 // --- Components ---
 
-const WebtoonDetail: React.FC<{ 
-  webtoon: Webtoon | null, 
-  onClose: () => void 
+const WebtoonDetail: React.FC<{
+  webtoon: Webtoon | null,
+  onClose: () => void
 }> = ({ webtoon, onClose }) => {
   if (!webtoon) return null;
 
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
           className="absolute inset-0 bg-black/80 backdrop-blur-md"
         />
-        <motion.div 
+        <motion.div
           initial={{ scale: 0.9, opacity: 0, y: 40 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 40 }}
@@ -322,9 +172,9 @@ const WebtoonDetail: React.FC<{
           </button>
 
           <div className="w-full md:w-2/5 h-64 md:h-full relative">
-            <img 
-              src={webtoon.thumbnail} 
-              className="w-full h-full object-cover" 
+            <img
+              src={webtoon.thumbnail}
+              className="w-full h-full object-cover"
               alt={webtoon.title}
               referrerPolicy="no-referrer"
             />
@@ -472,14 +322,14 @@ const AuthModal: React.FC<{ isOpen: boolean, onClose: () => void, onLogin: (user
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
-          <motion.div 
+          <motion.div
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -495,16 +345,16 @@ const AuthModal: React.FC<{ isOpen: boolean, onClose: () => void, onLogin: (user
             </div>
 
             <div className="space-y-4 mb-10">
-              <button 
+              <button
                 onClick={handleGoogleLogin}
                 disabled={loading}
                 className="w-full bg-white text-black font-bold py-4 rounded-2xl flex items-center justify-center gap-4 hover:bg-white/90 transition-all shadow-xl shadow-white/5 active:scale-95 disabled:opacity-50"
               >
-                <Chrome size={24} className="text-[#4285F4]" /> 
+                <Chrome size={24} className="text-[#4285F4]" />
                 <span className="text-lg">Google로 1초 로그인</span>
               </button>
-              
-              <button 
+
+              <button
                 onClick={handleGithubLogin}
                 disabled={loading}
                 className="w-full bg-zinc-800 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-3 hover:bg-zinc-700 transition-all border border-white/5 active:scale-95 disabled:opacity-50"
@@ -523,8 +373,8 @@ const AuthModal: React.FC<{ isOpen: boolean, onClose: () => void, onLogin: (user
               <div className="space-y-2">
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={16} />
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     required
                     placeholder="이메일 주소"
                     className="w-full bg-white/5 border border-white/5 rounded-xl pl-12 pr-4 py-3 outline-none focus:border-white/20 transition-all text-sm"
@@ -536,8 +386,8 @@ const AuthModal: React.FC<{ isOpen: boolean, onClose: () => void, onLogin: (user
               <div className="space-y-2">
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={16} />
-                  <input 
-                    type="password" 
+                  <input
+                    type="password"
                     required
                     placeholder="비밀번호"
                     className="w-full bg-white/5 border border-white/5 rounded-xl pl-12 pr-4 py-3 outline-none focus:border-white/20 transition-all text-sm"
@@ -547,7 +397,7 @@ const AuthModal: React.FC<{ isOpen: boolean, onClose: () => void, onLogin: (user
                 </div>
               </div>
 
-              <button 
+              <button
                 type="submit"
                 disabled={loading}
                 className="w-full bg-white/5 hover:bg-white/10 text-white/60 font-bold py-3 rounded-xl transition-all text-sm disabled:opacity-50"
@@ -558,7 +408,7 @@ const AuthModal: React.FC<{ isOpen: boolean, onClose: () => void, onLogin: (user
 
             <p className="text-center mt-8 text-sm text-white/50">
               {isLogin ? '계정이 없으신가요?' : '이미 계정이 있으신가요?'} {' '}
-              <button 
+              <button
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-brand font-bold hover:underline"
               >
@@ -572,8 +422,8 @@ const AuthModal: React.FC<{ isOpen: boolean, onClose: () => void, onLogin: (user
   );
 };
 
-const AdminDashboard: React.FC<{ 
-  webtoons: Webtoon[], 
+const AdminDashboard: React.FC<{
+  webtoons: Webtoon[],
   onBack: () => void,
   onAdd: (w: Webtoon) => void,
   onDelete: (id: string) => void
@@ -583,10 +433,11 @@ const AdminDashboard: React.FC<{
   const [newWebtoon, setNewWebtoon] = useState<Partial<Webtoon>>({
     genre: '로맨스',
     rating: 4.5,
-    thumbnail: 'https://picsum.photos/300/450',
-    banner: 'https://picsum.photos/1920/1080',
+    thumbnail: '',
+    banner: '',
     isHot: false,
     isNew: true,
+    episodes: 0,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -600,8 +451,9 @@ const AdminDashboard: React.FC<{
       setNewWebtoon({
         genre: '로맨스',
         rating: 4.5,
-        thumbnail: 'https://picsum.photos/300/450',
-        banner: 'https://picsum.photos/1920/1080',
+        thumbnail: '',
+        banner: '',
+        episodes: 0,
       });
     }
   };
@@ -615,7 +467,7 @@ const AdminDashboard: React.FC<{
         </div>
 
         <nav className="flex-1 space-y-2">
-          <button 
+          <button
             onClick={() => setActiveTab('stats')}
             className={cn(
               "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
@@ -624,7 +476,7 @@ const AdminDashboard: React.FC<{
           >
             <TrendingUp size={18} /> 대시보드
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('webtoons')}
             className={cn(
               "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
@@ -633,7 +485,7 @@ const AdminDashboard: React.FC<{
           >
             <Play size={18} /> 웹툰 관리
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('users')}
             className={cn(
               "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
@@ -644,7 +496,7 @@ const AdminDashboard: React.FC<{
           </button>
         </nav>
 
-        <button 
+        <button
           onClick={onBack}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/50 hover:bg-white/5 hover:text-white transition-all mt-auto"
         >
@@ -669,7 +521,7 @@ const AdminDashboard: React.FC<{
           </div>
 
           {activeTab === 'webtoons' && (
-            <button 
+            <button
               onClick={() => setIsAdding(true)}
               className="bg-brand hover:bg-brand/90 text-white px-6 py-2.5 rounded-full font-bold flex items-center gap-2 transition-all"
             >
@@ -693,7 +545,7 @@ const AdminDashboard: React.FC<{
                 <h3 className="text-4xl font-bold tracking-tight">{stat.value}</h3>
               </div>
             ))}
-            
+
             <div className="col-span-1 md:col-span-3 bg-surface border border-white/5 p-8 rounded-3xl h-64 flex items-center justify-center text-white/20 italic">
               [조회수 추이 그래프 영역]
             </div>
@@ -738,7 +590,7 @@ const AdminDashboard: React.FC<{
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button 
+                      <button
                         onClick={() => onDelete(w.id)}
                         className="text-white/30 hover:text-brand transition-colors p-2"
                       >
@@ -764,14 +616,14 @@ const AdminDashboard: React.FC<{
       <AnimatePresence>
         {isAdding && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsAdding(false)}
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             />
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -782,32 +634,32 @@ const AdminDashboard: React.FC<{
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-white/50 uppercase tracking-wider">제목</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       required
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand transition-all"
                       value={newWebtoon.title || ''}
-                      onChange={e => setNewWebtoon({...newWebtoon, title: e.target.value})}
+                      onChange={e => setNewWebtoon({ ...newWebtoon, title: e.target.value })}
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-white/50 uppercase tracking-wider">작가</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       required
                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand transition-all"
                       value={newWebtoon.author || ''}
-                      onChange={e => setNewWebtoon({...newWebtoon, author: e.target.value})}
+                      onChange={e => setNewWebtoon({ ...newWebtoon, author: e.target.value })}
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-white/50 uppercase tracking-wider">장르</label>
-                  <select 
+                  <select
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand transition-all appearance-none"
                     value={newWebtoon.genre}
-                    onChange={e => setNewWebtoon({...newWebtoon, genre: e.target.value})}
+                    onChange={e => setNewWebtoon({ ...newWebtoon, genre: e.target.value })}
                   >
                     {GENRES.filter(g => g !== '전체').map(g => (
                       <option key={g} value={g} className="bg-surface">{g}</option>
@@ -817,12 +669,12 @@ const AdminDashboard: React.FC<{
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-white/50 uppercase tracking-wider">작품 설명</label>
-                  <textarea 
+                  <textarea
                     required
                     rows={3}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-brand transition-all resize-none"
                     value={newWebtoon.description || ''}
-                    onChange={e => setNewWebtoon({...newWebtoon, description: e.target.value})}
+                    onChange={e => setNewWebtoon({ ...newWebtoon, description: e.target.value })}
                   />
                 </div>
 
@@ -830,8 +682,8 @@ const AdminDashboard: React.FC<{
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-white/50 uppercase">인기작 여부</label>
                     <div className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={newWebtoon.isHot}
                         onChange={e => setNewWebtoon({ ...newWebtoon, isHot: e.target.checked })}
                         className="w-5 h-5 rounded bg-white/5 border border-white/10 text-brand focus:ring-brand"
@@ -842,8 +694,8 @@ const AdminDashboard: React.FC<{
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-white/50 uppercase">신작 여부</label>
                     <div className="flex items-center gap-2">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={newWebtoon.isNew}
                         onChange={e => setNewWebtoon({ ...newWebtoon, isNew: e.target.checked })}
                         className="w-5 h-5 rounded bg-white/5 border border-white/10 text-brand focus:ring-brand"
@@ -854,14 +706,14 @@ const AdminDashboard: React.FC<{
                 </div>
 
                 <div className="flex gap-4 pt-4">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setIsAdding(false)}
                     className="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all"
                   >
                     취소
                   </button>
-                  <button 
+                  <button
                     type="submit"
                     className="flex-1 bg-brand hover:bg-brand/90 text-white font-bold py-3 rounded-xl transition-all"
                   >
@@ -877,15 +729,15 @@ const AdminDashboard: React.FC<{
   );
 };
 
-const GenreSection: React.FC<{ 
-  webtoons: Webtoon[], 
+const GenreSection: React.FC<{
+  webtoons: Webtoon[],
   isLoading: boolean,
-  onWebtoonClick: (w: Webtoon) => void 
+  onWebtoonClick: (w: Webtoon) => void
 }> = ({ webtoons, isLoading, onWebtoonClick }) => {
   const [selectedGenre, setSelectedGenre] = useState('전체');
 
-  const filteredWebtoons = selectedGenre === '전체' 
-    ? webtoons 
+  const filteredWebtoons = selectedGenre === '전체'
+    ? webtoons
     : webtoons.filter(w => w.genre === selectedGenre);
 
   return (
@@ -895,7 +747,7 @@ const GenreSection: React.FC<{
           <Menu className="text-brand" size={24} />
           <h2 className="text-2xl font-bold tracking-tight">장르별 탐색</h2>
         </div>
-        
+
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 -mx-2 px-2">
           {GENRES.map((genre) => (
             <button
@@ -903,8 +755,8 @@ const GenreSection: React.FC<{
               onClick={() => setSelectedGenre(genre)}
               className={cn(
                 "px-4 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap",
-                selectedGenre === genre 
-                  ? "bg-brand text-white" 
+                selectedGenre === genre
+                  ? "bg-brand text-white"
                   : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
               )}
             >
@@ -913,9 +765,9 @@ const GenreSection: React.FC<{
           ))}
         </div>
       </div>
-      
+
       <AnimatePresence mode="popLayout">
-        <motion.div 
+        <motion.div
           layout
           className="flex gap-6 overflow-x-auto no-scrollbar pb-4 -mx-2 px-2"
         >
@@ -952,12 +804,12 @@ const GenreSection: React.FC<{
   );
 };
 
-const Navbar: React.FC<{ 
-  onAdminClick: () => void, 
-  onAuthClick: () => void, 
-  user: any, 
-  onLogout: () => void, 
-  theme: string, 
+const Navbar: React.FC<{
+  onAdminClick: () => void,
+  onAuthClick: () => void,
+  user: any,
+  onLogout: () => void,
+  theme: string,
   onThemeToggle: () => void,
   searchQuery: string,
   onSearchChange: (q: string) => void
@@ -978,22 +830,22 @@ const Navbar: React.FC<{
         isScrolled ? "bg-bg/80 dark:bg-zinc-950/80 backdrop-blur-xl py-3 border-b border-white/5 shadow-2xl" : "bg-transparent"
       )}>
         <div className="flex items-center gap-10">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="text-2xl font-bold tracking-tighter text-brand italic cursor-pointer"
           >
             WEBTOON<span className="text-white not-italic">U</span>
           </motion.h1>
-          
+
           <div className="hidden lg:flex items-center gap-8 text-sm font-bold text-white/70">
             {['홈', '장르', '랭킹', '신작'].map((item, i) => (
-              <motion.a 
+              <motion.a
                 key={item}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                href="#" 
+                href="#"
                 className="hover:text-white transition-colors relative group"
               >
                 {item}
@@ -1006,17 +858,17 @@ const Navbar: React.FC<{
         <div className="flex items-center gap-4 md:gap-6">
           <div className="hidden sm:flex items-center bg-white/5 dark:bg-white/10 rounded-full px-4 py-2 gap-3 border border-white/10 focus-within:border-brand/50 focus-within:bg-white/10 transition-all w-48 lg:w-72">
             <Search size={18} className="text-white/40" />
-            <input 
-              type="text" 
-              placeholder="제목, 작가 검색" 
+            <input
+              type="text"
+              placeholder="제목, 작가 검색"
               className="bg-transparent border-none outline-none text-sm text-white w-full placeholder:text-white/20"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
             />
           </div>
-          
+
           <div className="flex items-center gap-2 md:gap-4">
-            <button 
+            <button
               onClick={onThemeToggle}
               className="p-2.5 hover:bg-white/10 rounded-full transition-all text-white/70 hover:text-white active:scale-90"
             >
@@ -1030,13 +882,13 @@ const Navbar: React.FC<{
 
             {user ? (
               <div className="flex items-center gap-3">
-                <button 
+                <button
                   onClick={onAdminClick}
                   className="hidden sm:flex items-center gap-2 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 transition-all text-sm font-bold"
                 >
                   <User size={16} /> 관리자
                 </button>
-                <button 
+                <button
                   onClick={onLogout}
                   className="p-2.5 hover:bg-brand/20 hover:text-brand rounded-full transition-all text-white/70 active:scale-90"
                   title="로그아웃"
@@ -1045,7 +897,7 @@ const Navbar: React.FC<{
                 </button>
               </div>
             ) : (
-              <button 
+              <button
                 onClick={onAuthClick}
                 className="bg-brand hover:bg-brand/90 text-white px-6 py-2 rounded-full font-bold text-sm transition-all shadow-lg shadow-brand/20 active:scale-95"
               >
@@ -1053,7 +905,7 @@ const Navbar: React.FC<{
               </button>
             )}
 
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="lg:hidden p-2.5 hover:bg-white/10 rounded-full transition-all text-white active:scale-90"
             >
@@ -1066,7 +918,7 @@ const Navbar: React.FC<{
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1082,12 +934,12 @@ const Navbar: React.FC<{
 
               <nav className="flex flex-col gap-6 text-3xl font-bold">
                 {['홈', '장르', '랭킹', '신작'].map((item, i) => (
-                  <motion.a 
+                  <motion.a
                     key={item}
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: i * 0.1 }}
-                    href="#" 
+                    href="#"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="hover:text-brand transition-colors"
                   >
@@ -1098,7 +950,7 @@ const Navbar: React.FC<{
 
               <div className="mt-auto space-y-4">
                 {!user && (
-                  <button 
+                  <button
                     onClick={() => { setIsMobileMenuOpen(false); onAuthClick(); }}
                     className="w-full bg-brand text-white py-4 rounded-2xl font-bold text-lg"
                   >
@@ -1161,13 +1013,13 @@ const Hero = ({ webtoons, onWebtoonClick, isLoading }: { webtoons: Webtoon[], on
         >
           <div className="absolute inset-0 bg-gradient-to-r from-bg via-bg/40 to-transparent z-10" />
           <div className="absolute inset-0 bg-gradient-to-t from-bg via-transparent to-transparent z-10" />
-          <img 
-            src={current.banner} 
+          <img
+            src={current.banner}
             alt={current.title}
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
-          
+
           <div className="absolute inset-0 z-20 flex flex-col justify-center px-6 md:px-16 max-w-3xl">
             <motion.div
               initial={{ y: 20, opacity: 0 }}
@@ -1187,22 +1039,22 @@ const Hero = ({ webtoons, onWebtoonClick, isLoading }: { webtoons: Webtoon[], on
                 )}
                 <span className="text-white/60 text-xs font-medium uppercase tracking-widest">{current.genre}</span>
               </div>
-              
+
               <h2 className="text-5xl md:text-7xl font-bold mb-4 tracking-tighter leading-none font-serif italic">
                 {current.title}
               </h2>
               <p className="text-white/70 text-lg mb-8 line-clamp-2 max-w-xl">
                 {current.description}
               </p>
-              
+
               <div className="flex items-center gap-4">
-                <button 
+                <button
                   onClick={() => onWebtoonClick(current)}
                   className="bg-brand hover:bg-brand/90 text-white px-8 py-3 rounded-full font-bold flex items-center gap-2 transition-transform active:scale-95"
                 >
                   <Play size={18} fill="currentColor" /> 지금 읽기
                 </button>
-                <button 
+                <button
                   onClick={() => onWebtoonClick(current)}
                   className="bg-white/10 hover:bg-white/20 text-white px-6 py-3 rounded-full font-bold flex items-center gap-2 transition-all border border-white/10"
                 >
@@ -1232,54 +1084,47 @@ const Hero = ({ webtoons, onWebtoonClick, isLoading }: { webtoons: Webtoon[], on
 
 const WebtoonCard: React.FC<{ webtoon: Webtoon, onClick: () => void }> = ({ webtoon, onClick }) => {
   return (
-    <motion.div 
-      whileHover={{ y: -8 }}
+    <motion.div
+      whileHover={{ y: -10, scale: 1.02 }}
       onClick={onClick}
-      className="group relative flex-shrink-0 w-40 md:w-48 cursor-pointer"
+      className="group relative flex-shrink-0 w-44 md:w-56 cursor-pointer p-2 rounded-2xl bg-white/5 border border-white/10 hover:border-brand/50 backdrop-blur-md transition-all duration-300 shadow-xl"
     >
-      <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-3">
-        <img 
-          src={webtoon.thumbnail} 
+      <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-4">
+        <img
+          src={webtoon.thumbnail}
           alt={webtoon.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-brand flex items-center justify-center text-white scale-75 group-hover:scale-100 transition-transform">
-            <Play size={24} fill="currentColor" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="w-14 h-14 rounded-full bg-brand/90 backdrop-blur-md shadow-brand/30 shadow-2xl flex items-center justify-center text-white scale-75 group-hover:scale-100 transition-transform">
+            <Play size={28} fill="currentColor" className="ml-1" />
           </div>
         </div>
-        
-        {webtoon.isNew && (
-          <div className="absolute top-2 left-2 bg-blue-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase">
-            신작
+
+        {webtoon.episodes !== undefined && (
+          <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md border border-white/10 text-brand text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-lg">
+            총 {webtoon.episodes}화
           </div>
         )}
-        {webtoon.isHot && (
-          <div className="absolute top-2 left-2 bg-brand text-white text-[8px] font-bold px-1.5 py-0.5 rounded uppercase flex items-center gap-0.5">
-            <Flame size={8} /> 인기
-          </div>
-        )}
-        
-        <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-bold text-white">
-          <Star size={10} className="text-yellow-400 fill-yellow-400" />
-          {webtoon.rating}
-        </div>
       </div>
-      
-      <h3 className="text-sm font-bold text-white line-clamp-1 group-hover:text-brand transition-colors">
-        {webtoon.title}
-      </h3>
-      <p className="text-xs text-white/50 line-clamp-1">
-        {webtoon.author}
-      </p>
+
+      <div className="px-1">
+        <h3 className="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70 line-clamp-1 group-hover:from-brand group-hover:to-purple-500 transition-all">
+          {webtoon.title}
+        </h3>
+        <p className="text-sm text-white/40 font-medium line-clamp-1 mt-1">
+          {webtoon.author || "WebtoonU 독점작"}
+        </p>
+      </div>
     </motion.div>
   );
 };
 
-const Section: React.FC<{ 
-  title: string, 
-  icon?: any, 
+const Section: React.FC<{
+  title: string,
+  icon?: any,
   webtoons: Webtoon[],
   isLoading?: boolean,
   onWebtoonClick?: (w: Webtoon) => void
@@ -1295,7 +1140,7 @@ const Section: React.FC<{
           전체보기 <ChevronRight size={16} />
         </button>
       </div>
-      
+
       <div className="flex gap-6 overflow-x-auto no-scrollbar pb-4 -mx-2 px-2">
         {isLoading ? (
           Array.from({ length: 6 }).map((_, i) => (
@@ -1325,7 +1170,7 @@ const Footer: React.FC<{ onAdminClick: () => void }> = ({ onAdminClick }) => {
             세계 최고의 프리미엄 웹툰 플랫폼. 오늘 당신의 새로운 인생작을 만나보세요.
           </p>
         </div>
-        
+
         <div>
           <h4 className="text-white font-bold mb-6">플랫폼</h4>
           <ul className="space-y-4 text-sm text-white/50">
@@ -1336,7 +1181,7 @@ const Footer: React.FC<{ onAdminClick: () => void }> = ({ onAdminClick }) => {
             <li><button onClick={onAdminClick} className="hover:text-brand transition-colors">관리자 모드</button></li>
           </ul>
         </div>
-        
+
         <div>
           <h4 className="text-white font-bold mb-6">고객 지원</h4>
           <ul className="space-y-4 text-sm text-white/50">
@@ -1346,7 +1191,7 @@ const Footer: React.FC<{ onAdminClick: () => void }> = ({ onAdminClick }) => {
             <li><a href="#" className="hover:text-white transition-colors">이용 약관</a></li>
           </ul>
         </div>
-        
+
         <div>
           <h4 className="text-white font-bold mb-6">다운로드</h4>
           <div className="flex flex-col gap-3">
@@ -1359,7 +1204,7 @@ const Footer: React.FC<{ onAdminClick: () => void }> = ({ onAdminClick }) => {
           </div>
         </div>
       </div>
-      
+
       <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-white/5 gap-4">
         <p className="text-white/30 text-xs">
           © 2026 웹툰 유니버스. All rights reserved.
@@ -1425,7 +1270,7 @@ const ProgressBar: React.FC = () => {
 
   return (
     <div className="fixed top-0 left-0 w-full h-1 z-[100] pointer-events-none">
-      <motion.div 
+      <motion.div
         className="h-full bg-brand shadow-[0_0_10px_rgba(255,51,102,0.8)]"
         style={{ width: `${scrollProgress}%` }}
       />
@@ -1472,12 +1317,12 @@ const CustomCursor: React.FC = () => {
 };
 
 const LoadingScreen: React.FC = () => (
-  <motion.div 
+  <motion.div
     initial={{ opacity: 1 }}
     exit={{ opacity: 0 }}
     className="fixed inset-0 z-[1000] bg-bg dark:bg-zinc-950 flex flex-col items-center justify-center"
   >
-    <motion.div 
+    <motion.div
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
@@ -1489,7 +1334,7 @@ const LoadingScreen: React.FC = () => (
       </div>
     </motion.div>
     <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
-      <motion.div 
+      <motion.div
         initial={{ x: '-100%' }}
         animate={{ x: '100%' }}
         transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
@@ -1512,7 +1357,7 @@ function App() {
   const [isAdminView, setIsAdminView] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
-  const [webtoons, setWebtoons] = useState<Webtoon[]>(MOCK_WEBTOONS);
+  const [webtoons, setWebtoons] = useState<Webtoon[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWebtoon, setSelectedWebtoon] = useState<Webtoon | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -1521,7 +1366,7 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-        
+
         // Sync user profile to Firestore
         const userRef = doc(db, 'users', firebaseUser.uid);
         try {
@@ -1545,8 +1390,8 @@ function App() {
     });
 
     // Fetch Webtoons from Firestore
-    const webtoonsQuery = query(collection(db, 'webtoons'), orderBy('createdAt', 'desc'));
-    
+    const webtoonsQuery = query(collection(db, 'webtoons'), orderBy('createdAt', 'desc'), limit(10));
+
     // Set a timeout to hide loading screen if Firestore takes too long
     const timeoutId = setTimeout(() => {
       setIsLoading(false);
@@ -1558,12 +1403,12 @@ function App() {
         ...doc.data(),
         id: doc.id
       })) as Webtoon[];
-      
+
       if (fetchedWebtoons.length > 0) {
         setWebtoons(fetchedWebtoons);
       } else {
-        // Fallback to mock data if Firestore is empty
-        setWebtoons(MOCK_WEBTOONS);
+        // Fallback to empty if Firestore is empty
+        setWebtoons([]);
       }
       setIsLoading(false);
     }, (error) => {
@@ -1620,7 +1465,7 @@ function App() {
     }
   };
 
-  const filteredWebtoons = webtoons.filter(w => 
+  const filteredWebtoons = webtoons.filter(w =>
     w.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     w.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
     w.genre.toLowerCase().includes(searchQuery.toLowerCase())
@@ -1631,8 +1476,8 @@ function App() {
 
   if (isAdminView && isAdmin) {
     return (
-      <AdminDashboard 
-        webtoons={webtoons} 
+      <AdminDashboard
+        webtoons={webtoons}
         onBack={() => setIsAdminView(false)}
         onAdd={handleAddWebtoon}
         onDelete={handleDeleteWebtoon}
@@ -1646,9 +1491,9 @@ function App() {
         {isLoading && <LoadingScreen />}
       </AnimatePresence>
       <Toaster position="top-center" expand={true} richColors />
-      
-      <Navbar 
-        onAdminClick={() => setIsAdminView(true)} 
+
+      <Navbar
+        onAdminClick={() => setIsAdminView(true)}
         onAuthClick={() => setIsAuthModalOpen(true)}
         user={user}
         onLogout={handleLogout}
@@ -1660,37 +1505,34 @@ function App() {
 
       <main className="pt-0">
         <Hero webtoons={webtoons.slice(0, 5)} onWebtoonClick={setSelectedWebtoon} isLoading={isLoading} />
-        
+
         <div className="relative z-30 -mt-20">
-          <Section 
-            title="지금 뜨는 인기작" 
-            icon={TrendingUp} 
-            webtoons={filteredWebtoons.filter(w => w.isHot)} 
-            isLoading={isLoading}
-            onWebtoonClick={setSelectedWebtoon}
-          />
-          
-          <Section 
-            title="최신 업데이트" 
-            icon={Clock} 
-            webtoons={[...filteredWebtoons].reverse().filter(w => w.isNew)} 
+          <Section
+            title="지금 뜨는 인기작"
+            icon={TrendingUp}
+            webtoons={filteredWebtoons.filter(w => w.isHot)}
             isLoading={isLoading}
             onWebtoonClick={setSelectedWebtoon}
           />
 
-          <GenreSection 
-            webtoons={filteredWebtoons} 
+          <Section
+            title="최신 업데이트"
+            icon={Clock}
+            webtoons={[...filteredWebtoons].reverse().filter(w => w.isNew)}
             isLoading={isLoading}
             onWebtoonClick={setSelectedWebtoon}
           />
-          
+
+          <GenreSection
+            webtoons={filteredWebtoons}
+            isLoading={isLoading}
+            onWebtoonClick={setSelectedWebtoon}
+          />
+
           <div className="px-6 md:px-16 py-12">
             <div className="relative h-64 rounded-3xl overflow-hidden group cursor-pointer">
-              <img 
-                src="https://picsum.photos/seed/promo/1920/600" 
-                alt="Promo"
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                referrerPolicy="no-referrer"
+              <div
+                className="w-full h-full bg-gradient-to-br from-indigo-900 to-purple-900 transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-brand/80 to-transparent flex flex-col justify-center px-12">
                 <h3 className="text-3xl font-bold mb-2">프리미엄 멤버십</h3>
@@ -1706,15 +1548,15 @@ function App() {
 
       <Footer onAdminClick={() => setIsAdminView(true)} />
 
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
         onLogin={setUser}
       />
 
-      <WebtoonDetail 
-        webtoon={selectedWebtoon} 
-        onClose={() => setSelectedWebtoon(null)} 
+      <WebtoonDetail
+        webtoon={selectedWebtoon}
+        onClose={() => setSelectedWebtoon(null)}
       />
 
       <ScrollToTop />
