@@ -150,33 +150,25 @@ const WebtoonDetail: React.FC<{
   webtoon: Webtoon | null,
   onClose: () => void
 }> = ({ webtoon, onClose }) => {
-  const [selectedEpisode, setSelectedEpisode] = useState<any>(null);
+  const [episodes, setEpisodes] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!webtoon) setSelectedEpisode(null);
+    if (webtoon) {
+      const epRef = collection(db, 'webtoons', webtoon.id, 'episodes');
+      getDocs(epRef).then(snap => {
+        const eps = snap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+        eps.sort((a: any, b: any) => a.vol - b.vol);
+        setEpisodes(eps);
+      });
+    }
   }, [webtoon]);
 
-  if (!webtoon) return null;
+  const navigateToViewer = (epId: string) => {
+    window.history.pushState({}, '', `/viewer/${webtoon?.id}/${epId}`);
+    window.dispatchEvent(new Event('popstate'));
+  };
 
-  if (selectedEpisode) {
-    return (
-      <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-3xl flex flex-col pt-safe-top">
-        <div className="h-16 shrink-0 flex items-center px-4 border-b border-white/10 justify-between bg-black sticky top-0 z-10 w-full shadow-2xl">
-          <button onClick={() => setSelectedEpisode(null)} className="text-white hover:text-brand transition-colors p-2 rounded-full hover:bg-white/10">
-            <X size={24} />
-          </button>
-          <h3 className="text-white font-bold">{selectedEpisode.title || '에피소드'}</h3>
-          <div className="w-10"></div>
-        </div>
-        <div className="flex-1 overflow-y-auto w-full max-w-2xl mx-auto flex flex-col items-center bg-black min-h-screen">
-          {selectedEpisode.cuts?.map((cut: string, index: number) => (
-            <img key={index} src={cut} loading="lazy" className="w-full object-cover block m-0 p-0 pointer-events-none fade-in" alt={"cut " + index} referrerPolicy="no-referrer" />
-          ))}
-          <div className="py-20 text-white/30 font-bold text-center">에피소드의 끝입니다.</div>
-        </div>
-      </div>
-    );
-  }
+  if (!webtoon) return null;
 
   return (
     <AnimatePresence>
@@ -251,15 +243,15 @@ const WebtoonDetail: React.FC<{
             <div className="flex flex-wrap gap-4 mb-8">
               <button
                 onClick={() => {
-                  if (webtoon.episodes && webtoon.episodes.length > 0) {
-                    setSelectedEpisode(webtoon.episodes[0]);
+                  if (episodes && episodes.length > 0) {
+                    navigateToViewer(episodes[0].id || '1');
                   } else {
                     toast.info('등록된 에피소드가 없거나 로딩중입니다.');
                   }
                 }}
                 className="flex-1 min-w-[200px] bg-brand hover:bg-brand/90 text-white font-bold py-4 rounded-2xl transition-all shadow-xl shadow-brand/20 flex items-center justify-center gap-3 text-lg cursor-pointer active:scale-95 z-50"
               >
-                <Play size={24} fill="currentColor" /> {webtoon.episodes && webtoon.episodes.length > 0 ? '첫 화 보기' : '감상하기'}
+                <Play size={24} fill="currentColor" /> 감상하기
               </button>
             </div>
 
@@ -268,11 +260,11 @@ const WebtoonDetail: React.FC<{
                 <Play size={20} className="text-brand" fill="currentColor" /> 에피소드 리스트
               </h3>
               <div className="space-y-4">
-                {webtoon.episodes && webtoon.episodes.length > 0 ? (
-                  webtoon.episodes.map((ep: any, index: number) => (
+                {episodes && episodes.length > 0 ? (
+                  episodes.map((ep: any, index: number) => (
                     <button
                       key={index}
-                      onClick={() => setSelectedEpisode(ep)}
+                      onClick={() => navigateToViewer(ep.id || ep.vol?.toString() || '1')}
                       className="w-full flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all group cursor-pointer text-left"
                     >
                       <div className="flex items-center gap-4">
@@ -281,7 +273,7 @@ const WebtoonDetail: React.FC<{
                         </div>
                         <div>
                           <h4 className="font-bold text-white group-hover:text-brand transition-colors">{ep.title || index + 1 + '화'}</h4>
-                          <p className="text-xs text-white/50">{ep.cuts?.length || 0}컷 분량</p>
+                          <p className="text-xs text-white/50">{ep.cuts?.length || 70}컷 분량</p>
                         </div>
                       </div>
                       <ChevronRight size={20} className="text-white/30 group-hover:text-brand transition-colors" />
@@ -1312,7 +1304,7 @@ const ProgressBar: React.FC = () => {
     <div className="fixed top-0 left-0 w-full h-1 z-[100] pointer-events-none">
       <motion.div
         className="h-full bg-brand shadow-[0_0_10px_rgba(255,51,102,0.8)]"
-        style={{ width: `${scrollProgress}%` }}
+        style={{ width: `${scrollProgress} % ` }}
       />
     </div>
   );
@@ -1384,6 +1376,56 @@ const LoadingScreen: React.FC = () => (
   </motion.div>
 );
 
+const CustomViewer: React.FC<{ webtoonId: string; episodeId: string; onClose: () => void; }> = ({ webtoonId, episodeId, onClose }) => {
+  const [cuts, setCuts] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCuts = async () => {
+      try {
+        const epRef = doc(db, 'webtoons', webtoonId, 'episodes', episodeId);
+        const snap = await getDoc(epRef);
+        if (snap.exists() && snap.data().cuts) {
+          setCuts(snap.data().cuts);
+        } else {
+          toast.error('에피소드 데이터를 찾을 수 없습니다.');
+        }
+      } catch (err) {
+        toast.error('에피소드 로딩 실패.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCuts();
+  }, [webtoonId, episodeId]);
+
+  return (
+    <div className="fixed inset-0 z-[500] bg-black/95 backdrop-blur-3xl flex flex-col overflow-hidden">
+      <div className="h-16 shrink-0 flex items-center px-4 border-b border-white/10 justify-between bg-black shadow-2xl z-10 w-full text-white">
+        <button onClick={onClose} className="hover:text-brand transition-colors p-2 rounded-full hover:bg-white/10">
+          <ChevronRight className="rotate-180" size={24} />
+        </button>
+        <span className="font-bold">웹툰 감상</span>
+        <div className="w-10"></div>
+      </div>
+      <div className="flex-1 overflow-y-auto w-full max-w-2xl mx-auto flex flex-col items-center bg-black">
+        {loading ? (
+          <div className="py-20 text-white/50 text-center animate-pulse">컷을 불러오는 중입니다...</div>
+        ) : cuts.length > 0 ? (
+          <>
+            {cuts.map((cutURL, idx) => (
+              <img key={idx} src={cutURL} loading="lazy" className="w-full object-cover block m-0 p-0 pointer-events-none fade-in" alt={`cut ${idx}`} referrerPolicy="no-referrer" />
+            ))}
+            <div className="py-20 text-white/30 font-bold text-center">에피소드의 끝입니다.</div>
+          </>
+        ) : (
+          <div className="py-20 text-red-500 font-bold text-center">표시할 이미지가 없습니다.</div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function AppWrapper() {
   return (
     <ErrorBoundary>
@@ -1393,6 +1435,7 @@ export default function AppWrapper() {
 }
 
 function App() {
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [user, setUser] = useState<any>(null);
   const [isAdminView, setIsAdminView] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -1401,6 +1444,12 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedWebtoon, setSelectedWebtoon] = useState<Webtoon | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const handlePopState = () => setCurrentPath(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -1492,7 +1541,7 @@ function App() {
       });
       toast.success('새 웹툰이 등록되었습니다.');
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `webtoons/${newW.id}`);
+      handleFirestoreError(error, OperationType.WRITE, `webtoons / ${newW.id}`);
     }
   };
 
@@ -1501,7 +1550,7 @@ function App() {
       await deleteDoc(doc(db, 'webtoons', id));
       toast.success('웹툰이 삭제되었습니다.');
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `webtoons/${id}`);
+      handleFirestoreError(error, OperationType.DELETE, `webtoons / ${id}`);
     }
   };
 
@@ -1513,6 +1562,18 @@ function App() {
 
   // Default admin check (using user email from context)
   const isAdmin = user?.email === 'f8001161@gmail.com';
+
+  if (currentPath.startsWith('/viewer')) {
+    const [, , webtoonId, episodeId] = currentPath.split('/');
+    if (webtoonId && episodeId) {
+      return (
+        <CustomViewer webtoonId={webtoonId} episodeId={episodeId} onClose={() => {
+          window.history.pushState({}, '', '/');
+          window.dispatchEvent(new Event('popstate'));
+        }} />
+      );
+    }
+  }
 
   if (isAdminView && isAdmin) {
     return (
