@@ -151,14 +151,20 @@ const WebtoonDetail: React.FC<{
   onClose: () => void
 }> = ({ webtoon, onClose }) => {
   const [episodes, setEpisodes] = useState<any[]>([]);
+  const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(false);
 
   useEffect(() => {
     if (webtoon) {
+      setIsLoadingEpisodes(true);
       const epRef = collection(db, 'webtoons', webtoon.id, 'episodes');
       getDocs(epRef).then(snap => {
         const eps = snap.docs.map(doc => ({ ...doc.data(), id: doc.id }));
         eps.sort((a: any, b: any) => a.vol - b.vol);
         setEpisodes(eps);
+      }).catch(err => {
+        console.error("Fetch err:", err);
+      }).finally(() => {
+        setIsLoadingEpisodes(false);
       });
     }
   }, [webtoon]);
@@ -260,7 +266,9 @@ const WebtoonDetail: React.FC<{
                 <Play size={20} className="text-brand" fill="currentColor" /> 에피소드 리스트
               </h3>
               <div className="space-y-4">
-                {episodes && episodes.length > 0 ? (
+                {isLoadingEpisodes ? (
+                  <p className="text-white/40 text-center py-6 border border-dashed border-white/10 rounded-xl">에피소드를 로딩 중입니다...</p>
+                ) : episodes && episodes.length > 0 ? (
                   episodes.map((ep: any, index: number) => (
                     <button
                       key={index}
@@ -460,7 +468,9 @@ const AdminDashboard: React.FC<{
   onAdd: (w: Webtoon) => void,
   onDelete: (id: string) => void
 }> = ({ webtoons, onBack, onAdd, onDelete }) => {
-  const [activeTab, setActiveTab] = useState<'stats' | 'webtoons' | 'users'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'webtoons' | 'pending' | 'users'>('pending');
+  const [pendingWebtoons, setPendingWebtoons] = useState<Webtoon[]>([]);
+  const [updateInterval, setUpdateInterval] = useState('1 month');
   const [isAdding, setIsAdding] = useState(false);
   const [newWebtoon, setNewWebtoon] = useState<Partial<Webtoon>>({
     genre: '로맨스',
@@ -490,6 +500,36 @@ const AdminDashboard: React.FC<{
     }
   };
 
+  useEffect(() => {
+    const fetchPending = async () => {
+      const q = query(collection(db, 'pending_webtoons'));
+      const snap = await getDocs(q);
+      setPendingWebtoons(snap.docs.map(d => ({ ...d.data(), id: d.id } as Webtoon)));
+    };
+    fetchPending();
+  }, []);
+
+  const handleApprove = async (w: Webtoon) => {
+    try {
+      const { id, ...data } = w;
+      // 1. Move to webtoons
+      await setDoc(doc(db, 'webtoons', id), { ...data, status: 'approved' });
+      // 2. Transfer subcollections
+      const epRef = collection(db, 'pending_webtoons', id, 'episodes');
+      const snap = await getDocs(epRef);
+      for (const d of snap.docs) {
+        await setDoc(doc(db, 'webtoons', id, 'episodes', d.id), d.data());
+        await deleteDoc(doc(db, 'pending_webtoons', id, 'episodes', d.id));
+      }
+      // 3. Delete from pending
+      await deleteDoc(doc(db, 'pending_webtoons', id));
+      toast.success('웹툰이 승인되어 라이브로 배포되었습니다!');
+      setPendingWebtoons(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      toast.error('승인 중 오류 발생.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-bg text-white font-sans">
       {/* Admin Sidebar */}
@@ -499,6 +539,15 @@ const AdminDashboard: React.FC<{
         </div>
 
         <nav className="flex-1 space-y-2">
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
+              activeTab === 'pending' ? "bg-brand text-white" : "text-white/50 hover:bg-white/5 hover:text-white"
+            )}
+          >
+            <Clock size={18} /> 승인 대기열 (Pending)
+          </button>
           <button
             onClick={() => setActiveTab('stats')}
             className={cn(
@@ -581,6 +630,62 @@ const AdminDashboard: React.FC<{
             <div className="col-span-1 md:col-span-3 bg-surface border border-white/5 p-8 rounded-3xl h-64 flex items-center justify-center text-white/20 italic">
               [조회수 추이 그래프 영역]
             </div>
+          </div>
+        )}
+
+        {activeTab === 'pending' && (
+          <div className="bg-surface border border-white/5 rounded-3xl overflow-hidden p-8">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">AI 승인 대기열</h3>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-white/50">자동 업데이트 주기</span>
+                <select
+                  value={updateInterval}
+                  onChange={(e) => setUpdateInterval(e.target.value)}
+                  className="bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-sm appearance-none outline-none focus:border-brand"
+                >
+                  <option value="1 week">1주일</option>
+                  <option value="1 month">한 달 (디폴트)</option>
+                  <option value="3 months">3개월</option>
+                </select>
+              </div>
+            </div>
+
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-bottom border-white/5 bg-white/5">
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-white/50">웹툰</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-white/50">장르</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-white/50 text-right">관리</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {pendingWebtoons.length === 0 ? (
+                  <tr><td colSpan={3} className="text-center py-8 text-white/30">승인 대기 중인 신작이 없습니다.</td></tr>
+                ) : pendingWebtoons.map((w) => (
+                  <tr key={w.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        <img src={w.thumbnail} className="w-10 h-14 object-cover rounded-lg" alt="" referrerPolicy="no-referrer" />
+                        <div>
+                          <p className="font-bold text-sm">{w.title}</p>
+                          <p className="text-xs text-white/50">{w.author}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-white/70">{w.genre}</td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => handleApprove(w)}
+                        className="bg-brand hover:bg-brand/90 text-white font-bold py-2 px-6 rounded-full transition-all shadow-xl shadow-brand/20 text-sm"
+                      >
+                        승인하기
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
