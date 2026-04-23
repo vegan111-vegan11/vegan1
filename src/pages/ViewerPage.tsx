@@ -38,21 +38,18 @@ const extractFirstStringDeep = (value: unknown, depth = 0): string | null => {
   }
   if (value && typeof value === 'object') {
     const obj = value as any;
-
     for (const k of ['ko', 'kr', 'korean', 'kor']) {
       if (k in obj) {
         const got = extractFirstStringDeep(obj[k], depth + 1);
         if (got) return got;
       }
     }
-
     for (const k of ['dialogue', 'text', 'caption', 'line', 'script', 'message', 'content']) {
       if (k in obj) {
         const got = extractFirstStringDeep(obj[k], depth + 1);
         if (got) return got;
       }
     }
-
     for (const v of Object.values(obj)) {
       const got = extractFirstStringDeep(v, depth + 1);
       if (got) return got;
@@ -64,10 +61,40 @@ const extractFirstStringDeep = (value: unknown, depth = 0): string | null => {
 
 const ensureString = (v: unknown, fallback: string) => extractFirstStringDeep(v) ?? fallback;
 
+// --- Global Concurrency Limiter for Images to prevent 429 Too Many Requests ---
+class ImageLoadQueue {
+  private queue: (() => void)[] = [];
+  private activeCount = 0;
+  private readonly MAX_CONCURRENT = 2; // Strict limit to prevent Pollinations 429 block
+
+  enqueue(task: () => void) {
+    this.queue.push(task);
+    this.process();
+  }
+
+  process() {
+    if (this.activeCount < this.MAX_CONCURRENT && this.queue.length > 0) {
+      const task = this.queue.shift();
+      if (task) {
+        this.activeCount++;
+        task();
+      }
+    }
+  }
+
+  complete() {
+    this.activeCount--;
+    this.process();
+  }
+}
+const globalQueue = new ImageLoadQueue();
+
 const CutBlock: React.FC<{ cut: ViewerCut; displayIndex: number }> = ({ cut, displayIndex }) => {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [shouldLoadSrc, setShouldLoadSrc] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -78,7 +105,7 @@ const CutBlock: React.FC<{ cut: ViewerCut; displayIndex: number }> = ({ cut, dis
           observer.disconnect();
         }
       },
-      { rootMargin: '1500px 0px' }
+      { rootMargin: '1000px 0px' }
     );
 
     if (containerRef.current) {
@@ -88,28 +115,75 @@ const CutBlock: React.FC<{ cut: ViewerCut; displayIndex: number }> = ({ cut, dis
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (isVisible && !shouldLoadSrc && !loaded && !failed) {
+      // Put in the global queue to prevent 429
+      globalQueue.enqueue(() => {
+        setShouldLoadSrc(true);
+      });
+    }
+  }, [isVisible, shouldLoadSrc, loaded, failed]);
+
+  const handleLoad = () => {
+    setLoaded(true);
+    setFailed(false);
+    globalQueue.complete();
+  };
+
+  const handleError = () => {
+    if (retryCount < 3) {
+      // If 429 or network error, retry up to 3 times after a delay
+      setTimeout(() => {
+        setShouldLoadSrc(false); // Reset to re-trigger
+        setRetryCount(prev => prev + 1);
+        globalQueue.complete();
+        
+        // Re-enqueue after 2 seconds
+        setTimeout(() => {
+          globalQueue.enqueue(() => {
+            setShouldLoadSrc(true);
+          });
+        }, 2000);
+      }, 500);
+    } else {
+      setFailed(true);
+      globalQueue.complete();
+    }
+  };
+
+  // To force cache bust on retries
+  const srcUrl = shouldLoadSrc ? (retryCount > 0 ? `${cut.imageUrl}&retry=${retryCount}` : cut.imageUrl) : undefined;
+
   return (
     <div ref={containerRef} className="w-full m-0 p-0 flex flex-col items-center bg-black min-h-[500px]">
       <div className="w-full relative flex justify-center bg-[#0a0a0a] min-h-[500px]">
         {!loaded && !failed && (
-          <div className="absolute inset-0 flex items-center justify-center text-white/10 text-sm font-medium tracking-widest">
-            LOADING...
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-white/50 text-sm font-medium tracking-widest gap-3">
+            <div className="w-6 h-6 border-2 border-white/20 border-t-white/80 rounded-full animate-spin"></div>
+            <div>{shouldLoadSrc ? 'AI 이미지 생성 중...' : '대기 중...'}</div>
+            {retryCount > 0 && <div className="text-xs text-orange-400">재시도 {retryCount}/3</div>}
           </div>
         )}
         
-        {isVisible && !failed ? (
+        {shouldLoadSrc && !failed ? (
           <img
-            src={cut.imageUrl}
+            src={srcUrl}
             alt={`cut ${displayIndex}`}
-            onLoad={() => setLoaded(true)}
-            onError={() => setFailed(true)}
-            className="w-full max-w-[800px] h-auto object-cover transition-opacity duration-300 relative z-10"
+            onLoad={handleLoad}
+            onError={handleError}
+            className="w-full max-w-[800px] h-auto object-cover transition-opacity duration-500 relative z-10"
             style={{ opacity: loaded ? 1 : 0 }}
           />
         ) : failed ? (
-          <div className="w-full max-w-[800px] py-12 px-4 text-center text-white/50 bg-[#111]">
-            <div className="text-sm">이미지를 불러오지 못했습니다.</div>
-            <div className="text-xs mt-2 break-all opacity-70">{cut.imageUrl}</div>
+          <div className="w-full max-w-[800px] flex flex-col items-center justify-center py-20 px-4 text-center text-red-400 bg-[#111]">
+            <div className="text-sm font-bold">이미지 로딩 실패 (AI 서버 혼잡)</div>
+            <div className="text-xs mt-2 text-white/50">잠시 후 다시 스크롤 해보세요.</div>
+            <button 
+              onClick={() => { setFailed(false); setRetryCount(0); setIsVisible(false); setTimeout(()=>setIsVisible(true), 100); }}
+              className="mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 rounded text-xs text-white"
+            >
+              다시 시도
+            </button>
           </div>
         ) : null}
       </div>
