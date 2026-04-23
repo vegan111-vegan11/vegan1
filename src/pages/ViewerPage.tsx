@@ -265,14 +265,14 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
   const [loading, setLoading] = useState(true);
   const [healing, setHealing] = useState(true);
   const [viewerCuts, setViewerCuts] = useState<ViewerCut[]>([]);
-  const [display, setDisplay] = useState<boolean[]>([]);
+  const [visibleCount, setVisibleCount] = useState(0);
 
-  const timeoutsRef = useRef<number[]>([]);
+  const timerRef = useRef<number | null>(null);
 
   const visibleCuts = useMemo(() => {
     if (viewerCuts.length === 0) return [];
-    return viewerCuts.filter((_, idx) => display[idx]);
-  }, [viewerCuts, display]);
+    return viewerCuts.slice(0, Math.min(visibleCount, viewerCuts.length));
+  }, [viewerCuts, visibleCount]);
 
   useEffect(() => {
     const styleEl = document.createElement('style');
@@ -296,7 +296,7 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
       setLoading(true);
       setHealing(true);
       setViewerCuts([]);
-      setDisplay([]);
+      setVisibleCount(0);
 
       try {
         const webtoonRef = doc(db, 'webtoons', webtoonId);
@@ -399,7 +399,7 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
 
         if (!cancelled) {
           setViewerCuts(normalizedViewerCuts);
-          setDisplay(new Array(normalizedViewerCuts.length).fill(false));
+          setVisibleCount(0);
         }
       } catch (e) {
         toast.error('데이터 로딩/자동완성 중 오류가 발생했습니다.');
@@ -418,27 +418,29 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
   }, [webtoonId, episodeId]);
 
   useEffect(() => {
-    for (const id of timeoutsRef.current) window.clearTimeout(id);
-    timeoutsRef.current = [];
-
     if (loading || healing) return;
     if (viewerCuts.length === 0) return;
 
-    for (let i = 0; i < viewerCuts.length; i++) {
-      const id = window.setTimeout(() => {
-        setDisplay((prev) => {
-          if (prev[i]) return prev;
-          const next = prev.slice();
-          next[i] = true;
-          return next;
-        });
-      }, i * 800);
-      timeoutsRef.current.push(id);
-    }
+    if (timerRef.current) window.clearTimeout(timerRef.current);
+    setVisibleCount(1);
+
+    const tick = () => {
+      setVisibleCount((prev) => {
+        const next = Math.min(prev + 1, viewerCuts.length);
+        return next;
+      });
+      timerRef.current = window.setTimeout(() => {
+        tick();
+      }, 800);
+    };
+
+    timerRef.current = window.setTimeout(() => {
+      tick();
+    }, 800);
 
     return () => {
-      for (const id of timeoutsRef.current) window.clearTimeout(id);
-      timeoutsRef.current = [];
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+      timerRef.current = null;
     };
   }, [viewerCuts, loading, healing]);
 
