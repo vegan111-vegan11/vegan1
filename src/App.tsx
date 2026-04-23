@@ -63,6 +63,7 @@ import {
   handleFirestoreError,
   OperationType
 } from './firebase';
+import ViewerPage from './pages/ViewerPage';
 import { AlertCircle } from 'lucide-react';
 
 // Error Boundary Component
@@ -1795,7 +1796,7 @@ function App() {
     const [, , webtoonId, episodeId] = currentPath.split('/');
     if (webtoonId && episodeId) {
       return (
-        <CustomViewer webtoonId={webtoonId} episodeId={episodeId} onClose={() => {
+        <ViewerPage webtoonId={webtoonId} episodeId={episodeId} onClose={() => {
           window.history.pushState({}, '', '/');
           window.dispatchEvent(new Event('popstate'));
         }} />
