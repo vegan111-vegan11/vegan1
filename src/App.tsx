@@ -1486,21 +1486,43 @@ const LoadingScreen: React.FC = () => (
   </motion.div>
 );
 
+type ViewerCut = { url: string; dialogue?: string | null };
+
 const CustomViewer: React.FC<{ webtoonId: string; episodeId: string; onClose: () => void; }> = ({ webtoonId, episodeId, onClose }) => {
-  const [cuts, setCuts] = useState<string[]>([]);
-  const [dialogue, setDialogue] = useState<any>(null);
+  const [cuts, setCuts] = useState<ViewerCut[]>([]);
+  const [episodeDialogue, setEpisodeDialogue] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [visibleCount, setVisibleCount] = useState(0);
+  const [visibleCuts, setVisibleCuts] = useState<ViewerCut[]>([]);
 
   useEffect(() => {
     const fetchCuts = async () => {
       try {
         const epRef = doc(db, 'webtoons', webtoonId, 'episodes', episodeId);
         const snap = await getDoc(epRef);
-        if (snap.exists() && snap.data().cuts) {
+        if (snap.exists()) {
           const data = snap.data() as any;
-          setCuts(Array.isArray(data.cuts) ? data.cuts : []);
-          setDialogue(data.dialogue ?? data.dialogues ?? null);
+
+          const rawCuts = Array.isArray(data.cuts) ? data.cuts : [];
+          const normalized: ViewerCut[] = rawCuts
+            .map((c: any, idx: number) => {
+              if (typeof c === 'string') return { url: c, dialogue: null };
+              if (c && typeof c === 'object') {
+                const url = c.url ?? c.image ?? c.src ?? c.cut ?? c.path;
+                const dialogue = c.dialogue ?? c.text ?? c.caption ?? null;
+                return typeof url === 'string' ? { url, dialogue: typeof dialogue === 'string' ? dialogue : null } : null;
+              }
+              return null;
+            })
+            .filter(Boolean) as ViewerCut[];
+
+          if (normalized.length > 0) {
+            setCuts(normalized);
+          } else {
+            toast.error('표시할 이미지가 없습니다.');
+            setCuts([]);
+          }
+
+          setEpisodeDialogue(data.dialogue ?? data.dialogues ?? null);
         } else {
           toast.error('에피소드 데이터를 찾을 수 없습니다.');
         }
@@ -1514,41 +1536,58 @@ const CustomViewer: React.FC<{ webtoonId: string; episodeId: string; onClose: ()
   }, [webtoonId, episodeId]);
 
   useEffect(() => {
-    setVisibleCount(0);
+    setVisibleCuts([]);
     if (loading) return;
     if (cuts.length === 0) return;
 
     let cancelled = false;
-    const tick = () => {
-      if (cancelled) return;
-      setVisibleCount((prev) => {
-        const next = Math.min(prev + 1, cuts.length);
-        return next;
-      });
+    let idx = 0;
+    let timerId: number | null = null;
+
+    const getEpisodeDialogueText = (i: number): string | null => {
+      const dialogue = episodeDialogue;
+      if (!dialogue) return null;
+      if (typeof dialogue === 'string') return dialogue;
+      if (Array.isArray(dialogue)) return typeof dialogue[i] === 'string' ? dialogue[i] : null;
+      if (typeof dialogue === 'object') {
+        const v = (dialogue as any)[i] ?? (dialogue as any)[String(i)] ?? (dialogue as any)[i + 1] ?? (dialogue as any)[String(i + 1)];
+        return typeof v === 'string' ? v : null;
+      }
+      return null;
     };
 
-    // 첫 컷은 즉시 보여주고, 이후 1초 간격으로 순차 로딩
-    setVisibleCount(1);
-    const intervalId = window.setInterval(() => {
-      tick();
-    }, 1000);
+    const scheduleNext = () => {
+      if (cancelled) return;
+      if (idx >= cuts.length) return;
+
+      const cut = cuts[idx];
+      const dialogueText = cut.dialogue ?? getEpisodeDialogueText(idx) ?? null;
+
+      // 프리로드 성공한 컷만 추가 (엑박/alt 텍스트 방지)
+      const img = new Image();
+      img.onload = () => {
+        if (cancelled) return;
+        setVisibleCuts((prev) => [...prev, { url: cut.url, dialogue: dialogueText }]);
+        idx += 1;
+        timerId = window.setTimeout(scheduleNext, 1000);
+      };
+      img.onerror = () => {
+        if (cancelled) return;
+        idx += 1;
+        timerId = window.setTimeout(scheduleNext, 1000);
+      };
+      img.referrerPolicy = 'no-referrer';
+      img.src = cut.url;
+    };
+
+    // 첫 컷은 즉시 시작
+    scheduleNext();
 
     return () => {
       cancelled = true;
-      window.clearInterval(intervalId);
+      if (timerId) window.clearTimeout(timerId);
     };
-  }, [cuts, loading]);
-
-  const getDialogueText = (idx: number): string | null => {
-    if (!dialogue) return null;
-    if (typeof dialogue === 'string') return dialogue;
-    if (Array.isArray(dialogue)) return typeof dialogue[idx] === 'string' ? dialogue[idx] : null;
-    if (typeof dialogue === 'object') {
-      const v = (dialogue as any)[idx] ?? (dialogue as any)[String(idx)] ?? (dialogue as any)[idx + 1] ?? (dialogue as any)[String(idx + 1)];
-      return typeof v === 'string' ? v : null;
-    }
-    return null;
-  };
+  }, [cuts, loading, episodeDialogue]);
 
   return (
     <div className="fixed inset-0 z-[500] bg-[#000000] flex flex-col overflow-hidden">
@@ -1564,7 +1603,7 @@ const CustomViewer: React.FC<{ webtoonId: string; episodeId: string; onClose: ()
         </div>
         <div className="w-10"></div>
       </div>
-      <div className="flex-1 overflow-y-auto w-full max-w-2xl mx-auto flex flex-col items-center bg-[#000000]">
+      <div className="flex-1 overflow-y-auto w-full max-w-[740px] mx-auto flex flex-col bg-[#000000]">
         {loading ? (
           <div className="py-24 w-full px-6">
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-8 text-center">
@@ -1575,41 +1614,35 @@ const CustomViewer: React.FC<{ webtoonId: string; episodeId: string; onClose: ()
           </div>
         ) : cuts.length > 0 ? (
           <>
-            {cuts.slice(0, visibleCount).map((cutURL, idx) => {
-              const line = getDialogueText(idx);
+            {visibleCuts.map((cut, idx) => {
+              const line = cut.dialogue ?? null;
               return (
                 <div key={idx} className="w-full">
                   <img
-                    src={cutURL}
+                    src={cut.url}
                     loading="lazy"
-                    className="w-full object-cover block m-0 p-0 pointer-events-none fade-in"
+                    className="w-full object-cover block m-0 p-0 fade-in"
                     alt={`cut ${idx}`}
                     referrerPolicy="no-referrer"
                   />
                   {line && (
-                    <div className="w-full px-5 py-4 border-b border-white/5 bg-gradient-to-b from-white/[0.04] to-transparent">
-                      <div className="rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl px-4 py-3">
-                        <p className="text-[15px] leading-relaxed text-white/85 font-medium tracking-[0.01em]">
-                          {line}
-                        </p>
-                      </div>
+                    <div className="w-full px-4 py-3 border-b border-white/5">
+                      <p className="text-[15px] leading-relaxed text-white/80 font-medium tracking-[0.01em]">
+                        {line}
+                      </p>
                     </div>
                   )}
                 </div>
               );
             })}
-            {visibleCount < cuts.length && (
-              <div className="w-full px-6 py-10">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex items-center justify-between">
-                  <p className="text-sm text-white/55 font-semibold tracking-tight">다음 컷 준비 중</p>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-brand animate-pulse" />
-                    <p className="text-xs text-white/35">{visibleCount}/{cuts.length}</p>
-                  </div>
-                </div>
+            {visibleCuts.length < cuts.length && (
+              <div className="w-full px-4 py-8">
+                <p className="text-xs text-white/35">
+                  로딩 중… {visibleCuts.length}/{cuts.length}
+                </p>
               </div>
             )}
-            {visibleCount >= cuts.length && (
+            {visibleCuts.length >= cuts.length && (
               <div className="py-24 text-white/30 font-bold text-center">에피소드의 끝입니다.</div>
             )}
           </>
