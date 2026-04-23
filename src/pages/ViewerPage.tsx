@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { db, doc, getDoc, updateDoc, serverTimestamp } from '../firebase';
+import { db, doc, getDoc } from '../firebase';
 
 type FirestoreCut = {
   imageUrl?: string;
@@ -263,7 +263,6 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
   const { webtoonId, episodeId, onClose } = props;
 
   const [loading, setLoading] = useState(true);
-  const [healing, setHealing] = useState(true);
   const [viewerCuts, setViewerCuts] = useState<ViewerCut[]>([]);
   const [visibleCount, setVisibleCount] = useState(0);
 
@@ -294,21 +293,18 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
 
     const run = async () => {
       setLoading(true);
-      setHealing(true);
       setViewerCuts([]);
       setVisibleCount(0);
 
       try {
-        const webtoonRef = doc(db, 'webtoons', webtoonId);
         const epRef = doc(db, 'webtoons', webtoonId, 'episodes', episodeId);
 
-        const [webtoonSnap, epSnap] = await Promise.all([getDoc(webtoonRef), getDoc(epRef)]);
+        const epSnap = await getDoc(epRef);
         if (!epSnap.exists()) {
           toast.error('에피소드 데이터를 찾을 수 없습니다.');
           return;
         }
 
-        const meta = (webtoonSnap.exists() ? (webtoonSnap.data() as any) : {}) as WebtoonMeta;
         const episodeData = epSnap.data() as any;
         const rawCutsAny = Array.isArray(episodeData?.cuts) ? (episodeData.cuts as any[]) : [];
         const rawCuts: FirestoreCut[] = rawCutsAny
@@ -325,74 +321,19 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
           })
           .filter(Boolean) as FirestoreCut[];
 
-        // 1) Self-heal project-level fields
-        const currentTheme = ensureString(meta.theme, '');
-        const currentSynopsis = ensureString(meta.synopsis, '');
-        const { theme: generatedTheme, synopsis: generatedSynopsis } = generateThemeAndSynopsis({
-          webtoonId,
-          title: meta.title,
-          genre: meta.genre,
-          description: meta.description,
-        });
-
-        const nextTheme = currentTheme.length > 0 ? currentTheme : generatedTheme;
-        const nextSynopsis = currentSynopsis.length > 0 ? currentSynopsis : generatedSynopsis;
-
-        if (webtoonSnap.exists()) {
-          const updates: any = {};
-          if (currentTheme.length === 0) updates.theme = nextTheme;
-          if (currentSynopsis.length === 0) updates.synopsis = nextSynopsis;
-          if (Object.keys(updates).length > 0) {
-            updates.updatedAt = serverTimestamp();
-            await updateDoc(webtoonRef, updates);
-          }
-        }
-
-        // 2) Self-heal cut-level fields (cut_theme, dialogue) in episode.cuts[]
-        let cutChanged = false;
-        const healedCuts: FirestoreCut[] = rawCuts.map((c, i) => {
-          const imageUrl = ensureString((c as any)?.imageUrl ?? (c as any)?.url ?? (c as any)?.src, '');
-          if (!imageUrl || isBadImageUrl(imageUrl)) return c;
-
-          const existingDialogue = extractFirstStringDeep((c as any)?.dialogue);
-          const existingCutTheme = extractFirstStringDeep((c as any)?.cut_theme);
-
-          if (existingDialogue && existingCutTheme) return c;
-
-          const generated = generateCutThemeAndDialogue({ synopsis: nextSynopsis, theme: nextTheme, index: i, total: rawCuts.length });
-          const nextDialogue = existingDialogue ?? generated.dialogue;
-          const nextCutTheme2 = existingCutTheme ?? generated.cut_theme;
-
-          const next: FirestoreCut = { ...(c as any) };
-          if (!existingCutTheme) {
-            next.cut_theme = nextCutTheme2;
-            cutChanged = true;
-          }
-          if (!existingDialogue) {
-            next.dialogue = nextDialogue;
-            cutChanged = true;
-          }
-          return next;
-        });
-
-        // Also persist normalization (string -> object, url -> imageUrl) so viewer is consistent.
-        if (cutChanged || rawCutsAny.length !== healedCuts.length || rawCutsAny.some((c) => typeof c === 'string')) {
-          await updateDoc(epRef, { cuts: healedCuts, healedAt: serverTimestamp() });
-        }
-
-        // 3) Build viewer cuts ONLY from DB (healedCuts)
+        // Build viewer cuts ONLY from DB (no DB writes in viewer to avoid freezes)
         const normalizedViewerCuts: ViewerCut[] = [];
-        for (let i = 0; i < healedCuts.length; i++) {
-          const c = healedCuts[i];
+        for (let i = 0; i < rawCuts.length; i++) {
+          const c = rawCuts[i];
           const imageUrl = ensureString((c as any)?.imageUrl ?? (c as any)?.url ?? (c as any)?.src, '');
           if (!imageUrl || isBadImageUrl(imageUrl)) continue;
 
           const d = extractFirstStringDeep((c as any)?.dialogue);
           const t = extractFirstStringDeep((c as any)?.cut_theme);
 
-          // 렌더링 시점에는 절대 ...이 나오지 않게 보장
-          const dialogue = d ?? generateCutThemeAndDialogue({ synopsis: nextSynopsis, theme: nextTheme, index: i, total: healedCuts.length }).dialogue;
-          const cut_theme = t ?? generateCutThemeAndDialogue({ synopsis: nextSynopsis, theme: nextTheme, index: i, total: healedCuts.length }).cut_theme;
+          // DB가 제대로 시딩된다는 전제(반복/빈 값 방지)는 seed 스크립트가 책임진다.
+          const dialogue = d ?? '';
+          const cut_theme = t ?? '';
 
           normalizedViewerCuts.push({ imageUrl, dialogue, cut_theme, rawIndex: i });
         }
@@ -402,10 +343,9 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
           setVisibleCount(0);
         }
       } catch (e) {
-        toast.error('데이터 로딩/자동완성 중 오류가 발생했습니다.');
+        toast.error('데이터 로딩 중 오류가 발생했습니다.');
       } finally {
         if (!cancelled) {
-          setHealing(false);
           setLoading(false);
         }
       }
@@ -418,7 +358,7 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
   }, [webtoonId, episodeId]);
 
   useEffect(() => {
-    if (loading || healing) return;
+    if (loading) return;
     if (viewerCuts.length === 0) return;
 
     if (timerRef.current) window.clearTimeout(timerRef.current);
@@ -442,7 +382,7 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
       if (timerRef.current) window.clearTimeout(timerRef.current);
       timerRef.current = null;
     };
-  }, [viewerCuts, loading, healing]);
+  }, [viewerCuts, loading]);
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: '#000000', color: '#ffffff', overflow: 'hidden' }}>
@@ -492,9 +432,7 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
           {loading ? (
             <div style={{ width: '100%', maxWidth: 800, margin: '0 auto', padding: '24px 16px' }}>
               <Skeleton height={520} />
-              <div style={{ marginTop: 16, opacity: 0.6, fontSize: 14 }}>
-                {healing ? '데이터 자동 완성 중…' : '불러오는 중…'}
-              </div>
+              <div style={{ marginTop: 16, opacity: 0.6, fontSize: 14 }}>불러오는 중…</div>
             </div>
           ) : viewerCuts.length === 0 ? (
             <div style={{ padding: '64px 16px', textAlign: 'center', opacity: 0.7 }}>표시할 이미지가 없습니다.</div>

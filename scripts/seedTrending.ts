@@ -37,25 +37,97 @@ function genDialogue(theme: string, synopsis: string, idx: number) {
   const hint = synopsis.length > 70 ? synopsis.slice(0, 70) + '…' : synopsis;
 
   if (theme === 'SF') {
-    if (beat === '도입') return `네온이 숨을 쉬는 밤… ${hint}`;
-    if (beat === '긴장') return `경고등이 켜졌어. 누군가 먼저 움직였다.`;
-    if (beat === '전개') return `흔적이 이어져. 한 조각씩, 진실이 드러난다.`;
-    if (beat === '충돌') return `여기서 멈추면 끝이야. 지금이 아니면 못 나가.`;
-    return `…아직 끝나지 않았어. 다음 장면이 답이겠지.`;
+    const variants = {
+      도입: [
+        `네온이 숨을 쉬는 밤… ${hint}`,
+        `도시는 잠들지 않아. 오늘도 빛이 우리를 감시해.`,
+        `…비가 내리면, 신호는 더 선명해져.`,
+      ],
+      긴장: [
+        `경고등이 켜졌어. 누군가 먼저 움직였다.`,
+        `발자국이 늘었어. 뒤에 누가 있어.`,
+        `소음 속에서 ‘정적’이 들려… 이상해.`,
+      ],
+      전개: [
+        `흔적이 이어져. 한 조각씩, 진실이 드러난다.`,
+        `이건 우연이 아니야. 누가 판을 짰어.`,
+        `…단서가 너무 깔끔해. 함정 냄새가 나.`,
+      ],
+      충돌: [
+        `여기서 멈추면 끝이야. 지금이 아니면 못 나가.`,
+        `손이 떨려도 밀어붙여. 선택은 하나야.`,
+        `…한 번만 더. 딱 한 번만 더 버티자.`,
+      ],
+      여운: [
+        `…아직 끝나지 않았어. 다음 장면이 답이겠지.`,
+        `도망친 게 아니야. 다음 수를 둔 거지.`,
+        `…빛이 꺼져도, 기록은 남아.`,
+      ],
+    } as const;
+    const list = (variants as any)[beat] || [`…${hint}`];
+    return list[idx % list.length];
   }
   if (theme === '로맨스') {
-    if (beat === '도입') return `처음 만난 순간, 공기가 달라졌어.`;
-    if (beat === '긴장') return `왜 이렇게 심장이 빨라… 들키면 안 되는데.`;
-    if (beat === '전개') return `말하지 못한 마음이, 자꾸만 새어 나와.`;
-    if (beat === '충돌') return `도망치지 마. 이번엔… 내 진심이야.`;
-    return `…다음에 만나면, 웃을 수 있을까.`;
+    const variants = {
+      도입: [
+        `처음 만난 순간, 공기가 달라졌어.`,
+        `…왜 하필 오늘, 너였을까.`,
+        `평범한 하루였는데, 갑자기 장면이 바뀌었어.`,
+      ],
+      긴장: [
+        `왜 이렇게 심장이 빨라… 들키면 안 되는데.`,
+        `가까워지면 안 돼. 그런데… 멀어지기도 싫어.`,
+        `내 표정, 들켰을까?`,
+      ],
+      전개: [
+        `말하지 못한 마음이, 자꾸만 새어 나와.`,
+        `한 마디만 하면 되는데… 입술이 굳어.`,
+        `…지금이라면, 조금은 솔직해질 수 있을까.`,
+      ],
+      충돌: [
+        `도망치지 마. 이번엔… 내 진심이야.`,
+        `좋아해. 그래서 무서워.`,
+        `…나도 너처럼, 용기 내볼게.`,
+      ],
+      여운: [
+        `…다음에 만나면, 웃을 수 있을까.`,
+        `오늘의 대답은, 내일의 용기가 될 거야.`,
+        `…비가 그치면, 우리도 선명해질까.`,
+      ],
+    } as const;
+    const list = (variants as any)[beat] || [`…${hint}`];
+    return list[idx % list.length];
   }
   if (theme === '다크판타지') {
-    if (beat === '도입') return `검은 물결이 깨어난다. 나를 부르는 소리…`;
-    if (beat === '긴장') return `문이 열렸다. 돌아갈 수 없는 길이야.`;
-    if (beat === '전개') return `룬이 반응해… 심연이 숨을 쉰다.`;
-    if (beat === '충돌') return `내가 지키지 않으면, 모든 것이 무너진다.`;
-    return `…심연은 끝이 아니라, 시작이야.`;
+    const variants = {
+      도입: [
+        `검은 물결이 깨어난다. 나를 부르는 소리…`,
+        `…발밑이 비어 있어. 심연이 숨을 쉬어.`,
+        `룬이 희미하게 빛나. ‘경계’가 얇아졌어.`,
+      ],
+      긴장: [
+        `문이 열렸다. 돌아갈 수 없는 길이야.`,
+        `이 냄새… 봉인이 타는 냄새야.`,
+        `…누가 먼저 들어갔다. 발자국이 젖어 있어.`,
+      ],
+      전개: [
+        `룬이 반응해… 심연이 숨을 쉰다.`,
+        `조각이 맞춰져. 고대의 문장이 읽혀.`,
+        `…여긴 지도에 없어. 누가 지워버렸지.`,
+      ],
+      충돌: [
+        `내가 지키지 않으면, 모든 것이 무너진다.`,
+        `검은 손이 잡아당겨… 버텨야 해.`,
+        `…피해. 지금은 ‘이름’을 부르면 안 돼.`,
+      ],
+      여운: [
+        `…심연은 끝이 아니라, 시작이야.`,
+        `봉인은 임시였어. 진짜 전쟁은 이제부터야.`,
+        `…빛이 꺼져도, 맹세는 남아.`,
+      ],
+    } as const;
+    const list = (variants as any)[beat] || [`…${hint}`];
+    return list[idx % list.length];
   }
   return `…${hint}`;
 }
@@ -141,8 +213,11 @@ async function seedTrending() {
     const episodesRef = collection(db, 'webtoons', w.id, 'episodes');
     for (let ep = 1; ep <= 2; ep++) {
       const cuts = Array.from({ length: 70 }).map((_, i) => {
-        const seed = ep * 10000 + i * 17 + (w.id.length % 97);
-        const prompt = `${w.episodePromptBase}, episode ${ep}, scene ${i}, no text, illustrated, high detail`;
+        // Make image prompts more unique per cut to reduce repeated generations
+        const seed = ep * 100000 + i * 997 + (w.id.length * 37) + 123;
+        const camera = ['wide shot', 'close-up', 'over-shoulder', 'top-down', 'low angle'][i % 5];
+        const mood = ['cinematic', 'noir', 'neon glow', 'soft haze', 'high contrast'][i % 5];
+        const prompt = `${w.episodePromptBase}, episode ${ep}, scene ${i}, ${camera}, ${mood}, no text, illustrated, high detail`;
         return {
           imageUrl: pollinationsUrl(prompt, { width: 800, height: 1200, seed }),
           cut_theme: genCutTheme(w.theme, i),
