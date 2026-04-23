@@ -138,7 +138,8 @@ interface Webtoon {
   isNew?: boolean;
   isHot?: boolean;
   isCompleted?: boolean;
-  episodes: number;
+  episodes?: any;
+  episodeCount?: number;
 }
 
 const GENRES = ['전체', '로맨스', '판타지', '드라마', '액션', 'SF', '미스터리', '일상'];
@@ -1105,7 +1106,7 @@ const WebtoonCard: React.FC<{ webtoon: Webtoon, onClick: () => void }> = ({ webt
 
         {webtoon.episodes !== undefined && (
           <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md border border-white/10 text-brand text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-lg">
-            총 {webtoon.episodes}화
+            총 {Array.isArray(webtoon.episodes) ? webtoon.episodes.length : (webtoon.episodeCount || webtoon.episodes || 0)}화
           </div>
         )}
       </div>
