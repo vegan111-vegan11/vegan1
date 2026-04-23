@@ -510,6 +510,29 @@ const AdminDashboard: React.FC<{
     fetchPending();
   }, []);
 
+  // Temporary: auto-approve everything in pending so the service always shows approved content.
+  useEffect(() => {
+    if (pendingWebtoons.length === 0) return;
+    let cancelled = false;
+
+    const run = async () => {
+      for (const w of pendingWebtoons) {
+        if (cancelled) return;
+        try {
+          await handleApprove(w);
+        } catch {
+          // ignore per-item failures; handleApprove already toasts
+        }
+      }
+    };
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingWebtoons.length]);
+
   const handleApprove = async (w: Webtoon) => {
     try {
       const { id, ...data } = w;
