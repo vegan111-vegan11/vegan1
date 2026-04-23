@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, GithubAuthProvider } from 'firebase/auth';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   getFirestore,
   collection,
@@ -34,6 +35,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || "(default)");
+export const storage = getStorage(app);
 
 export const googleProvider = new GoogleAuthProvider();
 // Force account selection screen
@@ -119,5 +121,8 @@ export {
   where,
   orderBy,
   limit,
-  serverTimestamp
+  serverTimestamp,
+  ref,
+  uploadBytes,
+  getDownloadURL
 };

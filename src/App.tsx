@@ -60,6 +60,7 @@ import {
   orderBy,
   limit,
   serverTimestamp,
+  storage, ref, uploadBytes, getDownloadURL,
   handleFirestoreError,
   OperationType
 } from './firebase';
@@ -469,9 +470,8 @@ const AdminDashboard: React.FC<{
   onAdd: (w: Webtoon) => void,
   onDelete: (id: string) => void
 }> = ({ webtoons, onBack, onAdd, onDelete }) => {
-  const [activeTab, setActiveTab] = useState<'stats' | 'webtoons' | 'pending' | 'users'>('pending');
+  const [activeTab, setActiveTab] = useState<'stats' | 'webtoons' | 'pending' | 'users' | 'settings'>('pending');
   const [pendingWebtoons, setPendingWebtoons] = useState<Webtoon[]>([]);
-  const [updateInterval, setUpdateInterval] = useState('1 month');
   const [isAdding, setIsAdding] = useState(false);
   const [newWebtoon, setNewWebtoon] = useState<Partial<Webtoon>>({
     genre: '로맨스',
@@ -482,6 +482,105 @@ const AdminDashboard: React.FC<{
     isNew: true,
     episodes: 0,
   });
+
+  const [autoGenInterval, setAutoGenInterval] = useState(30);
+  const [isAutoGenRunning, setIsAutoGenRunning] = useState(false);
+  const [genProgress, setGenProgress] = useState('');
+
+  const handleWipeDB = async () => {
+    if (!window.confirm('경고: 모든 웹툰과 에피소드를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+    try {
+      const wSnap = await getDocs(collection(db, 'webtoons'));
+      for (const w of wSnap.docs) {
+        const epSnap = await getDocs(collection(db, 'webtoons', w.id, 'episodes'));
+        for (const e of epSnap.docs) await deleteDoc(e.ref);
+        await deleteDoc(w.ref);
+      }
+      const pSnap = await getDocs(collection(db, 'pending_webtoons'));
+      for (const p of pSnap.docs) await deleteDoc(p.ref);
+      toast.success('DB가 초기화되었습니다.');
+    } catch (e) {
+      toast.error('초기화 실패');
+    }
+  };
+
+  useEffect(() => {
+    let intervalId: number;
+    let cancelled = false;
+
+    const runGenerator = async () => {
+      if (cancelled) return;
+      setGenProgress('시작 중...');
+      try {
+        const uniqueId = `ai-auto-${Date.now()}`;
+        const wTitle = `[AI 신작] 시그널 ${Math.floor(Math.random() * 1000)}`;
+        
+        setGenProgress(`웹툰 등록 중: ${wTitle}`);
+        await setDoc(doc(db, 'webtoons', uniqueId), {
+          title: wTitle,
+          author: 'AI 오토마톤',
+          genre: 'SF',
+          rating: 4.9,
+          thumbnail: 'https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=400',
+          banner: 'https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=1920',
+          description: 'AI가 자동으로 생성하고 스토리지에 저장한 웹툰입니다.',
+          status: 'approved',
+          isNew: true,
+          episodeCount: 2,
+          createdAt: serverTimestamp(),
+          approvedAt: serverTimestamp()
+        });
+
+        const uploadCut = async (epIdx: number, cutIdx: number) => {
+          const prompt = `cyberpunk neon city episode ${epIdx} scene ${cutIdx} high detail webtoon style no text`;
+          const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=1200&nologo=true&seed=${Date.now() + cutIdx}`;
+          
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('Pollinations fetch failed');
+          const blob = await res.blob();
+
+          const storageRef = ref(storage, `webtoons/${uniqueId}/episodes/${epIdx}/cut_${cutIdx}.jpg`);
+          await uploadBytes(storageRef, blob);
+          return await getDownloadURL(storageRef);
+        };
+
+        for (let ep = 1; ep <= 2; ep++) {
+          if (cancelled) return;
+          const cuts = [];
+          for (let i = 0; i < 70; i++) {
+            if (cancelled) return;
+            setGenProgress(`[${ep}화] 이미지 생성 및 업로드 중... (${i+1}/70)`);
+            const finalUrl = await uploadCut(ep, i);
+            cuts.push({ imageUrl: finalUrl, dialogue: `자동 생성된 대사입니다. (컷 ${i+1})` });
+          }
+          await setDoc(doc(db, 'webtoons', uniqueId, 'episodes', String(ep)), {
+            vol: ep,
+            title: `${wTitle} ${ep}화`,
+            cuts,
+            createdAt: serverTimestamp()
+          });
+        }
+        
+        setGenProgress(`[완료] ${wTitle} 생성 완료!`);
+        toast.success(`${wTitle} 자동 생성 완료`);
+      } catch (err: any) {
+        setGenProgress(`[에러] ${err.message}`);
+        toast.error('생성 중 오류 발생: ' + err.message);
+      }
+    };
+
+    if (isAutoGenRunning) {
+      runGenerator();
+      intervalId = window.setInterval(() => {
+        runGenerator();
+      }, autoGenInterval * 60 * 1000);
+    }
+
+    return () => {
+      cancelled = true;
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, [isAutoGenRunning, autoGenInterval]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -604,6 +703,15 @@ const AdminDashboard: React.FC<{
           >
             <User size={18} /> 사용자 관리
           </button>
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all",
+              activeTab === 'settings' ? "bg-brand text-white" : "text-white/50 hover:bg-white/5 hover:text-white"
+            )}
+          >
+            <AlertCircle size={18} /> 시스템 설정
+          </button>
         </nav>
 
         <button
@@ -627,6 +735,7 @@ const AdminDashboard: React.FC<{
               {activeTab === 'stats' && "플랫폼의 현재 상태를 한눈에 확인하세요."}
               {activeTab === 'webtoons' && "총 " + webtoons.length + "개의 웹툰이 등록되어 있습니다."}
               {activeTab === 'users' && "총 1,248명의 활성 사용자가 있습니다."}
+              {activeTab === 'settings' && "자동화 시스템 및 DB 초기화를 관리합니다."}
             </p>
           </div>
 
@@ -774,6 +883,47 @@ const AdminDashboard: React.FC<{
           <div className="bg-surface border border-white/5 rounded-3xl p-12 flex flex-col items-center justify-center text-white/30 gap-4">
             <User size={64} />
             <p className="text-xl font-medium">사용자 관리 기능은 준비 중입니다.</p>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="bg-surface border border-white/5 p-8 rounded-3xl space-y-8">
+            <div>
+              <h3 className="text-xl font-bold mb-4">DB 강제 초기화</h3>
+              <p className="text-sm text-white/50 mb-4">현재 DB에 저장된 잘못된 이미지(pollinations) 웹툰 데이터를 전부 날려버립니다.</p>
+              <button onClick={handleWipeDB} className="bg-red-500/20 text-red-400 border border-red-500/50 hover:bg-red-500/30 px-6 py-2.5 rounded-full font-bold transition-all">
+                기존 웹툰 전체 삭제 (Wipe Out)
+              </button>
+            </div>
+            
+            <div className="h-px bg-white/10 my-8"></div>
+            
+            <div>
+              <h3 className="text-xl font-bold mb-4">자동 생성기 (Auto-Generator)</h3>
+              <p className="text-sm text-white/50 mb-4">설정한 주기에 맞춰 AI가 이미지를 생성한 뒤 Firebase Storage에 안전하게 업로드합니다.</p>
+              
+              <div className="flex items-center gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">생성 주기: </span>
+                  <input type="number" value={autoGenInterval} onChange={e => setAutoGenInterval(Number(e.target.value))} className="bg-white/5 border border-white/10 rounded-lg px-3 py-1 w-20 text-center text-white" />
+                  <span className="text-sm">분</span>
+                </div>
+                
+                <button 
+                  onClick={() => setIsAutoGenRunning(!isAutoGenRunning)}
+                  className={cn("px-6 py-2.5 rounded-full font-bold transition-all", isAutoGenRunning ? "bg-red-500 hover:bg-red-600 text-white" : "bg-brand hover:bg-brand/90 text-white")}
+                >
+                  {isAutoGenRunning ? '생성 중지' : '자동 생성 시작'}
+                </button>
+              </div>
+              
+              {isAutoGenRunning && (
+                <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                  <div className="text-sm font-mono text-brand mb-2 animate-pulse">{genProgress}</div>
+                  <p className="text-xs text-white/40">생성 중에는 페이지를 닫지 마세요. 브라우저에서 직접 Storage로 업로드합니다.</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

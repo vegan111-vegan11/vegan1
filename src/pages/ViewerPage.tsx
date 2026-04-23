@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { db, doc, getDoc } from '../firebase';
@@ -64,48 +64,45 @@ const extractFirstStringDeep = (value: unknown, depth = 0): string | null => {
 
 const ensureString = (v: unknown, fallback: string) => extractFirstStringDeep(v) ?? fallback;
 
-const CutBlock: React.FC<{ 
-  cut: ViewerCut; 
-  displayIndex: number; 
-  shouldLoad: boolean; 
-  onLoadComplete: () => void;
-}> = ({ cut, displayIndex, shouldLoad, onLoadComplete }) => {
+const CutBlock: React.FC<{ cut: ViewerCut; displayIndex: number }> = ({ cut, displayIndex }) => {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fallback timer: if an image takes more than 15 seconds, proceed to the next one to avoid hanging the entire webtoon.
   useEffect(() => {
-    let timeout: number;
-    if (shouldLoad && !loaded && !failed) {
-      timeout = window.setTimeout(() => {
-        onLoadComplete();
-      }, 15000);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '1500px 0px' }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
     }
-    return () => clearTimeout(timeout);
-  }, [shouldLoad, loaded, failed, onLoadComplete]);
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div className="w-full m-0 p-0 flex flex-col items-center bg-black min-h-[500px]">
+    <div ref={containerRef} className="w-full m-0 p-0 flex flex-col items-center bg-black min-h-[500px]">
       <div className="w-full relative flex justify-center bg-[#0a0a0a] min-h-[500px]">
         {!loaded && !failed && (
           <div className="absolute inset-0 flex items-center justify-center text-white/10 text-sm font-medium tracking-widest">
-            {shouldLoad ? "LOADING..." : "WAITING..."}
+            LOADING...
           </div>
         )}
         
-        {shouldLoad && !failed ? (
+        {isVisible && !failed ? (
           <img
             src={cut.imageUrl}
             alt={`cut ${displayIndex}`}
-            referrerPolicy="no-referrer"
-            onLoad={() => {
-              setLoaded(true);
-              onLoadComplete();
-            }}
-            onError={() => {
-              setFailed(true);
-              onLoadComplete();
-            }}
+            onLoad={() => setLoaded(true)}
+            onError={() => setFailed(true)}
             className="w-full max-w-[800px] h-auto object-cover transition-opacity duration-300 relative z-10"
             style={{ opacity: loaded ? 1 : 0 }}
           />
@@ -131,11 +128,6 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
 
   const [loading, setLoading] = useState(true);
   const [viewerCuts, setViewerCuts] = useState<ViewerCut[]>([]);
-  const [loadLimit, setLoadLimit] = useState(1); // Allow first 2 images to load initially (0 and 1)
-
-  const handleLoadComplete = useCallback((idx: number) => {
-    setLoadLimit(prev => Math.max(prev, idx + 1));
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,7 +135,6 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
     const run = async () => {
       setLoading(true);
       setViewerCuts([]);
-      setLoadLimit(1);
 
       try {
         const epRef = doc(db, 'webtoons', webtoonId, 'episodes', episodeId);
@@ -234,13 +225,7 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
           ) : (
             <div className="w-full bg-black flex flex-col">
               {viewerCuts.map((cut, idx) => (
-                <CutBlock 
-                  key={`${cut.imageUrl}-${cut.rawIndex}`} 
-                  cut={cut} 
-                  displayIndex={idx} 
-                  shouldLoad={idx <= loadLimit}
-                  onLoadComplete={() => handleLoadComplete(idx)}
-                />
+                <CutBlock key={`${cut.imageUrl}-${cut.rawIndex}`} cut={cut} displayIndex={idx} />
               ))}
               <div className="py-16 text-center opacity-50 font-bold text-sm">
                 에피소드의 끝입니다.
