@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { db, doc, getDoc } from '../firebase';
@@ -67,20 +67,40 @@ const ensureString = (v: unknown, fallback: string) => extractFirstStringDeep(v)
 const CutBlock: React.FC<{ cut: ViewerCut; displayIndex: number }> = ({ cut, displayIndex }) => {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Intersection Observer를 사용하여 화면에 가까워질 때만 렌더링 (메모리 및 네트워크 최적화)
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '1500px 0px' } // 화면 진입 1500px 전부터 로드 시작
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div className="w-full m-0 p-0 flex flex-col items-center bg-black">
-      <div className="w-full relative flex justify-center bg-[#0a0a0a] min-h-[300px]">
+    <div ref={containerRef} className="w-full m-0 p-0 flex flex-col items-center bg-black min-h-[500px]">
+      <div className="w-full relative flex justify-center bg-[#0a0a0a] min-h-[500px]">
         {!loaded && !failed && (
-          <div className="absolute inset-0 flex items-center justify-center text-white/20 text-sm">
-            Loading...
+          <div className="absolute inset-0 flex items-center justify-center text-white/10 text-sm font-medium tracking-widest">
+            LOADING...
           </div>
         )}
-        {!failed ? (
+        
+        {isVisible && !failed ? (
           <img
             src={cut.imageUrl}
-            loading="lazy"
-            decoding="async"
             alt={`cut ${displayIndex}`}
             onLoad={() => setLoaded(true)}
             onError={() => {
@@ -90,12 +110,12 @@ const CutBlock: React.FC<{ cut: ViewerCut; displayIndex: number }> = ({ cut, dis
             className="w-full max-w-[800px] h-auto object-cover transition-opacity duration-300 relative z-10"
             style={{ opacity: loaded ? 1 : 0 }}
           />
-        ) : (
+        ) : failed ? (
           <div className="w-full max-w-[800px] py-12 px-4 text-center text-white/50 bg-[#111]">
             <div className="text-sm">이미지를 불러오지 못했습니다.</div>
             <div className="text-xs mt-2 break-all opacity-70">{cut.imageUrl}</div>
           </div>
-        )}
+        ) : null}
       </div>
 
       {cut.dialogue && (
@@ -203,12 +223,12 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
           {loading ? (
             <div className="w-full max-w-[800px] flex flex-col items-center justify-center min-h-[50vh] opacity-60">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-4"></div>
-              <div className="text-sm">데이터를 불러오는 중입니다...</div>
+              <div className="text-sm tracking-widest mt-4 font-bold">LOADING...</div>
             </div>
           ) : viewerCuts.length === 0 ? (
             <div className="py-20 text-center opacity-70 text-sm">표시할 이미지가 없습니다.</div>
           ) : (
-            <div className="w-full bg-black">
+            <div className="w-full bg-black flex flex-col">
               {viewerCuts.map((cut, idx) => (
                 <CutBlock key={`${cut.imageUrl}-${cut.rawIndex}`} cut={cut} displayIndex={idx} />
               ))}
