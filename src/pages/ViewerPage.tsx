@@ -1,126 +1,211 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
-import { db, doc, getDoc } from '../firebase';
+import { db, doc, getDoc, updateDoc, serverTimestamp } from '../firebase';
+
+type FirestoreCut = {
+  imageUrl?: string;
+  dialogue?: unknown;
+  cut_theme?: unknown;
+  [key: string]: any;
+};
 
 type ViewerCut = {
-  url: string;
+  imageUrl: string;
   dialogue: string;
+  cut_theme: string;
+  rawIndex: number;
 };
 
-function normalizeCuts(raw: unknown): ViewerCut[] {
-  if (!Array.isArray(raw)) return [];
+type WebtoonMeta = {
+  title?: string;
+  genre?: string;
+  description?: string;
+  theme?: string;
+  synopsis?: string;
+};
 
-  const badWords = ['parts', 'hardware'];
-  const isBad = (url: string) => {
-    const lower = url.toLowerCase();
-    return badWords.some((w) => lower.includes(w));
-  };
+const BAD_WORDS = ['parts', 'hardware'];
+const isBadImageUrl = (url: string) => {
+  const lower = url.toLowerCase();
+  return BAD_WORDS.some((w) => lower.includes(w));
+};
 
-  const extractFirstStringDeep = (value: unknown, depth = 0): string | null => {
-    if (depth > 6) return null;
-    if (typeof value === 'string') {
-      const t = value.trim();
-      return t.length > 0 ? t : null;
-    }
-    if (Array.isArray(value)) {
-      for (const v of value) {
-        const got = extractFirstStringDeep(v, depth + 1);
-        if (got) return got;
-      }
-      return null;
-    }
-    if (value && typeof value === 'object') {
-      const obj = value as any;
-
-      // Prefer Korean keys first if present
-      for (const k of ['ko', 'kr', 'korean', 'kor']) {
-        if (k in obj) {
-          const got = extractFirstStringDeep(obj[k], depth + 1);
-          if (got) return got;
-        }
-      }
-
-      // Common dialogue-like keys
-      for (const k of ['dialogue', 'text', 'caption', 'line', 'script', 'message', 'content']) {
-        if (k in obj) {
-          const got = extractFirstStringDeep(obj[k], depth + 1);
-          if (got) return got;
-        }
-      }
-
-      // Otherwise, scan values
-      for (const v of Object.values(obj)) {
-        const got = extractFirstStringDeep(v, depth + 1);
-        if (got) return got;
-      }
-      return null;
+const extractFirstStringDeep = (value: unknown, depth = 0): string | null => {
+  if (depth > 6) return null;
+  if (typeof value === 'string') {
+    const t = value.trim();
+    return t.length > 0 ? t : null;
+  }
+  if (Array.isArray(value)) {
+    for (const v of value) {
+      const got = extractFirstStringDeep(v, depth + 1);
+      if (got) return got;
     }
     return null;
-  };
-
-  const extractDialogue = (d: unknown): string => {
-    const got = extractFirstStringDeep(d);
-    return got ?? '...';
-  };
-
-  const out: ViewerCut[] = [];
-  for (const item of raw) {
-    if (!item) continue;
-
-    if (typeof item === 'string') {
-      const url = item;
-      if (!url || isBad(url)) continue;
-      out.push({ url, dialogue: '...' });
-      continue;
-    }
-
-    if (typeof item === 'object') {
-      const obj = item as any;
-      // Firestore cuts[] item: { imageUrl, dialogue }
-      const url = obj.imageUrl ?? obj.url ?? obj.src ?? obj.image ?? obj.cut ?? obj.path;
-      if (typeof url !== 'string' || !url) continue;
-      if (isBad(url)) continue;
-
-      const d = obj.dialogue ?? obj.text ?? obj.caption ?? obj.line ?? obj.script ?? obj.message;
-      const dialogue = extractDialogue(d);
-      out.push({ url, dialogue });
-    }
   }
+  if (value && typeof value === 'object') {
+    const obj = value as any;
 
-  return out;
-}
+    for (const k of ['ko', 'kr', 'korean', 'kor']) {
+      if (k in obj) {
+        const got = extractFirstStringDeep(obj[k], depth + 1);
+        if (got) return got;
+      }
+    }
 
-const Skeleton: React.FC<{ height?: number }> = ({ height = 520 }) => {
-  return (
-    <div
-      style={{
-        height,
-        width: '100%',
-        background: '#1a1a1a',
-        borderRadius: 0,
-        animation: 'viewerPulse 1.4s ease-in-out infinite',
-      }}
-    />
-  );
+    for (const k of ['dialogue', 'text', 'caption', 'line', 'script', 'message', 'content']) {
+      if (k in obj) {
+        const got = extractFirstStringDeep(obj[k], depth + 1);
+        if (got) return got;
+      }
+    }
+
+    for (const v of Object.values(obj)) {
+      const got = extractFirstStringDeep(v, depth + 1);
+      if (got) return got;
+    }
+    return null;
+  }
+  return null;
 };
 
-const CutBlock: React.FC<{ cut: ViewerCut; index: number }> = ({ cut, index }) => {
+const ensureString = (v: unknown, fallback: string) => extractFirstStringDeep(v) ?? fallback;
+
+function generateThemeAndSynopsis(input: { webtoonId: string; title?: string; genre?: string; description?: string }) {
+  const title = (input.title ?? input.webtoonId).trim();
+  const genre = (input.genre ?? '').trim();
+  const desc = (input.description ?? '').trim();
+  const bag = `${title} ${genre} ${desc}`.toLowerCase();
+
+  const inferredTheme =
+    genre ||
+    (bag.includes('sf') || bag.includes('207') || bag.includes('네오') || bag.includes('cyber') || bag.includes('나노')
+      ? 'SF'
+      : bag.includes('판타지') || bag.includes('마법') || bag.includes('왕') || bag.includes('조선')
+        ? '판타지'
+        : bag.includes('미스터리') || bag.includes('thriller') || bag.includes('복제') || bag.includes('살인')
+          ? '미스터리'
+          : '드라마');
+
+  const synopsis =
+    desc.length > 0
+      ? desc
+      : inferredTheme === 'SF'
+        ? `${title} — 네온빛 도시와 냉혹한 시스템 속에서, 주인공은 ‘탈출’과 ‘진실’ 사이에서 선택을 강요받는다.`
+        : inferredTheme === '판타지'
+          ? `${title} — 오래된 규율과 금단의 힘이 충돌하는 세계에서, 운명은 조용히 균열을 만든다.`
+          : inferredTheme === '미스터리'
+            ? `${title} — 일상의 틈으로 스며든 단서들이 서로 연결되며, 숨겨진 얼굴이 드러난다.`
+            : `${title} — 관계와 욕망이 겹쳐지며, 작은 선택이 커다란 파문이 된다.`;
+
+  return { theme: inferredTheme, synopsis };
+}
+
+function generateCutThemeAndDialogue(input: { synopsis: string; theme: string; index: number; total: number }) {
+  const t = Math.max(1, input.total);
+  const p = input.index / t;
+
+  const beat =
+    p < 0.15 ? '도입' : p < 0.35 ? '긴장' : p < 0.6 ? '전개' : p < 0.8 ? '충돌' : '여운';
+
+  const cut_theme =
+    input.theme === 'SF'
+      ? beat === '도입'
+        ? '네온의 고요'
+        : beat === '긴장'
+          ? '시스템 경보'
+          : beat === '전개'
+            ? '추적과 단서'
+            : beat === '충돌'
+              ? '격돌의 순간'
+              : '잔상'
+      : input.theme === '판타지'
+        ? beat === '도입'
+          ? '세계의 규율'
+          : beat === '긴장'
+            ? '금단의 기운'
+            : beat === '전개'
+              ? '징조'
+              : beat === '충돌'
+                ? '각성'
+                : '여운'
+        : input.theme === '미스터리'
+          ? beat === '도입'
+            ? '수상한 공기'
+            : beat === '긴장'
+              ? '불안한 단서'
+              : beat === '전개'
+                ? '의심의 연결'
+                : beat === '충돌'
+                  ? '정면대치'
+                  : '침묵'
+          : beat;
+
+  const synopsisHint = input.synopsis.length > 90 ? input.synopsis.slice(0, 90) + '…' : input.synopsis;
+
+  const dialogue =
+    input.theme === 'SF'
+      ? beat === '도입'
+        ? `…여긴 너무 조용해. 조용한 건, 대개 폭발 직전이야.`
+        : beat === '긴장'
+          ? `경보가 울렸어. 누군가 내가 찾는 걸 먼저 봤다는 뜻이지.`
+          : beat === '전개'
+            ? `단서가 이어지고 있어. ${synopsisHint}`
+            : beat === '충돌'
+              ? `도망칠수록 시스템은 더 가까워져. 하지만… 멈출 수 없어.`
+              : `끝난 게 아니야. 다음 장면은, 더 차가울 거야.`
+      : input.theme === '판타지'
+        ? beat === '도입'
+          ? `이 세계의 규칙… 모두가 믿지만, 아무도 증명하진 않았지.`
+          : beat === '긴장'
+            ? `금단의 힘이 깨어났어. 내 안에서… 숨소리가 들려.`
+            : beat === '전개'
+              ? `징조는 늘 조용히 와. ${synopsisHint}`
+              : beat === '충돌'
+                ? `지금이야. 내가 두려워하던 ‘나’와 마주할 시간.`
+                : `마법은 끝나지 않아. 여운은 더 길게 남아.`
+        : input.theme === '미스터리'
+          ? beat === '도입'
+            ? `이상하지… 아무 일도 없는데, 모든 게 수상해.`
+            : beat === '긴장'
+              ? `단서가 보이면 더 무서워져. 진실은 늘 잔인하니까.`
+              : beat === '전개'
+                ? `조각들이 맞춰지고 있어. ${synopsisHint}`
+                : beat === '충돌'
+                  ? `도망치지 마. 이제는 네 차례야.`
+                  : `침묵이 말하고 있어. 다음 장면이 답이겠지.`
+          : `…${synopsisHint}`;
+
+  return { cut_theme, dialogue };
+}
+
+const Skeleton: React.FC<{ height?: number }> = ({ height = 520 }) => (
+  <div
+    style={{
+      height,
+      width: '100%',
+      background: '#1a1a1a',
+      borderRadius: 0,
+      animation: 'viewerPulse 1.4s ease-in-out infinite',
+    }}
+  />
+);
+
+const CutBlock: React.FC<{ cut: ViewerCut; displayIndex: number }> = ({ cut, displayIndex }) => {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
-
   const showSkeleton = !loaded || failed;
-  const skeletonHeight = 520;
 
   return (
     <div style={{ width: '100%', margin: 0, padding: 0 }}>
       <div style={{ width: '100%', background: '#000000' }}>
-        {showSkeleton && <Skeleton height={skeletonHeight} />}
+        {showSkeleton && <Skeleton height={520} />}
         {!failed && (
           <img
-            src={cut.url}
+            src={cut.imageUrl}
             loading="lazy"
-            alt={`cut ${index}`}
+            alt={`cut ${displayIndex}`}
             referrerPolicy="no-referrer"
             onLoad={() => setLoaded(true)}
             onError={() => {
@@ -147,13 +232,13 @@ const CutBlock: React.FC<{ cut: ViewerCut; index: number }> = ({ cut, index }) =
           background: '#000000',
           color: '#ffffff',
           fontSize: '1.2rem',
-          lineHeight: 1.9,
+          lineHeight: 1.95,
           letterSpacing: '0.01em',
           padding: '14px 16px 18px',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
         }}
       >
-        {cut.dialogue || '...'}
+        {cut.dialogue}
       </div>
     </div>
   );
@@ -162,16 +247,17 @@ const CutBlock: React.FC<{ cut: ViewerCut; index: number }> = ({ cut, index }) =
 export default function ViewerPage(props: { webtoonId: string; episodeId: string; onClose: () => void }) {
   const { webtoonId, episodeId, onClose } = props;
 
-  const [cuts, setCuts] = useState<ViewerCut[]>([]);
   const [loading, setLoading] = useState(true);
+  const [healing, setHealing] = useState(true);
+  const [viewerCuts, setViewerCuts] = useState<ViewerCut[]>([]);
   const [display, setDisplay] = useState<boolean[]>([]);
 
   const timeoutsRef = useRef<number[]>([]);
 
   const visibleCuts = useMemo(() => {
-    if (cuts.length === 0) return [];
-    return cuts.filter((_, idx) => display[idx]);
-  }, [cuts, display]);
+    if (viewerCuts.length === 0) return [];
+    return viewerCuts.filter((_, idx) => display[idx]);
+  }, [viewerCuts, display]);
 
   useEffect(() => {
     const styleEl = document.createElement('style');
@@ -190,29 +276,109 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setCuts([]);
-    setDisplay([]);
 
     const run = async () => {
+      setLoading(true);
+      setHealing(true);
+      setViewerCuts([]);
+      setDisplay([]);
+
       try {
+        const webtoonRef = doc(db, 'webtoons', webtoonId);
         const epRef = doc(db, 'webtoons', webtoonId, 'episodes', episodeId);
-        const snap = await getDoc(epRef);
-        if (!snap.exists()) {
+
+        const [webtoonSnap, epSnap] = await Promise.all([getDoc(webtoonRef), getDoc(epRef)]);
+        if (!epSnap.exists()) {
           toast.error('에피소드 데이터를 찾을 수 없습니다.');
           return;
         }
 
-        const data = snap.data() as any;
-        const normalized = normalizeCuts(data?.cuts);
+        const meta = (webtoonSnap.exists() ? (webtoonSnap.data() as any) : {}) as WebtoonMeta;
+        const episodeData = epSnap.data() as any;
+        const rawCuts = Array.isArray(episodeData?.cuts) ? (episodeData.cuts as FirestoreCut[]) : [];
+
+        // 1) Self-heal project-level fields
+        const currentTheme = ensureString(meta.theme, '');
+        const currentSynopsis = ensureString(meta.synopsis, '');
+        const { theme: generatedTheme, synopsis: generatedSynopsis } = generateThemeAndSynopsis({
+          webtoonId,
+          title: meta.title,
+          genre: meta.genre,
+          description: meta.description,
+        });
+
+        const nextTheme = currentTheme.length > 0 ? currentTheme : generatedTheme;
+        const nextSynopsis = currentSynopsis.length > 0 ? currentSynopsis : generatedSynopsis;
+
+        if (webtoonSnap.exists()) {
+          const updates: any = {};
+          if (currentTheme.length === 0) updates.theme = nextTheme;
+          if (currentSynopsis.length === 0) updates.synopsis = nextSynopsis;
+          if (Object.keys(updates).length > 0) {
+            updates.updatedAt = serverTimestamp();
+            await updateDoc(webtoonRef, updates);
+          }
+        }
+
+        // 2) Self-heal cut-level fields (cut_theme, dialogue) in episode.cuts[]
+        let cutChanged = false;
+        const healedCuts: FirestoreCut[] = rawCuts.map((c, i) => {
+          const imageUrl = ensureString((c as any)?.imageUrl ?? (c as any)?.url ?? (c as any)?.src, '');
+          if (!imageUrl || isBadImageUrl(imageUrl)) return c;
+
+          const existingDialogue = extractFirstStringDeep((c as any)?.dialogue);
+          const existingCutTheme = extractFirstStringDeep((c as any)?.cut_theme);
+
+          if (existingDialogue && existingCutTheme) return c;
+
+          const generated = generateCutThemeAndDialogue({ synopsis: nextSynopsis, theme: nextTheme, index: i, total: rawCuts.length });
+          const nextDialogue = existingDialogue ?? generated.dialogue;
+          const nextCutTheme2 = existingCutTheme ?? generated.cut_theme;
+
+          const next: FirestoreCut = { ...(c as any) };
+          if (!existingCutTheme) {
+            next.cut_theme = nextCutTheme2;
+            cutChanged = true;
+          }
+          if (!existingDialogue) {
+            next.dialogue = nextDialogue;
+            cutChanged = true;
+          }
+          return next;
+        });
+
+        if (cutChanged) {
+          await updateDoc(epRef, { cuts: healedCuts, healedAt: serverTimestamp() });
+        }
+
+        // 3) Build viewer cuts ONLY from DB (healedCuts)
+        const normalizedViewerCuts: ViewerCut[] = [];
+        for (let i = 0; i < healedCuts.length; i++) {
+          const c = healedCuts[i];
+          const imageUrl = ensureString((c as any)?.imageUrl ?? (c as any)?.url ?? (c as any)?.src, '');
+          if (!imageUrl || isBadImageUrl(imageUrl)) continue;
+
+          const d = extractFirstStringDeep((c as any)?.dialogue);
+          const t = extractFirstStringDeep((c as any)?.cut_theme);
+
+          // 렌더링 시점에는 절대 ...이 나오지 않게 보장
+          const dialogue = d ?? generateCutThemeAndDialogue({ synopsis: nextSynopsis, theme: nextTheme, index: i, total: healedCuts.length }).dialogue;
+          const cut_theme = t ?? generateCutThemeAndDialogue({ synopsis: nextSynopsis, theme: nextTheme, index: i, total: healedCuts.length }).cut_theme;
+
+          normalizedViewerCuts.push({ imageUrl, dialogue, cut_theme, rawIndex: i });
+        }
+
         if (!cancelled) {
-          setCuts(normalized);
-          setDisplay(new Array(normalized.length).fill(false));
+          setViewerCuts(normalizedViewerCuts);
+          setDisplay(new Array(normalizedViewerCuts.length).fill(false));
         }
       } catch (e) {
-        toast.error('에피소드 로딩 실패.');
+        toast.error('데이터 로딩/자동완성 중 오류가 발생했습니다.');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setHealing(false);
+          setLoading(false);
+        }
       }
     };
 
@@ -223,23 +389,19 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
   }, [webtoonId, episodeId]);
 
   useEffect(() => {
-    // clear previous timers
     for (const id of timeoutsRef.current) window.clearTimeout(id);
     timeoutsRef.current = [];
 
-    if (loading) return;
-    if (cuts.length === 0) return;
+    if (loading || healing) return;
+    if (viewerCuts.length === 0) return;
 
-    // sequentially reveal, 0.8s interval
-    for (let i = 0; i < cuts.length; i++) {
+    for (let i = 0; i < viewerCuts.length; i++) {
       const id = window.setTimeout(() => {
         setDisplay((prev) => {
-          if (!prev[i]) {
-            const next = prev.slice();
-            next[i] = true;
-            return next;
-          }
-          return prev;
+          if (prev[i]) return prev;
+          const next = prev.slice();
+          next[i] = true;
+          return next;
         });
       }, i * 800);
       timeoutsRef.current.push(id);
@@ -249,7 +411,7 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
       for (const id of timeoutsRef.current) window.clearTimeout(id);
       timeoutsRef.current = [];
     };
-  }, [cuts, loading]);
+  }, [viewerCuts, loading, healing]);
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 500, background: '#000000', color: '#ffffff', overflow: 'hidden' }}>
@@ -299,23 +461,25 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
           {loading ? (
             <div style={{ width: '100%', maxWidth: 800, margin: '0 auto', padding: '24px 16px' }}>
               <Skeleton height={520} />
-              <div style={{ marginTop: 16, opacity: 0.6, fontSize: 14 }}>불러오는 중…</div>
+              <div style={{ marginTop: 16, opacity: 0.6, fontSize: 14 }}>
+                {healing ? '데이터 자동 완성 중…' : '불러오는 중…'}
+              </div>
             </div>
-          ) : cuts.length === 0 ? (
+          ) : viewerCuts.length === 0 ? (
             <div style={{ padding: '64px 16px', textAlign: 'center', opacity: 0.7 }}>표시할 이미지가 없습니다.</div>
           ) : (
             <>
               {visibleCuts.map((cut, idx) => (
-                <CutBlock key={`${cut.url}-${idx}`} cut={cut} index={idx} />
+                <CutBlock key={`${cut.imageUrl}-${cut.rawIndex}`} cut={cut} displayIndex={idx} />
               ))}
-              {visibleCuts.length < cuts.length && (
+              {visibleCuts.length < viewerCuts.length && (
                 <div style={{ width: '100%', maxWidth: 800, margin: '0 auto', padding: '16px' }}>
                   <div style={{ opacity: 0.55, fontSize: 13 }}>
-                    로딩 중… {visibleCuts.length}/{cuts.length}
+                    로딩 중… {visibleCuts.length}/{viewerCuts.length}
                   </div>
                 </div>
               )}
-              {visibleCuts.length >= cuts.length && (
+              {visibleCuts.length >= viewerCuts.length && (
                 <div style={{ padding: '56px 16px', textAlign: 'center', opacity: 0.55, fontWeight: 700 }}>
                   에피소드의 끝입니다.
                 </div>
