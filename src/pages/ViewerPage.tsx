@@ -17,6 +17,20 @@ function normalizeCuts(raw: unknown): ViewerCut[] {
     return badWords.some((w) => lower.includes(w));
   };
 
+  const extractDialogue = (d: unknown): string => {
+    if (typeof d === 'string') {
+      const t = d.trim();
+      return t.length > 0 ? t : '...';
+    }
+    if (d && typeof d === 'object') {
+      const obj = d as any;
+      if (typeof obj.ko === 'string' && obj.ko.trim().length > 0) return obj.ko.trim();
+      const first = Object.values(obj).find((v) => typeof v === 'string' && v.trim().length > 0) as string | undefined;
+      return first ? first.trim() : '...';
+    }
+    return '...';
+  };
+
   const out: ViewerCut[] = [];
   for (const item of raw) {
     if (!item) continue;
@@ -30,12 +44,13 @@ function normalizeCuts(raw: unknown): ViewerCut[] {
 
     if (typeof item === 'object') {
       const obj = item as any;
-      const url = obj.url ?? obj.src ?? obj.image ?? obj.cut ?? obj.path;
+      // Firestore cuts[] item: { imageUrl, dialogue }
+      const url = obj.imageUrl ?? obj.url ?? obj.src ?? obj.image ?? obj.cut ?? obj.path;
       if (typeof url !== 'string' || !url) continue;
       if (isBad(url)) continue;
 
       const d = obj.dialogue ?? obj.text ?? obj.caption;
-      const dialogue = typeof d === 'string' && d.trim().length > 0 ? d : '...';
+      const dialogue = extractDialogue(d);
       out.push({ url, dialogue });
     }
   }
@@ -98,7 +113,7 @@ const CutBlock: React.FC<{ cut: ViewerCut; index: number }> = ({ cut, index }) =
           margin: '0 auto',
           background: '#000000',
           color: '#ffffff',
-          fontSize: '1.1rem',
+          fontSize: '1.2rem',
           lineHeight: 1.9,
           letterSpacing: '0.01em',
           padding: '14px 16px 18px',
