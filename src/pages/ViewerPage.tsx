@@ -17,18 +17,51 @@ function normalizeCuts(raw: unknown): ViewerCut[] {
     return badWords.some((w) => lower.includes(w));
   };
 
+  const extractFirstStringDeep = (value: unknown, depth = 0): string | null => {
+    if (depth > 6) return null;
+    if (typeof value === 'string') {
+      const t = value.trim();
+      return t.length > 0 ? t : null;
+    }
+    if (Array.isArray(value)) {
+      for (const v of value) {
+        const got = extractFirstStringDeep(v, depth + 1);
+        if (got) return got;
+      }
+      return null;
+    }
+    if (value && typeof value === 'object') {
+      const obj = value as any;
+
+      // Prefer Korean keys first if present
+      for (const k of ['ko', 'kr', 'korean', 'kor']) {
+        if (k in obj) {
+          const got = extractFirstStringDeep(obj[k], depth + 1);
+          if (got) return got;
+        }
+      }
+
+      // Common dialogue-like keys
+      for (const k of ['dialogue', 'text', 'caption', 'line', 'script', 'message', 'content']) {
+        if (k in obj) {
+          const got = extractFirstStringDeep(obj[k], depth + 1);
+          if (got) return got;
+        }
+      }
+
+      // Otherwise, scan values
+      for (const v of Object.values(obj)) {
+        const got = extractFirstStringDeep(v, depth + 1);
+        if (got) return got;
+      }
+      return null;
+    }
+    return null;
+  };
+
   const extractDialogue = (d: unknown): string => {
-    if (typeof d === 'string') {
-      const t = d.trim();
-      return t.length > 0 ? t : '...';
-    }
-    if (d && typeof d === 'object') {
-      const obj = d as any;
-      if (typeof obj.ko === 'string' && obj.ko.trim().length > 0) return obj.ko.trim();
-      const first = Object.values(obj).find((v) => typeof v === 'string' && v.trim().length > 0) as string | undefined;
-      return first ? first.trim() : '...';
-    }
-    return '...';
+    const got = extractFirstStringDeep(d);
+    return got ?? '...';
   };
 
   const out: ViewerCut[] = [];
@@ -49,7 +82,7 @@ function normalizeCuts(raw: unknown): ViewerCut[] {
       if (typeof url !== 'string' || !url) continue;
       if (isBad(url)) continue;
 
-      const d = obj.dialogue ?? obj.text ?? obj.caption;
+      const d = obj.dialogue ?? obj.text ?? obj.caption ?? obj.line ?? obj.script ?? obj.message;
       const dialogue = extractDialogue(d);
       out.push({ url, dialogue });
     }
