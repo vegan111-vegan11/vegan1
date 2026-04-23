@@ -295,7 +295,20 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
 
         const meta = (webtoonSnap.exists() ? (webtoonSnap.data() as any) : {}) as WebtoonMeta;
         const episodeData = epSnap.data() as any;
-        const rawCuts = Array.isArray(episodeData?.cuts) ? (episodeData.cuts as FirestoreCut[]) : [];
+        const rawCutsAny = Array.isArray(episodeData?.cuts) ? (episodeData.cuts as any[]) : [];
+        const rawCuts: FirestoreCut[] = rawCutsAny
+          .map((c) => {
+            if (!c) return null;
+            if (typeof c === 'string') return { imageUrl: c } as FirestoreCut;
+            if (typeof c === 'object') {
+              const obj = c as any;
+              // normalize common url keys into imageUrl (without deleting originals)
+              const imageUrl = ensureString(obj.imageUrl ?? obj.url ?? obj.src ?? obj.image, '');
+              return { ...obj, ...(imageUrl ? { imageUrl } : {}) } as FirestoreCut;
+            }
+            return null;
+          })
+          .filter(Boolean) as FirestoreCut[];
 
         // 1) Self-heal project-level fields
         const currentTheme = ensureString(meta.theme, '');
@@ -347,7 +360,8 @@ export default function ViewerPage(props: { webtoonId: string; episodeId: string
           return next;
         });
 
-        if (cutChanged) {
+        // Also persist normalization (string -> object, url -> imageUrl) so viewer is consistent.
+        if (cutChanged || rawCutsAny.length !== healedCuts.length || rawCutsAny.some((c) => typeof c === 'string')) {
           await updateDoc(epRef, { cuts: healedCuts, healedAt: serverTimestamp() });
         }
 
