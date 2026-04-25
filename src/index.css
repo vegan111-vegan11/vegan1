@@ -1,32 +1,200 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Playfair Display", serif;
-  
-  --color-brand: #E61E2B; /* Lezhin Red */
-  --color-bg: #0A0A0A;
-  --color-surface: #1A1A1A;
+  --font-sans: "Inter", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-webtoon: "Nanum Gothic", "Noto Sans KR", sans-serif;
+
+  --color-brand: #E61E2B;
+  --color-bg: #000000;
+  --color-surface: #0A0A0A;
   --color-ink: #FFFFFF;
 }
 
-body {
-  background-color: var(--color-bg);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
+@layer base {
+  body {
+    background-color: #000000;
+    color: #FFFFFF;
+    font-family: var(--font-sans);
+    @apply selection:bg-brand selection:text-white;
+  }
+}
+
+.font-webtoon {
+  font-family: var(--font-webtoon);
+}
+
+.webtoon-dialogue {
+  @apply relative inline-block px-6 py-4 bg-white text-black font-webtoon font-bold text-lg rounded-[2.5rem] shadow-[4px_4px_20px_rgba(0, 0, 0, 0.3)] border-2 border-black;
+  max-width: 90%;
+}
+
+.webtoon-narrative {
+  @apply bg-black/90 text-white font-webtoon p-4 border border-white/20 shadow-2xl;
+  max-width: 85%;
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.animate-blink {
+  animation: blink 1.5s infinite;
+}
+
+@keyframes glitch {
+  0% {
+    transform: translate(0);
+  }
+
+  20% {
+    transform: translate(-3px, 3px);
+  }
+
+  40% {
+    transform: translate(-3px, -3px);
+  }
+
+  60% {
+    transform: translate(3px, 3px);
+  }
+
+  80% {
+    transform: translate(3px, -3px);
+  }
+
+  100% {
+    transform: translate(0);
+  }
+}
+
+.glitch-hover:hover {
+  animation: glitch 0.2s infinite;
+  text-shadow: 2px 0 #ff00c1, -2px 0 #00fff9;
+}
+
+/* Neural Link Loader Animation */
+@keyframes neural-path {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+.neural-loader-ring {
+  animation: rotate 4s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Experimental Grid Layouts */
+.void-image-container {
+  @apply relative mb-48 transition-all duration-700 ease-out;
+}
+
+.experimental-left {
+  @apply ml-0 mr-auto max-w-[85%] md:max-w-[65%];
+}
+
+.experimental-right {
+  @apply ml-auto mr-0 max-w-[85%] md:max-w-[65%];
+}
+
+.experimental-center {
+  @apply mx-auto max-w-[95%] md:max-w-[75%];
+}
+
+.neon-glow-red {
+  filter: drop-shadow(0 0 15px rgba(230, 30, 43, 0.6));
+}
+
+.hero-title-glow {
+  text-shadow: 0 0 20px rgba(230, 30, 43, 0.8), 0 0 40px rgba(230, 30, 43, 0.4);
+}
+
+@keyframes brilliant-flash {
+  0% {
+    filter: brightness(1) contrast(1);
+  }
+
+  10% {
+    filter: brightness(10) contrast(2) saturate(2);
+  }
+
+  100% {
+    filter: brightness(1) contrast(1);
+  }
+}
+
+.flash-effect {
+  animation: brilliant-flash 0.8s ease-out;
+}
+
+.particles-bg {
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-auto-rows: 260px;
+  gap: 1.5rem;
+}
+
+.bento-item-large {
+  grid-row: span 2;
+  grid-column: span 2;
+}
+
+@media (max-width: 768px) {
+  .bento-item-large {
+    grid-row: span 1;
+    grid-column: span 1;
+  }
 }
