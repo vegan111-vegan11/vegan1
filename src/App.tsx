@@ -71,6 +71,7 @@ import {
   getDocs,
   onSnapshot
 } from 'firebase/firestore';
+// 경로수정
 import firebaseConfig from './firebase-applet-config.json';
 import {
   generateDailyWebtoonScript,
@@ -644,7 +645,7 @@ const OnAir: React.FC<{ news: NewsArchive[], isLoading: boolean }> = ({ news, is
           news.filter(n => n.status === 'approved').map((item, index) => (
             <motion.div
               key={item.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               onClick={() => window.open(item.link, '_blank')}
@@ -2568,7 +2569,7 @@ const WebtoonCard: React.FC<{ webtoon: Webtoon, onClick: () => void, index?: num
       whileHover={{ y: -12, scale: 1.02 }}
       onClick={onClick}
       className="group relative flex-shrink-0 w-48 md:w-56 cursor-pointer"
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
