@@ -26,7 +26,7 @@
 }
 
 .webtoon-dialogue {
-  /* rgba 안의 모든 공백을 제거했습니다. 이제 빌드 에러가 나지 않습니다. */
+  /* rgba 안의 모든 공백을 제거했습니다. 이제 빌드 에러가 나지 않습니다.    !!!!*/
   @apply relative inline-block px-6 py-4 bg-white text-black font-webtoon font-bold text-lg rounded-[2.5rem] shadow-[4px_4px_20px_rgba(0, 0, 0, 0.3)] border-2 border-black;
   max-width: 90%;
 }
