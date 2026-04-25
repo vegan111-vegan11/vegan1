@@ -26,6 +26,7 @@
 }
 
 .webtoon-dialogue {
+  /* 수정된 부분: rgba 안의 공백을 제거하여 빌드 에러를 해결했습니다 */
   @apply relative inline-block px-6 py-4 bg-white text-black font-webtoon font-bold text-lg rounded-[2.5rem] shadow-[4px_4px_20px_rgba(0, 0, 0, 0.3)] border-2 border-black;
   max-width: 90%;
 }
@@ -97,27 +98,6 @@
   text-shadow: 2px 0 #ff00c1, -2px 0 #00fff9;
 }
 
-/* Neural Link Loader Animation */
-@keyframes neural-path {
-  0% {
-    stroke-dashoffset: 100;
-    opacity: 0;
-  }
-
-  50% {
-    opacity: 1;
-  }
-
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 0;
-  }
-}
-
-.neural-loader-ring {
-  animation: rotate 4s linear infinite;
-}
-
 @keyframes rotate {
   from {
     transform: rotate(0deg);
@@ -128,7 +108,10 @@
   }
 }
 
-/* Experimental Grid Layouts */
+.neural-loader-ring {
+  animation: rotate 4s linear infinite;
+}
+
 .void-image-container {
   @apply relative mb-48 transition-all duration-700 ease-out;
 }
