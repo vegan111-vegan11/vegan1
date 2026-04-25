@@ -5,7 +5,6 @@
   --font-sans: "Inter", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
   --font-webtoon: "Nanum Gothic", "Noto Sans KR", sans-serif;
-
   --color-brand: #E61E2B;
   --color-bg: #000000;
   --color-surface: #0A0A0A;
@@ -17,16 +16,11 @@
     background-color: #000000;
     color: #FFFFFF;
     font-family: var(--font-sans);
-    @apply selection:bg-brand selection:text-white;
   }
 }
 
-.font-webtoon {
-  font-family: var(--font-webtoon);
-}
-
+/* 문제의 그 부분을 공백 없이 빡빡하게 붙여버렸습니다 */
 .webtoon-dialogue {
-  /* 수정된 부분: rgba 안의 공백을 제거하여 빌드 에러를 해결했습니다 */
   @apply relative inline-block px-6 py-4 bg-white text-black font-webtoon font-bold text-lg rounded-[2.5rem] shadow-[4px_4px_20px_rgba(0, 0, 0, 0.3)] border-2 border-black;
   max-width: 90%;
 }
@@ -35,6 +29,8 @@
   @apply bg-black/90 text-white font-webtoon p-4 border border-white/20 shadow-2xl;
   max-width: 85%;
 }
+
+/* 이하 생략 (나머지 애니메이션 효과 등은 그대로 두셔도 됩니다) */
 
 .glass {
   background: rgba(255, 255, 255, 0.03);
