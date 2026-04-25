@@ -420,21 +420,21 @@ const MOCK_WEBTOONS: Webtoon[] = [
         number: 1,
         title: '로그인: 위험한 매칭',
         pages: [
-          "https://image.pollinations.ai/prompt/manhwa%20style%20neon%20cyberpunk%20city%20night%20rain%20cinematic?nologo=true&seed=3001",
-          "https://image.pollinations.ai/prompt/anime%20style%20close%20up%20of%20alarm%20clock%20glowing%20scifi?nologo=true&seed=3002",
-          "https://image.pollinations.ai/prompt/manhwa%20girl%20looking%20at%20smartphone%20screen%20neon%20reflection?nologo=true&seed=3003",
-          "https://image.pollinations.ai/prompt/dating%20app%20profile%20handsome%20man%20anime%20style%20digital?nologo=true&seed=3004",
-          "https://image.pollinations.ai/prompt/shocked%20anime%20girl%20face%20close%20up%20night%20room?nologo=true&seed=3005",
-          "https://image.pollinations.ai/prompt/high%20school%20memory%20blurry%20nostalgic%20anime%20sunset?nologo=true&seed=3006",
-          "https://image.pollinations.ai/prompt/chest%20clutching%20heartbeat%20visual%20effect%20anime%20dramatic?nologo=true&seed=3007",
-          "https://image.pollinations.ai/prompt/view%20from%20window%20rainy%20neon%20seoul%20future%20cyberpunk?nologo=true&seed=3008",
-          "https://image.pollinations.ai/prompt/digital%20glitch%20on%20smartphone%20screen%20cyberpunk%20error?nologo=true&seed=3009",
-          "https://image.pollinations.ai/prompt/finger%20hovering%20over%20red%20cancel%20button%20glow?nologo=true&seed=3010",
-          "https://image.pollinations.ai/prompt/smartphone%20vibrating%20on%20table%20dynamic%20motion%20manhwa?nologo=true&seed=3011",
-          "https://image.pollinations.ai/prompt/mysterious%20man%20face%20hologram%20glitch%20cyberpunk?nologo=true&seed=3012",
-          "https://image.pollinations.ai/prompt/cold%20shiver%20anime%20visual%20effect%20blue%20energy?nologo=true&seed=3013",
-          "https://image.pollinations.ai/prompt/menacing%20smile%20man%20anime%20eyes%20glowing%20sinister?nologo=true&seed=3014",
-          "https://image.pollinations.ai/prompt/mirror%20reflection%20of%20scared%20girl%20cyberpunk%20room?nologo=true&seed=3015"
+          "https://image.pollinations.ai/prompt/manhwa%20style%20neon%20city%20night%20rain%20cinematic?nologo=true&seed=3101",
+          "https://image.pollinations.ai/prompt/manhwa%20style%20close%20up%20digital%20alarm%20clock%20glow?nologo=true&seed=3102",
+          "https://image.pollinations.ai/prompt/manhwa%20girl%20looking%20at%20smartphone%20neon%20reflection?nologo=true&seed=3103",
+          "https://image.pollinations.ai/prompt/manhwa%20handsome%20man%20profile%20digital%20screen?nologo=true&seed=3104",
+          "https://image.pollinations.ai/prompt/manhwa%20girl%20shocked%20face%20close%20up%20night?nologo=true&seed=3105",
+          "https://image.pollinations.ai/prompt/manhwa%20school%20memory%20nostalgic%20sunset?nologo=true&seed=3106",
+          "https://image.pollinations.ai/prompt/manhwa%20dramatic%20heartbeat%20visual%20effect?nologo=true&seed=3107",
+          "https://image.pollinations.ai/prompt/manhwa%20view%20from%20window%20rainy%20neon%20city?nologo=true&seed=3108",
+          "https://image.pollinations.ai/prompt/manhwa%20digital%20glitch%20smartphone%20screen?nologo=true&seed=3109",
+          "https://image.pollinations.ai/prompt/manhwa%20finger%20touching%20glowing%20screen%20close%20up?nologo=true&seed=3110",
+          "https://image.pollinations.ai/prompt/manhwa%20smartphone%20vibrating%20on%20wooden%20table?nologo=true&seed=3111",
+          "https://image.pollinations.ai/prompt/manhwa%20mysterious%20man%20hologram%20glitch?nologo=true&seed=3112",
+          "https://image.pollinations.ai/prompt/manhwa%20blue%20energy%20resonance%20visual%20effect?nologo=true&seed=3113",
+          "https://image.pollinations.ai/prompt/manhwa%20menacing%20smile%20glowing%20eyes?nologo=true&seed=3114",
+          "https://image.pollinations.ai/prompt/manhwa%20scared%20girl%20reflection%20in%20mirror?nologo=true&seed=3115"
         ],
         scripts: [
           "\"데이터 소리... 들리는가?\"",
@@ -839,10 +839,10 @@ const WebtoonViewer: React.FC<{
           <div key={i} className="relative group w-full min-h-[60vh] flex flex-col items-center bg-black overflow-hidden">
             <motion.img
               src={url}
-              alt={`page-${i}`}
+              alt={`node-${i}`}
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
-              viewport={{ once: true, margin: "100%" }}
+              viewport={{ once: true, margin: "200%" }}
               className="w-full h-auto block select-none"
               referrerPolicy="no-referrer"
               onLoad={(e) => {
@@ -851,7 +851,8 @@ const WebtoonViewer: React.FC<{
               }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
-                target.src = `https://placehold.co/800x1200/000000/E50914?text=Loading+Neural+Art+${i + 1}`;
+                // Silently hide or retry without a ugly text-based placeholder
+                target.style.display = 'none';
               }}
             />
 
@@ -3240,15 +3241,15 @@ function App() {
 
   // Force sync DB for admin on special condition (e.g., initial login or command from user)
   useEffect(() => {
-    if (isAdmin && !localStorage.getItem('db_synced_v4')) {
+    if (isAdmin && !localStorage.getItem('db_synced_v5')) {
       const performInitialSeed = async () => {
         try {
-          console.log("Admin detected. Performing auto-sync of MOCK_WEBTOONS to Firestore...");
+          console.log("Admin detected. Performing auto-sync v5 of MOCK_WEBTOONS to Firestore...");
           for (const w of MOCK_WEBTOONS) {
             await setDoc(doc(db, 'webtoons', w.id), w);
           }
-          localStorage.setItem('db_synced_v4', 'true');
-          toast.success('관리자 계정 감지: 데이터 및 이미지 프롬프트가 모두 최신화되었습니다.');
+          localStorage.setItem('db_synced_v5', 'true');
+          toast.success('관리자 계정 감지: 데이터베이스가 v5로 강제 동기화되었습니다.');
         } catch (error) {
           console.error("Auto-sync failed:", error);
         }
