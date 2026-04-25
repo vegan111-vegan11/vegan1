@@ -25,9 +25,13 @@
   font-family: var(--font-webtoon);
 }
 
+/* src/index.css */
 .webtoon-dialogue {
-  /* 테일윈드 엔진이 절대 오해 못하게 공백을 언더바(_)로 다 메꿨습니다. */
-  @apply relative inline-block px-6 py-4 bg-white text-black font-webtoon font-bold text-lg rounded-[2.5rem] shadow-[4px_4px_20px_rgba(0, 0, 0, 0.3)] border-2 border-black;
+  /* 기본 레이아웃 및 폰트는 Tailwind 유틸리티 사용 */
+  @apply relative inline-block px-6 py-4 bg-white text-black font-bold text-lg rounded-[2.5rem] border-2 border-black;
+
+  /* 오류가 났던 그림자 부분을 표준 CSS 속성으로 직접 작성 */
+  box-shadow: 4px 4px 20px rgba(0, 0, 0, 0.3);
   max-width: 90%;
 }
 
