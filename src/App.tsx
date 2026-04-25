@@ -71,7 +71,7 @@ import {
   getDocs,
   onSnapshot
 } from 'firebase/firestore';
-import firebaseConfig from '../firebase-applet-config.json';
+import firebaseConfig from './firebase-applet-config.json';
 import {
   generateDailyWebtoonScript,
   saveScriptToDB,
