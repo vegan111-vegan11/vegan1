@@ -71,7 +71,6 @@ import {
   getDocs,
   onSnapshot
 } from 'firebase/firestore';
-// 경로수정
 import firebaseConfig from './firebase-applet-config.json';
 import {
   generateDailyWebtoonScript,
@@ -247,7 +246,48 @@ const MOCK_WEBTOONS: Webtoon[] = [
         id: 'ep-1',
         number: 1,
         title: '강림 (The Descent)',
-        pages: Array.from({ length: 40 }).map((_, i) => `https://loremflickr.com/800/1200/cyberpunk,hanbok,robot,scifi,korean,high-res,cinematic?lock=${i + 15000}`),
+        pages: [
+          "https://image.pollinations.ai/prompt/cyberpunk%20seoul%20neon%20night%20monochrome%20blue%20cinematic?nologo=true&seed=101",
+          "https://image.pollinations.ai/prompt/cyberpunk%20girl%20frustrated%20looking%20at%20broken%20holographic%20device?nologo=true&seed=102",
+          "https://image.pollinations.ai/prompt/young%20woman%20sighing%20night%20city%20background%20cyberpunk?nologo=true&seed=103",
+          "https://image.pollinations.ai/prompt/giant%20electric%20lightning%20striking%20neon%20city%20sky%20explosion?nologo=true&seed=104",
+          "https://image.pollinations.ai/prompt/cyberpunk%20woman%20looking%20up%20at%20the%20sky%20shocked?nologo=true&seed=105",
+          "https://image.pollinations.ai/prompt/mysterious%20giant%20wolf%20silhouette%20in%20deep%20blue%20cyberpunk%20fog?nologo=true&seed=106",
+          "https://image.pollinations.ai/prompt/close%20up%20glowing%20blue%20wolf%20eyes%20cyberpunk%20aesthetic?nologo=true&seed=107",
+          "https://image.pollinations.ai/prompt/cyberpunk%20girl%20staring%20at%20giant%20wolf%20wonder?nologo=true&seed=108",
+          "https://image.pollinations.ai/prompt/mechanical%20wolf%20approaching%20gently%20cyberpunk%20vibe?nologo=true&seed=109",
+          "https://image.pollinations.ai/prompt/wolf%20wagging%20tail%20friendly%20mechanical%20dog%20cyberpunk?nologo=true&seed=110",
+          "https://image.pollinations.ai/prompt/futuristic%20hologram%20text%20reconnecting%20partner%20cyberpunk?nologo=true&seed=111",
+          "https://image.pollinations.ai/prompt/holographic%20device%20glowing%20blue%20energy%20resonance?nologo=true&seed=112",
+          "https://image.pollinations.ai/prompt/woman%20smiles%20at%20mechanical%20wolf%20neon%20lights?nologo=true&seed=113",
+          "https://image.pollinations.ai/prompt/dark%20alleyway%20cyberpunk%20city%20mysterious%20atmosphere?nologo=true&seed=114",
+          "https://image.pollinations.ai/prompt/wolf%20running%20through%20neon%20streets%20motion%20blur?nologo=true&seed=115",
+          "https://image.pollinations.ai/prompt/epic%20landscape%20of%20cyberpunk%20seoul%20future%20skyline?nologo=true&seed=116",
+          "https://image.pollinations.ai/prompt/police%20car%20lights%20red%20and%20blue%20reflecting%20on%20wet%20pavement?nologo=true&seed=117",
+          "https://image.pollinations.ai/prompt/police%20agents%20in%20tactical%20gear%20shouting%20cyberpunk?nologo=true&seed=118",
+          "https://image.pollinations.ai/prompt/woman%20hand%20petting%20wolf%20energy%20sparks?nologo=true&seed=119",
+          "https://image.pollinations.ai/prompt/mechanical%20wolf%20roaring%20blue%20shockwave%20energy?nologo=true&seed=120",
+          "https://image.pollinations.ai/prompt/electronics%20exploding%20in%20blue%20electricity%20cyberpunk?nologo=true&seed=121",
+          "https://image.pollinations.ai/prompt/police%20officer%20surprised%20by%20holographic%20interference?nologo=true&seed=122",
+          "https://image.pollinations.ai/prompt/wolf%20disappearing%20into%20digital%20pixels%20glitch%20effect?nologo=true&seed=123",
+          "https://image.pollinations.ai/prompt/fast%20running%20silhouette%20between%20skyscrapers%20night?nologo=true&seed=124",
+          "https://image.pollinations.ai/prompt/woman%20riding%20on%20top%20of%20giant%20wolf%20action%20shot?nologo=true&seed=125",
+          "https://image.pollinations.ai/prompt/pointing%20at%20a%20massive%20megastructure%20tower%20neon?nologo=true&seed=126",
+          "https://image.pollinations.ai/prompt/top%20of%20the%20neon%20tower%20clouds%20and%20lightning?nologo=true&seed=127",
+          "https://image.pollinations.ai/prompt/wolf%20running%20faster%20towards%20the%20destination%20epic?nologo=true&seed=128",
+          "https://image.pollinations.ai/prompt/looking%20up%20at%20the%20stars%20from%20a%20high%20building%20city%20lights?nologo=true&seed=129",
+          "https://image.pollinations.ai/prompt/massive%20spaceship%20uncloaking%20over%20the%20city%20shadow?nologo=true&seed=130",
+          "https://image.pollinations.ai/prompt/woman%20determined%20looking%20at%20the%20horizon%20epic%20ending?nologo=true&seed=131",
+          "https://image.pollinations.ai/prompt/ethereal%20blue%20threads%20connecting%20heart%20and%20machine?nologo=true&seed=132",
+          "https://image.pollinations.ai/prompt/massive%20blue%20energy%20dome%20covering%20seoul%20city?nologo=true&seed=133",
+          "https://image.pollinations.ai/prompt/digital%20rain%20rebooting%20the%20world%20cyberpunk%20ending?nologo=true&seed=134",
+          "https://image.pollinations.ai/prompt/mother%20ship%20landing%20lights%20opening%20door?nologo=true&seed=135",
+          "https://image.pollinations.ai/prompt/woman%20and%20wolf%20walking%20towards%20light%20final%20shot?nologo=true&seed=136",
+          "https://image.pollinations.ai/prompt/neukgu%20space%20wolf%20title%20card%20epic%20finish?nologo=true&seed=137",
+          "https://image.pollinations.ai/prompt/cyberpunk%20nature%20growth%20urban%20setting?nologo=true&seed=138",
+          "https://image.pollinations.ai/prompt/sunrise%20over%20reborn%20cyberpunk%20city?nologo=true&seed=139",
+          "https://image.pollinations.ai/prompt/end%20of%20chapter%20one%20logo%20cinematic?nologo=true&seed=140"
+        ],
         scripts: [
           "네온 사인이 번쩍이는 한양의 밤... 도시는 차갑게 식어 있었다.",
           "\"젠장, 시스템이 또 먹통이야...\"",
@@ -313,7 +353,23 @@ const MOCK_WEBTOONS: Webtoon[] = [
         id: 'ep-1',
         number: 1,
         title: '디지털 정복',
-        pages: Array.from({ length: 15 }).map((_, i) => `https://loremflickr.com/800/1200/cyberpunk,technology?lock=${i + 200}`),
+        pages: [
+          "https://image.pollinations.ai/prompt/cyberpunk%20detective%20looking%20at%20huge%20server%20rack%20blue%20neon?nologo=true&seed=2001",
+          "https://image.pollinations.ai/prompt/close%20up%20of%20scifi%20visor%20scanning%20digital%20matrix%20glitch?nologo=true&seed=2002",
+          "https://image.pollinations.ai/prompt/cyberpunk%20cityscape%20view%20from%20top%20neon%20reflections?nologo=true&seed=2003",
+          "https://image.pollinations.ai/prompt/hacker%20typing%20on%20virtual%20keyboard%20blue%20firewall?nologo=true&seed=2004",
+          "https://image.pollinations.ai/prompt/corrupted%20memory%20file%20icon%20floating%20in%20dark%20space?nologo=true&seed=2005",
+          "https://image.pollinations.ai/prompt/nanobots%20swimming%20in%20bloodstream%20scifi%20microscope?nologo=true&seed=2006",
+          "https://image.pollinations.ai/prompt/cyberpunk%20police%20scanner%20hologram%20red%20warning?nologo=true&seed=2007",
+          "https://image.pollinations.ai/prompt/man%20holding%20his%20head%20in%20digital%20pain%20glitch%20effect?nologo=true&seed=2008",
+          "https://image.pollinations.ai/prompt/mysterious%20portal%20opening%20in%20cyberpunk%20alleyway?nologo=true&seed=2009",
+          "https://image.pollinations.ai/prompt/cyberpunk%20girl%20standing%20in%20the%20rain%20neon%20lights?nologo=true&seed=2010",
+          "https://image.pollinations.ai/prompt/futuristic%20laboratory%20with%20glowing%20chemicals?nologo=true&seed=2011",
+          "https://image.pollinations.ai/prompt/binary%20code%20raining%20down%20over%203d%20city%20model?nologo=true&seed=2012",
+          "https://image.pollinations.ai/prompt/cyberpunk%20weapon%20charging%20up%20blue%20electricity?nologo=true&seed=2013",
+          "https://image.pollinations.ai/prompt/breaking%20the%20fourth%20wall%20digital%20shattering%20glass?nologo=true&seed=2014",
+          "https://image.pollinations.ai/prompt/system%20reboot%20success%20green%20text%20on%20black%20screen?nologo=true&seed=2015"
+        ],
         scripts: [
           "연결됨... 시스템 로딩 중 (99%)",
           "내 이름은 카일. 기억 보안관이다.",
@@ -363,7 +419,23 @@ const MOCK_WEBTOONS: Webtoon[] = [
         id: 'ep-1',
         number: 1,
         title: '로그인: 위험한 매칭',
-        pages: Array.from({ length: 15 }).map((_, i) => `https://loremflickr.com/800/1200/manhwa,anime,couple,romance,red,high-res,cinematic?lock=${i + 25000}`),
+        pages: [
+          "https://image.pollinations.ai/prompt/manhwa%20style%20neon%20cyberpunk%20city%20night%20rain%20cinematic?nologo=true&seed=3001",
+          "https://image.pollinations.ai/prompt/anime%20style%20close%20up%20of%20alarm%20clock%20glowing%20scifi?nologo=true&seed=3002",
+          "https://image.pollinations.ai/prompt/manhwa%20girl%20looking%20at%20smartphone%20screen%20neon%20reflection?nologo=true&seed=3003",
+          "https://image.pollinations.ai/prompt/dating%20app%20profile%20handsome%20man%20anime%20style%20digital?nologo=true&seed=3004",
+          "https://image.pollinations.ai/prompt/shocked%20anime%20girl%20face%20close%20up%20night%20room?nologo=true&seed=3005",
+          "https://image.pollinations.ai/prompt/high%20school%20memory%20blurry%20nostalgic%20anime%20sunset?nologo=true&seed=3006",
+          "https://image.pollinations.ai/prompt/chest%20clutching%20heartbeat%20visual%20effect%20anime%20dramatic?nologo=true&seed=3007",
+          "https://image.pollinations.ai/prompt/view%20from%20window%20rainy%20neon%20seoul%20future%20cyberpunk?nologo=true&seed=3008",
+          "https://image.pollinations.ai/prompt/digital%20glitch%20on%20smartphone%20screen%20cyberpunk%20error?nologo=true&seed=3009",
+          "https://image.pollinations.ai/prompt/finger%20hovering%20over%20red%20cancel%20button%20glow?nologo=true&seed=3010",
+          "https://image.pollinations.ai/prompt/smartphone%20vibrating%20on%20table%20dynamic%20motion%20manhwa?nologo=true&seed=3011",
+          "https://image.pollinations.ai/prompt/mysterious%20man%20face%20hologram%20glitch%20cyberpunk?nologo=true&seed=3012",
+          "https://image.pollinations.ai/prompt/cold%20shiver%20anime%20visual%20effect%20blue%20energy?nologo=true&seed=3013",
+          "https://image.pollinations.ai/prompt/menacing%20smile%20man%20anime%20eyes%20glowing%20sinister?nologo=true&seed=3014",
+          "https://image.pollinations.ai/prompt/mirror%20reflection%20of%20scared%20girl%20cyberpunk%20room?nologo=true&seed=3015"
+        ],
         scripts: [
           "\"데이터 소리... 들리는가?\"",
           "알람 소리에 소스라치게 놀라 잠에서 깬다.",
@@ -387,7 +459,7 @@ const MOCK_WEBTOONS: Webtoon[] = [
         id: 'ep-2',
         number: 2,
         title: '재회의 덫',
-        pages: Array.from({ length: 15 }).map((_, i) => `https://loremflickr.com/800/1200/manhwa,drama,man,date,red,high-res,cinematic?lock=${i + 26000}`),
+        pages: Array.from({ length: 15 }).map((_, i) => `https://image.pollinations.ai/prompt/manhwa%20drama%20date%20night%20emotional%20anime%20red%20aesthetic?nologo=true&seed=${i + 4000}`),
         scripts: [
           "화려한 바, 분위기는 무드 있게 가라앉아 있다.",
           "저 멀리서 걸어오는 강준의 실루엣이 보인다.",
@@ -426,7 +498,7 @@ const MOCK_WEBTOONS: Webtoon[] = [
         id: 'ep-1',
         number: 1,
         title: '자수하는 도플갱어',
-        pages: Array.from({ length: 15 }).map((_, i) => `https://loremflickr.com/800/1200/thriller,mystery,dark?lock=${i + 500}`),
+        pages: Array.from({ length: 15 }).map((_, i) => `https://image.pollinations.ai/prompt/thriller%20mystery%20dark%20doppelganger%20android%20cinematic%20shadow?nologo=true&seed=${i + 5000}`),
         scripts: [
           "취조실의 형사와 나, 그리고... 또 다른 나.",
           "\"제가 죽였습니다. 모든 건 계획된 것이었죠.\"",
@@ -449,7 +521,7 @@ const MOCK_WEBTOONS: Webtoon[] = [
         id: 'ep-2',
         number: 2,
         title: '진짜의 정체',
-        pages: Array.from({ length: 15 }).map((_, i) => `https://loremflickr.com/800/1200/thriller,dark,anime?lock=${i + 515}`),
+        pages: Array.from({ length: 15 }).map((_, i) => `https://image.pollinations.ai/prompt/thriller%20dark%20anime%20suspense%20twin%20robot%20night?nologo=true&seed=${i + 6000}`),
         scripts: [
           "피 묻은 '나'가 거실로 성큼성큼 걸어 들어온다.",
           "\"왜 그렇게 놀라? 네가 시킨 일이잖아.\"",
@@ -490,7 +562,7 @@ const MOCK_WEBTOONS: Webtoon[] = [
         id: 'ep-1',
         number: 1,
         title: '배우의 소풍',
-        pages: Array.from({ length: 15 }).map((_, i) => `https://loremflickr.com/800/1200/healing,nature,girl?lock=${i + 600}`),
+        pages: Array.from({ length: 15 }).map((_, i) => `https://image.pollinations.ai/prompt/healing%20nature%20anime%20girl%20forest%20sunlight%20soft%20colors?nologo=true&seed=${i + 7000}`),
         scripts: [
           "무대를 내려온 이솔, 그녀의 첫 번째 일과는?",
           "\"시스템 종료가 아니라, 신발 끈 묶기야.\"",
@@ -513,7 +585,7 @@ const MOCK_WEBTOONS: Webtoon[] = [
         id: 'ep-2',
         number: 2,
         title: '비건의 향기',
-        pages: Array.from({ length: 15 }).map((_, i) => `https://loremflickr.com/800/1200/manhwa,anime,healing,nature?lock=${i + 1300}`),
+        pages: Array.from({ length: 15 }).map((_, i) => `https://image.pollinations.ai/prompt/manhwa%20anime%20healing%20park%20flowers%20peaceful?nologo=true&seed=${i + 8000}`),
         scripts: [
           "숲길을 걷는 이솔의 발걸음이 한결 가볍다.",
           "\"오늘의 캐스팅은... 들꽃들이네.\"",
@@ -645,8 +717,8 @@ const OnAir: React.FC<{ news: NewsArchive[], isLoading: boolean }> = ({ news, is
           news.filter(n => n.status === 'approved').map((item, index) => (
             <motion.div
               key={item.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               onClick={() => window.open(item.link, '_blank')}
               className={cn(
@@ -764,26 +836,36 @@ const WebtoonViewer: React.FC<{
 
       <main className="w-full max-w-3xl flex flex-col pt-16 relative bg-zinc-950">
         {episode.pages.map((url, i) => (
-          <div key={i} className="relative group w-full mb-0">
+          <div key={i} className="relative group w-full min-h-[60vh] flex flex-col items-center bg-black overflow-hidden">
             <motion.img
               src={url}
               alt={`page-${i}`}
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
-              viewport={{ once: true, margin: "50%" }}
-              className="w-full h-auto block select-none brightness-[1.1] contrast-[1.1] saturate-[1.2]"
+              viewport={{ once: true, margin: "100%" }}
+              className="w-full h-auto block select-none"
               referrerPolicy="no-referrer"
+              onLoad={(e) => {
+                const target = e.target as HTMLImageElement;
+                if (target.parentElement) target.parentElement.style.minHeight = '0';
+              }}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = `https://placehold.co/800x1200/000000/E50914?text=Loading+Neural+Art+${i + 1}`;
+              }}
             />
 
-            {/* Lezhin-Style Cinematic Dialogue Overlay */}
+            {/* Cinematic Background Gradient for better text readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60 pointer-events-none" />
+
+            {/* Cinematic Dialogue Overlay */}
             {episode.scripts && episode.scripts[i] && (
               <motion.div
-                initial={{ opacity: 0 }} // y: 60, scale: 0.9 제거
-                whileInView={{ opacity: 1 }} // y: 0, scale: 1 제거
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
                 viewport={{ once: false, margin: "-10% 0px -10% 0px" }}
-                // transition에서 spring 효과 대신 부드러운 duration(초)으로 변경
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="absolute inset-x-0 bottom-[15%] flex justify-center px-4 md:px-12 z-20 pointer-events-none"
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="absolute inset-x-0 bottom-[10%] flex justify-center px-4 md:px-12 z-20 pointer-events-none"
               >
                 <div className={cn(
                   "pointer-events-auto transform shadow-[0_40px_80px_-20px_rgba(0,0,0,0.7)] group-hover:scale-105 transition-all duration-500",
@@ -946,16 +1028,16 @@ const WebtoonDetail: React.FC<{
           <div className="max-w-4xl mx-auto px-6 -mt-32 relative z-20 pb-32">
             <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-end mb-16">
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ y: 40, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.2 }}
                 className="w-48 md:w-64 flex-shrink-0 shadow-2xl rounded-2xl overflow-hidden border border-white/10"
               >
                 <img src={webtoon.thumbnail} className="w-full h-auto" alt="" referrerPolicy="no-referrer" />
               </motion.div>
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.3 }}
                 className="flex-1"
               >
@@ -1171,9 +1253,9 @@ const AuthModal: React.FC<{ isOpen: boolean, onClose: () => void, onLogin: () =>
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
             className="relative bg-surface dark:bg-zinc-900 w-full max-w-sm rounded-3xl p-10 border border-white/10 shadow-2xl"
           >
             <button onClick={onClose} className="absolute top-6 right-6 text-white/30 hover:text-white">
@@ -2034,9 +2116,9 @@ const AdminDashboard: React.FC<{
                 className="absolute inset-0 bg-black/80 backdrop-blur-sm"
               />
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
                 className="relative bg-surface w-full max-w-xl rounded-3xl p-10 border border-white/10 shadow-2xl"
               >
                 <h3 className="text-2xl font-bold mb-8">새 웹툰 등록</h3>
@@ -2205,9 +2287,9 @@ const GenreSection: React.FC<{
               <motion.div
                 key={webtoon.id}
                 layout
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.2 }}
               >
                 <WebtoonCard webtoon={webtoon} onClick={() => onWebtoonClick(webtoon)} />
@@ -2510,8 +2592,8 @@ const Hero = ({ webtoons, onWebtoonClick, isLoading }: { webtoons: Webtoon[], on
 
           <div className="absolute inset-x-0 bottom-0 z-20 pb-20 md:pb-28 px-6 md:px-16 container mx-auto">
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.8 }}
               className="max-w-4xl"
             >
@@ -2570,7 +2652,7 @@ const WebtoonCard: React.FC<{ webtoon: Webtoon, onClick: () => void, index?: num
       whileHover={{ y: -12, scale: 1.02 }}
       onClick={onClick}
       className="group relative flex-shrink-0 w-48 md:w-56 cursor-pointer"
-      initial={{ opacity: 0 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
@@ -2787,7 +2869,7 @@ const ScrollToTop: React.FC = () => {
       {isVisible && (
         <motion.button
           initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.5 }}
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           className="fixed bottom-8 right-8 z-[90] p-4 bg-brand text-white rounded-full shadow-2xl shadow-brand/40 hover:scale-110 active:scale-95 transition-all"
@@ -3155,6 +3237,25 @@ function App() {
   };
 
   const isAdmin = user?.email === 'f8001161@gmail.com';
+
+  // Force sync DB for admin on special condition (e.g., initial login or command from user)
+  useEffect(() => {
+    if (isAdmin && !localStorage.getItem('db_synced_v4')) {
+      const performInitialSeed = async () => {
+        try {
+          console.log("Admin detected. Performing auto-sync of MOCK_WEBTOONS to Firestore...");
+          for (const w of MOCK_WEBTOONS) {
+            await setDoc(doc(db, 'webtoons', w.id), w);
+          }
+          localStorage.setItem('db_synced_v4', 'true');
+          toast.success('관리자 계정 감지: 데이터 및 이미지 프롬프트가 모두 최신화되었습니다.');
+        } catch (error) {
+          console.error("Auto-sync failed:", error);
+        }
+      };
+      performInitialSeed();
+    }
+  }, [isAdmin]);
 
   const approvedWebtoons = webtoons.filter(w => w.status === 'approved');
   const pendingWebtoons = webtoons.filter(w => w.status === 'pending');
