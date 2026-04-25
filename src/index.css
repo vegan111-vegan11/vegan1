@@ -25,12 +25,11 @@
   font-family: var(--font-webtoon);
 }
 
-/* src/index.css */
 .webtoon-dialogue {
-  /* 기본 레이아웃 및 폰트는 Tailwind 유틸리티 사용 */
-  @apply relative inline-block px-6 py-4 bg-white text-black font-bold text-lg rounded-[2.5rem] border-2 border-black;
+  /* Tailwind 유틸리티 적용 */
+  @apply relative inline-block px-6 py-4 bg-white text-black font-webtoon font-bold text-lg rounded-[2.5rem] border-2 border-black;
 
-  /* 오류가 났던 그림자 부분을 표준 CSS 속성으로 직접 작성 */
+  /* 빌드 에러 방지를 위한 표준 CSS 그림자 설정 */
   box-shadow: 4px 4px 20px rgba(0, 0, 0, 0.3);
   max-width: 90%;
 }
