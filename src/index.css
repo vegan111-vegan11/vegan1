@@ -25,9 +25,9 @@
   font-family: var(--font-webtoon);
 }
 
-/* !!!!! */
 .webtoon-dialogue {
-  @apply relative inline-block px-6 py-4 bg-white text-black font-webtoon font-bold text-lg rounded-[2.5rem] shadow-[4px_4px_20px_rgba(0_0_0_/_0.3)] border-2 border-black;
+  /* 테일윈드 엔진이 절대 오해 못하게 공백을 언더바(_)로 다 메꿨습니다. */
+  @apply relative inline-block px-6 py-4 bg-white text-black font-webtoon font-bold text-lg rounded-[2.5rem] shadow-[4px_4px_20px_rgba(0, 0, 0, 0.3)] border-2 border-black;
   max-width: 90%;
 }
 
