@@ -646,7 +646,7 @@ const OnAir: React.FC<{ news: NewsArchive[], isLoading: boolean }> = ({ news, is
             <motion.div
               key={item.id}
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1, y: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: index * 0.1 }}
               onClick={() => window.open(item.link, '_blank')}
               className={cn(
@@ -778,10 +778,11 @@ const WebtoonViewer: React.FC<{
             {/* Lezhin-Style Cinematic Dialogue Overlay */}
             {episode.scripts && episode.scripts[i] && (
               <motion.div
-                initial={{ opacity: 0, y: 60, scale: 0.9 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                initial={{ opacity: 0 }} // y: 60, scale: 0.9 제거
+                whileInView={{ opacity: 1 }} // y: 0, scale: 1 제거
                 viewport={{ once: false, margin: "-10% 0px -10% 0px" }}
-                transition={{ type: 'spring', damping: 25, stiffness: 140 }}
+                // transition에서 spring 효과 대신 부드러운 duration(초)으로 변경
+                transition={{ duration: 0.4, ease: "easeOut" }}
                 className="absolute inset-x-0 bottom-[15%] flex justify-center px-4 md:px-12 z-20 pointer-events-none"
               >
                 <div className={cn(
@@ -945,16 +946,16 @@ const WebtoonDetail: React.FC<{
           <div className="max-w-4xl mx-auto px-6 -mt-32 relative z-20 pb-32">
             <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-end mb-16">
               <motion.div
-                initial={{ y: 40, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
                 className="w-48 md:w-64 flex-shrink-0 shadow-2xl rounded-2xl overflow-hidden border border-white/10"
               >
                 <img src={webtoon.thumbnail} className="w-full h-auto" alt="" referrerPolicy="no-referrer" />
               </motion.div>
               <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
                 className="flex-1"
               >
@@ -1170,9 +1171,9 @@ const AuthModal: React.FC<{ isOpen: boolean, onClose: () => void, onLogin: () =>
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
           <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="relative bg-surface dark:bg-zinc-900 w-full max-w-sm rounded-3xl p-10 border border-white/10 shadow-2xl"
           >
             <button onClick={onClose} className="absolute top-6 right-6 text-white/30 hover:text-white">
@@ -2033,9 +2034,9 @@ const AdminDashboard: React.FC<{
                 className="absolute inset-0 bg-black/80 backdrop-blur-sm"
               />
               <motion.div
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 className="relative bg-surface w-full max-w-xl rounded-3xl p-10 border border-white/10 shadow-2xl"
               >
                 <h3 className="text-2xl font-bold mb-8">새 웹툰 등록</h3>
@@ -2204,9 +2205,9 @@ const GenreSection: React.FC<{
               <motion.div
                 key={webtoon.id}
                 layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
               >
                 <WebtoonCard webtoon={webtoon} onClick={() => onWebtoonClick(webtoon)} />
@@ -2509,8 +2510,8 @@ const Hero = ({ webtoons, onWebtoonClick, isLoading }: { webtoons: Webtoon[], on
 
           <div className="absolute inset-x-0 bottom-0 z-20 pb-20 md:pb-28 px-6 md:px-16 container mx-auto">
             <motion.div
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.8 }}
               className="max-w-4xl"
             >
@@ -2786,7 +2787,7 @@ const ScrollToTop: React.FC = () => {
       {isVisible && (
         <motion.button
           initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
+          animate={{ opacity: 1 }}
           exit={{ opacity: 0, scale: 0.5 }}
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           className="fixed bottom-8 right-8 z-[90] p-4 bg-brand text-white rounded-full shadow-2xl shadow-brand/40 hover:scale-110 active:scale-95 transition-all"
