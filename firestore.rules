@@ -1,0 +1,154 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 3. Primitive Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { 
+      return isSignedIn() && 
+      (request.auth.token.email == 'f8001161@gmail.com' || 
+       request.auth.token.email == 'shjvt@nate.com' ||
+       request.auth.token.email == 'shjvt470@nate.com');
+    }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- Validation Blueprints ---
+
+    function isValidNews(data) {
+      return data.title is string && data.title.size() <= 300 &&
+             data.content is string && data.content.size() <= 120000 &&
+             data.category is string &&
+             data.thumbnail is string &&
+             data.author is string &&
+             (data.reporterId == request.auth.uid || isAdmin() || data.reporterId == 'admin');
+    }
+
+    function isValidCartoon(data) {
+      return data.title is string && data.title.size() <= 300 &&
+             data.content is string && data.content.size() <= 2000 &&
+             data.cartoonist is string &&
+             data.imageUrl is string &&
+             data.date is string;
+    }
+
+    function isValidSponsorship(data) {
+      return data.bankName is string && data.bankName.size() <= 100 &&
+             data.accountNumber is string && data.accountNumber.size() <= 50 &&
+             data.accountHolder is string && data.accountHolder.size() <= 100 &&
+             data.type in ['regular', 'project', 'welfare'];
+    }
+
+    // --- Collection Matches ---
+
+    match /citizen_news/{newsId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (isAdmin() || (isValidNews(incoming()) && isValidId(newsId)));
+      allow update: if isAdmin() || (
+        // Case A: The reporter edits their own article (while verifying metadata constraints)
+        (isSignedIn() && existing().reporterId == request.auth.uid && isValidNews(incoming()))
+      ) || (
+        // Case B: General reader liking/recommending the article
+        incoming().title == existing().title &&
+        incoming().content == existing().content &&
+        incoming().reporterId == existing().reporterId &&
+        (
+          (!('likes' in existing()) && incoming().likes == 1) ||
+          (incoming().likes == existing().likes + 1)
+        )
+      );
+      allow delete: if isAdmin() || (isSignedIn() && existing().reporterId == request.auth.uid);
+    }
+
+    match /editorial_cartoons/{cartoonId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidCartoon(incoming()) && isValidId(cartoonId);
+    }
+
+    match /sponsorship_funds/{fundId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidSponsorship(incoming()) && isValidId(fundId);
+    }
+
+    match /reporters/{reporterId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (request.auth.uid == reporterId || isAdmin());
+      allow update: if isSignedIn() && (request.auth.uid == reporterId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /news_archives/{newsId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /webtoons/{webtoonId} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /episodes/{episodeId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
+    match /news_comments/{commentId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if isAdmin();
+    }
+
+    match /news_settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /reader_claims/{claimId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    match /polls/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /newsletter_subscribers/{subId} {
+      allow read: if isAdmin();
+      allow create: if true;
+    }
+
+    match /news/{newsId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /character_cuesheets/{docId} {
+      allow read, write: if true;
+    }
+
+    match /movie_cue_sheets/{docId} {
+      allow read, write: if true;
+    }
+
+    match /rag_documents/{docId} {
+      allow read, write: if true;
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

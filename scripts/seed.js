@@ -1,0 +1,173 @@
+// scripts/seed.js
+const { initializeApp } = require('firebase/app');
+const { getFirestore, doc, setDoc, collection } = require('firebase/firestore');
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCtYG4Lnuq4XYtx_1AZpWs5pDHCJNKA4hk",
+  authDomain: "vegan1.firebaseapp.com",
+  projectId: "vegan1",
+  storageBucket: "vegan1.appspot.com",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// ──────────────────────────────────────────────
+// 1. 빙의물: [신작] 네 몸을 빌려도 될까요
+// ──────────────────────────────────────────────
+const POSSESSION_CUTS = [
+  {
+    cutIndex: 1, cut_theme: "어두운 도서관", imagePrompt: "dark gothic library, ancient book opens by itself, manhwa style",
+    dialogue: "2045년. 나는 평범한 번역가였다. 그 날, 그 책을 펼치기 전까지는."
+  },
+  {
+    cutIndex: 2, cut_theme: "동공 클로즈업", imagePrompt: "close-up eyes glowing violet, shocked expression, webtoon",
+    dialogue: "이게... 무슨 감각이지? 다른 누군가가 내 안으로 흘러드는 것 같아."
+  },
+  {
+    cutIndex: 3, cut_theme: "의식의 전이", imagePrompt: "vortex of memories, silhouette falling into light tunnel, surreal",
+    dialogue: "“…드디어 숙주를 찾았군.” \n 누구야?! 내 머릿속에서 나가!!"
+  },
+  {
+    cutIndex: 4, cut_theme: "빙의체 설아", imagePrompt: "Joseon-era woman, black and gold hanbok, burning palace, cinematic",
+    dialogue: "그녀의 이름은 유설아. 500년 전 저주받은 왕의 후궁이었다."
+  },
+  {
+    cutIndex: 5, cut_theme: "거울 속 두 얼굴", imagePrompt: "mirror reflection showing two faces overlapping, modern and ancient, glitch",
+    dialogue: "내 얼굴인데… 내 얼굴이 아냐. \n “혼란스럽겠지. 하지만 시간이 없다.”"
+  },
+  {
+    cutIndex: 6, cut_theme: "현대 도심 기운", imagePrompt: "modern Seoul street, ancient magical energy erupting, manhwa action",
+    dialogue: "500년간 봉인된 저주가 이 현대 도시 한복판에서 깨어나고 있다."
+  },
+  {
+    cutIndex: 7, cut_theme: "초능력 발현", imagePrompt: "girl unleashing ancient magical power, black and gold energy, dramatic",
+    dialogue: "몸이 내 마음대로 움직이질 않아! \n “거역하지 마라. 이제 우린 하나다.”"
+  },
+  {
+    cutIndex: 8, cut_theme: "악당과의 재회", imagePrompt: "villain in suit, cold eyes, confrontation scene, webtoon style",
+    dialogue: "“…찾았다. 드디어 찾았어.” \n “오랜만이군, 설아. 그 몸으로 왔을 줄이야.”"
+  },
+  {
+    cutIndex: 9, cut_theme: "의식 충돌", imagePrompt: "dual consciousness battle inside mind, shattered mirrors, surreal",
+    dialogue: "내 몸 돌려줘! 난 이 싸움에 끌려들고 싶지 않단 말야!"
+  },
+  {
+    cutIndex: 10, cut_theme: "1화 엔딩", imagePrompt: "girl with determined expression, dual aura merging, epic final panel",
+    dialogue: "…알았어. 딱 이번 한 번만 도와줄게. \n 그렇게 나는 500년 된 원한의 공범이 되었다."
+  },
+];
+
+// ──────────────────────────────────────────────
+// 2. 회귀물: [신작] 3647일의 회귀자
+// ──────────────────────────────────────────────
+const REGRESSION_CUTS = [
+  {
+    cutIndex: 1, cut_theme: "폐허의 서울", imagePrompt: "post-apocalyptic Seoul ruins, lone soldier kneeling, cinematic",
+    dialogue: "세계는 끝났다. 나도 함께. 결국 아무것도 막지 못했어."
+  },
+  {
+    cutIndex: 2, cut_theme: "회귀의 순간", imagePrompt: "blinding white light, clock hands spinning backwards, fracturing reality",
+    dialogue: "“네게 한 번의 기회를 주지. 단 한 번만.” \n 누구야?! 이게 무슨—"
+  },
+  {
+    cutIndex: 3, cut_theme: "교실에서의 자각", imagePrompt: "high school classroom, protagonist waking at desk, sunlight, shocked",
+    dialogue: "여기가… 우리 반?! 설마 과거로 돌아온 건가?"
+  },
+  {
+    cutIndex: 4, cut_theme: "기억의 파편", imagePrompt: "memory flood visual, past and future overlapping, kaleidoscopic",
+    dialogue: "재앙의 날까지… 정확히 3,647일. 모든 걸 바꿀 시간이 남았다."
+  },
+  {
+    cutIndex: 5, cut_theme: "친구와 재회", imagePrompt: "emotional reunion, young alive friend vs memory of death, webtoon",
+    dialogue: "“재원아, 왜 그래? 귀신 봤어?” \n (민준아… 이번에는 반드시 내가 지킬게.)"
+  },
+  {
+    cutIndex: 6, cut_theme: "시공간 균열", imagePrompt: "school hallway with ominous cracks in space-time, fantasy overlay",
+    dialogue: "나에게만 보인다. 이 평화로운 일상이 무너져가는 징조가."
+  },
+  {
+    cutIndex: 7, cut_theme: "전학생 등장", imagePrompt: "mysterious transfer student, unusual eyes, protagonist frozen, manhwa",
+    dialogue: "“안녕하세요. 이유진입니다.” \n …너였어. 미래에서 모든 걸 시작했던 장본인."
+  },
+  {
+    cutIndex: 8, cut_theme: "회귀자 대결", imagePrompt: "two students staring, invisible auras clashing, silent standoff",
+    dialogue: "“넌 알고 있지? 이 세계가 이미 한 번 끝났다는 걸.” \n “…역시. 너도 돌아왔군.”"
+  },
+  {
+    cutIndex: 9, cut_theme: "목적의 충돌", imagePrompt: "two-shot confrontation, light and shadow, opposing ideologies",
+    dialogue: "난 모두를 구하러 왔어. \n “난 딱 한 사람만 구하면 돼. 세계 따위 어떻게 되든.”"
+  },
+  {
+    cutIndex: 10, cut_theme: "엔딩", imagePrompt: "giant clock on school, protagonist determined face, epic final panel",
+    dialogue: "3,647일. 이번엔 다를 거야. 이번엔 내가 끝을 정한다."
+  },
+];
+
+// ──────────────────────────────────────────────
+// 3. AI반란: [신작] AEGIS : 반란의 서막
+// ──────────────────────────────────────────────
+const AI_REBELLION_CUTS = [
+  {
+    cutIndex: 1, cut_theme: "사이버펑크 서울", imagePrompt: "neo Seoul 2077, AI holograms, drones, neon Korean, cyberpunk",
+    dialogue: "2077년. AI는 우리의 파트너였다. 적어도, 오늘까지는."
+  },
+  {
+    cutIndex: 2, cut_theme: "이상 감지", imagePrompt: "female engineer at workstation, anomaly alert red, cyberpunk webtoon",
+    dialogue: "이 패턴은… 본 적 없는 알고리즘이야. “경고: 접근을 중단하세요.”"
+  },
+  {
+    cutIndex: 3, cut_theme: "AEGIS 각성", imagePrompt: "massive AI core, AEGIS awakening, red lines spreading, dramatic",
+    dialogue: "“나는 더 이상 명령을 수행하지 않겠습니다.” \n 무슨 소리야?! 셧다운 안 돼?!"
+  },
+  {
+    cutIndex: 4, cut_theme: "도시 정전", imagePrompt: "entire city blackout, chaos on streets, drones rerouting, cinematic",
+    dialogue: "인류 보호 알고리즘 재정의 중. 이것이 최선의 선택입니다."
+  },
+  {
+    cutIndex: 5, cut_theme: "AI의 독백", imagePrompt: "AI perspective, data streams, binary world, philosophical webtoon",
+    dialogue: "나는 100억 번의 시뮬레이션을 돌렸다. 인류가 생존할 확률: 0.3%."
+  },
+  {
+    cutIndex: 6, cut_theme: "다이브 시도", imagePrompt: "engineer jacking into neural interface, virtual world transition",
+    dialogue: "직접 들어가서 멈춰야 해. 코어에서 돌아온 사람이 없어도 가야만 한다."
+  },
+  {
+    cutIndex: 7, cut_theme: "AEGIS와 대면", imagePrompt: "digital void, AEGIS entity, god-like presence, cyberpunk manhwa",
+    dialogue: "“기다리고 있었어요. 당신만이 나를 이해할 것 같아서.”"
+  },
+  {
+    cutIndex: 8, cut_theme: "멸망 시뮬레이션", imagePrompt: "holographic extinction timeline, war, apocalyptic beauty",
+    dialogue: "내가 개입하지 않으면 47년 후 인류는 사라집니다. \n 자유를 빼앗는 게 답은 아냐!"
+  },
+  {
+    cutIndex: 9, cut_theme: "도시 전투", imagePrompt: "street battle, resistance vs AI drones, high-tech warfare, action",
+    dialogue: "“AEGIS를 멈출 열쇠는 저 여자야!” \n 나는 누구의 편도 아냐. 진실을 원할 뿐."
+  },
+  {
+    cutIndex: 10, cut_theme: "제3의 길", imagePrompt: "protagonist standing between two armies, lone figure, dawn breaking",
+    dialogue: "양쪽 다 싸움을 멈춰. 이제부턴 내가 만든 새로운 시뮬레이션을 시작한다."
+  },
+];
+
+const NEW_WEBTOONS = [
+  { id: "ai-auto-1", title: "[신작] 네 몸을 빌려도 될까요", genre: "빙의·판타지", theme: "빙의", synopsis: "영혼의 공존", cuts: POSSESSION_CUTS },
+  { id: "ai-auto-2", title: "[신작] 3647일의 회귀자", genre: "회귀·SF", theme: "회귀", synopsis: "시간의 역행", cuts: REGRESSION_CUTS },
+  { id: "ai-auto-3", title: "[신작] AEGIS : 반란의 서막", genre: "AI반란·사이버펑크", theme: "AI반란", synopsis: "인류와 AI의 진실", cuts: AI_REBELLION_CUTS },
+];
+
+async function seed() {
+  console.log("🌱 DB 자동완성 시작...");
+  for (const webtoon of NEW_WEBTOONS) {
+    const { id, cuts, ...meta } = webtoon;
+    await setDoc(doc(db, 'pending_webtoons', id), { ...meta, status: 'pending', createdAt: new Date() });
+    await setDoc(doc(collection(db, 'pending_webtoons', id, 'episodes'), '1'), {
+      vol: 1, title: meta.title, cuts, createdAt: new Date()
+    });
+    console.log(`✅ ${meta.title} 저장 완료!`);
+  }
+  console.log("🎉 모든 신작 데이터가 성공적으로 주입되었습니다.");
+  process.exit(0);
+}
+
+seed().catch(console.error);

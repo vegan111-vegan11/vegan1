@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 3. Primitive Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { 
+      return isSignedIn() && 
+      (request.auth.token.email == 'f8001161@gmail.com' || request.auth.token.email == 'shjvt@nate.com');
+    }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- Validation Blueprints ---
+
+    function isValidNews(data) {
+      return data.title is string && data.title.size() <= 300 &&
+             data.content is string && data.content.size() <= 100000 &&
+             data.category is string &&
+             data.thumbnail is string &&
+             data.author is string &&
+             data.reporterId == request.auth.uid;
+    }
+
+    function isValidCartoon(data) {
+      return data.title is string && data.title.size() <= 300 &&
+             data.content is string && data.content.size() <= 2000 &&
+             data.cartoonist is string &&
+             data.imageUrl is string &&
+             data.date is string;
+    }
+
+    function isValidSponsorship(data) {
+      return data.bankName is string && data.bankName.size() <= 100 &&
+             data.accountNumber is string && data.accountNumber.size() <= 50 &&
+             data.accountHolder is string && data.accountHolder.size() <= 100 &&
+             data.type in ['regular', 'project', 'welfare'];
+    }
+
+    // --- Collection Matches ---
+
+    match /citizen_news/{newsId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidNews(incoming()) && isValidId(newsId);
+      allow update: if isSignedIn() && (
+        isAdmin() || 
+        (existing().reporterId == request.auth.uid && 
+         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'thumbnail', 'category', 'updatedAt']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /editorial_cartoons/{cartoonId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidCartoon(incoming()) && isValidId(cartoonId);
+    }
+
+    match /sponsorship_funds/{fundId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidSponsorship(incoming()) && isValidId(fundId);
+    }
+
+    match /reporters/{reporterId} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.auth.uid == reporterId;
+    }
+  }
+}

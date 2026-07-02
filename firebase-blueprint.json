@@ -1,0 +1,125 @@
+{
+  "entities": {
+    "EditorialCartoon": {
+      "title": "EditorialCartoon",
+      "description": "Professional editorial cartoons with detailed metadata.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "cartoonist": { "type": "string" },
+        "content": { "type": "string", "description": "The satirical message or description." },
+        "imageUrl": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "likes": { "type": "integer" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "series": { "type": "string", "description": "The series name if applicable." }
+      },
+      "required": ["title", "cartoonist", "content", "imageUrl", "date"]
+    },
+    "SponsorshipFund": {
+      "title": "SponsorshipFund",
+      "description": "Information about sponsorship funds and bank accounts.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["regular", "project", "welfare"] },
+        "bankName": { "type": "string" },
+        "accountNumber": { "type": "string" },
+        "accountHolder": { "type": "string" },
+        "cumulativeAmount": { "type": "integer" },
+        "targetDescription": { "type": "string" }
+      },
+      "required": ["type", "bankName", "accountNumber", "accountHolder"]
+    },
+    "CitizenNews": {
+      "title": "CitizenNews",
+      "description": "News articles created by citizens or AI reporters.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "description": "The title of the news article." },
+        "author": { "type": "string", "description": "The name of the author." },
+        "reporterId": { "type": "string", "description": "The unique ID of the reporter." },
+        "content": { "type": "string", "description": "The full content of the article." },
+        "thumbnail": { "type": "string", "description": "URL to the article's thumbnail image." },
+        "date": { "type": "string", "format": "date", "description": "Publication date." },
+        "likes": { "type": "integer", "description": "Number of recommendations/likes." },
+        "category": { "type": "string", "description": "The category of the news." },
+        "isApproved": { "type": "boolean", "description": "Whether the article is approved for publication." },
+        "isFeatured": { "type": "boolean", "description": "Whether the article is featured on the home page." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "author", "reporterId", "content", "thumbnail", "date", "likes", "category", "isApproved"]
+    },
+    "NewsArchive": {
+      "title": "NewsArchive",
+      "description": "External news records and archives.",
+      "type": "object",
+      "properties": {
+        "media": { "type": "string" },
+        "title": { "type": "string" },
+        "date": { "type": "string" },
+        "summary": { "type": "string" },
+        "link": { "type": "string" },
+        "status": { "type": "string", "enum": ["approved", "pending"] }
+      },
+      "required": ["media", "title", "date", "summary", "link", "status"]
+    },
+    "Reporter": {
+      "title": "Reporter",
+      "description": "User profile for specialized reporters.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "avatar": { "type": "string" },
+        "bio": { "type": "string" },
+        "rank": { "type": "string" },
+        "articlesCount": { "type": "integer" },
+        "followers": { "type": "integer" },
+        "specialty": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name", "email", "avatar", "rank"]
+    },
+    "RagDocument": {
+      "title": "RagDocument",
+      "description": "RAG Knowledge Base documents for AI context retrieval.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "charCount": { "type": "integer" },
+        "chunkCount": { "type": "integer" }
+      },
+      "required": ["title", "content", "category", "active", "createdAt", "charCount", "chunkCount"]
+    }
+  },
+  "firestore": {
+    "citizen_news": {
+      "schema": "CitizenNews",
+      "description": "Collection of citizen-contributed news articles."
+    },
+    "news_archives": {
+      "schema": "NewsArchive",
+      "description": "Collection of archived external news."
+    },
+    "reporters": {
+      "schema": "Reporter",
+      "description": "Collection of reporter profiles."
+    },
+    "editorial_cartoons": {
+      "schema": "EditorialCartoon",
+      "description": "Collection of professional editorial cartoons."
+    },
+    "sponsorship_funds": {
+      "schema": "SponsorshipFund",
+      "description": "Collection of transparency information regarding funds."
+    },
+    "rag_documents": {
+      "schema": "RagDocument",
+      "description": "Knowledge documents for RAG grounding."
+    }
+  }
+}

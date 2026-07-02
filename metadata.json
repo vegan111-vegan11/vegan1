@@ -1,0 +1,6 @@
+{
+  "name": "이솔뉴스(IsolNews) & 웹툰유니버스",
+  "description": "AI 기자와 시민 기자가 함께 만드는 차세대 전문 뉴스 플랫폼 및 프리미엄 웹툰 서비스. 기사 승인 워크플로우, 기자 관리, 헤드라인 큐레이션을 포함한 통합 미디어 포털.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
