@@ -117,6 +117,7 @@ import {
   Vote,
   Percent,
   Loader2,
+  Mic,
 } from "lucide-react";
 import { GoogleGenAI, Type } from "@google/genai";
 import { Toaster, toast } from "sonner";
@@ -8906,7 +8907,7 @@ const NewsDetailModal: React.FC<{
 }) => {
   const [selectedLang, setSelectedLang] = useState<"KOR" | "ENG" | "JPN">("KOR");
   const [isTranslating, setIsTranslating] = useState(false);
-  const [eyeCareBg, setEyeCareBg] = useState<"default" | "sepia" | "charcoal">("default");
+  const [eyeCareBg, setEyeCareBg] = useState<"default" | "sepia" | "charcoal" | "pure_black">("default");
   const [localFontSize, setLocalFontSize] = useState<"sm" | "base" | "lg" | "xl" | "2xl">("base");
   const [readerFontFamily, setReaderFontFamily] = useState<"serif" | "sans" | "mono">("sans");
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -9360,7 +9361,7 @@ const NewsDetailModal: React.FC<{
   const coreBody =
     <div className={cn(
       "w-full h-full flex flex-col font-sans selection:bg-red-500/20 selection:text-red-500",
-      eyeCareBg === "sepia" ? "bg-[#f4ebd0] text-[#433422]" : eyeCareBg === "charcoal" ? "bg-[#1e252b] text-[#c9d1d9]" : "bg-white dark:bg-[#0c0c0f] text-zinc-900 dark:text-zinc-100"
+      eyeCareBg === "sepia" ? "bg-[#f4ebd0] text-[#433422]" : eyeCareBg === "charcoal" ? "bg-[#1e252b] text-[#c9d1d9]" : eyeCareBg === "pure_black" ? "bg-black text-white" : "bg-white dark:bg-[#0c0c0f] text-zinc-900 dark:text-zinc-100"
     )}>
       {/* Scrollable Container */}
       <div className="flex-1 overflow-y-auto px-6 py-8 md:px-12 md:py-10 space-y-8 no-scrollbar" id="news-modal-scroll-viewport">
@@ -9645,6 +9646,16 @@ const NewsDetailModal: React.FC<{
                     >
                       C
                     </button>
+                    <button
+                      onClick={() => setEyeCareBg("pure_black")}
+                      className={cn(
+                        "w-4 h-4 rounded-full bg-black text-white border border-zinc-850 transition-all flex items-center justify-center text-[8px] font-black cursor-pointer",
+                        eyeCareBg === "pure_black" && "ring-2 ring-red-500 scale-110"
+                      )}
+                      title="OLED 칠흑 암막 모드"
+                    >
+                      B
+                    </button>
                   </div>
 
                   <div className="flex items-center gap-1 border-l border-zinc-200 dark:border-zinc-800 pl-3 font-sans">
@@ -9684,6 +9695,7 @@ const NewsDetailModal: React.FC<{
                 "p-6 md:p-8 rounded-3xl transition-all duration-300 shadow-xs mt-6",
                 eyeCareBg === "sepia" && "bg-[#FBF6E9] text-[#3D2C1B] border border-[#E9DFCA] shadow-inner",
                 eyeCareBg === "charcoal" && "bg-[#161B22] text-[#E6EDF0] border border-[#30363D] shadow-inner",
+                eyeCareBg === "pure_black" && "bg-black text-zinc-100 border border-zinc-900 shadow-none",
                 eyeCareBg === "default" && "bg-transparent text-zinc-900 dark:text-zinc-100"
               )}>
                 <div className={cn(
@@ -9921,6 +9933,21 @@ const NewsDetailModal: React.FC<{
                     ? "✨ [완벽한 정론] 본 원고는 6하원칙의 모든 필수 속성들을 누락 없이 정방위로 포괄하고 있는 고품격 사실 정론 기사로 확인되었습니다." 
                     : `⚠️ [구조 보정 필요] 총 6개 정합 지표 중 일부 필수 요소인 "${!detect5W1H.why ? "Why(원인)" : ""}" "${!detect5W1H.how ? "How(방식)" : ""}" 부근의 상세 해명이 다소 약화된 상태입니다. 독자분들의 추가 사실 공유가 유용합니다.`}
                 </p>
+
+                <div className="pt-1.5">
+                  <button
+                    onClick={() => {
+                      if (typeof playHapticClick === "function") playHapticClick(650, 0.05);
+                      const copyText = `[이솔뉴스 AI 6하원칙 팩트체크 브리핑]\n기사명: "${news.title}"\n기자: ${news.author || "시민필진"}\n6하원칙 정합도: ${detect5W1H.score}%\n검증 현황: \n- 누가(Who): ${detect5W1H.who ? "충족 (✓)" : "누락 (?)"}\n- 언제(When): ${detect5W1H.when ? "충족 (✓)" : "누락 (?)"}\n- 어디서(Where): ${detect5W1H.where ? "충족 (✓)" : "누락 (?)"}\n- 무엇을(What): ${detect5W1H.what ? "충족 (✓)" : "누락 (?)"}\n- 왜(Why): ${detect5W1H.why ? "충족 (✓)" : "누락 (?)"}\n- 어떻게(How): ${detect5W1H.how ? "충족 (✓)" : "누락 (?)"}\n\n총평: ${detect5W1H.score === 100 ? "정론 보도의 필수 기틀을 모두 포괄하고 있어 신뢰할 수 있습니다." : "일부 기론의 설명 보완이 추천되는 요건입니다."}`;
+                      navigator.clipboard.writeText(copyText);
+                      toast.success("📋 6하원칙 팩트체크 브리핑 데이터가 클립보드에 초정밀 복사되었습니다!");
+                    }}
+                    className="w-full py-2.5 bg-blue-600/5 hover:bg-blue-600/10 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-2xl text-[11px] font-black tracking-tight transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Copy size={12} />
+                    6하원칙 AI 브리핑 한눈에 복사하기
+                  </button>
+                </div>
               </div>
 
               {/* ITEM 1: REAL-TIME IN-DEPTH AI NEWS ANALYSIS AND CROSS-REPORT GENERATOR */}
@@ -10518,11 +10545,33 @@ const NewsDetailModal: React.FC<{
                 <button
                   key={item.label}
                   onClick={() => {
-                    if (item.label === "링크복사") {
-                      navigator.clipboard.writeText(window.location.href);
-                      toast.success("🔗 기사의 고유 타전 링크 주소가 클립보드에 복사되었습니다!");
+                    const shareTitle = news ? news.title : "이솔나라 뉴스";
+                    const shareText = news ? `${news.title}\n\n독립 언론 이솔나라의 팩트체크 보도자료` : "이솔나라 독립 언론 팩트체크 기사";
+                    const shareUrl = window.location.href;
+
+                    if (navigator.share) {
+                      navigator.share({
+                        title: shareTitle,
+                        text: shareText,
+                        url: shareUrl
+                      }).then(() => {
+                        toast.success("📤 소중한 진실 보도가 성공적으로 공유되었습니다!");
+                      }).catch((err) => {
+                        console.log("Native share failed or cancelled, using fallback", err);
+                        if (item.label === "링크복사") {
+                          navigator.clipboard.writeText(shareUrl);
+                          toast.success("🔗 기사의 고유 타전 링크 주소가 클립보드에 복사되었습니다!");
+                        } else {
+                          toast.success(`📤 [간이 전파]: ${item.label}으로 뉴스 인덱스가 성공적으로 가전송되었습니다.`);
+                        }
+                      });
                     } else {
-                      toast.success(`📤 ${item.label}으로의 뉴스 회설 전파가 활성화되었습니다.`);
+                      if (item.label === "링크복사") {
+                        navigator.clipboard.writeText(shareUrl);
+                        toast.success("🔗 기사의 고유 타전 링크 주소가 클립보드에 복사되었습니다!");
+                      } else {
+                        toast.success(`📤 [간이 전파]: ${item.label}으로 뉴스 인덱스가 성공적으로 가전송되었습니다.`);
+                      }
                     }
                     setIsShareSheetOpen(false);
                   }}
@@ -10649,11 +10698,14 @@ const Navbar = ({
   onSearchChange,
   onManualClick,
   onKakaoClick,
+  citizenNews = [],
 }: any) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isMobileWorkshopOpen, setIsMobileWorkshopOpen] = React.useState(false);
   const [isWorkshopDropdownOpen, setIsWorkshopDropdownOpen] = React.useState(false);
   const [isAllCategoriesOpen, setIsAllCategoriesOpen] = React.useState(false);
+
+  const pendingCount = citizenNews.filter((n: any) => !n.isApproved && n.status !== "rejected" && n.status !== "revision").length;
 
   const isWorkshopActive = currentPage === "이솔공방" || (typeof currentPage === "string" && currentPage.startsWith("이솔공방::"));
 
@@ -10980,11 +11032,16 @@ const Navbar = ({
           
           <button
             onClick={onAdminClick}
-            className="flex items-center gap-1 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-905 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-md text-xs font-bold transition-all cursor-pointer h-8"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-905 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-md text-xs font-bold transition-all cursor-pointer h-8 relative"
             title="관리자 뉴스 데스크 제어실로 이동합니다"
           >
             <ShieldAlert size={13} />
-            데스크
+            <span>데스크</span>
+            {pendingCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-red-650 text-white text-[8.5px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse shadow-sm border border-white dark:border-zinc-900">
+                {pendingCount}
+              </span>
+            )}
           </button>
 
           <button
@@ -11227,7 +11284,7 @@ const Navbar = ({
                       {/* Column 2: 채널 데스크 & 공방 */}
                       <div className="space-y-4">
                         <div className="space-y-2">
-                          <h4 className="text-[10px] font-black text-zinc-400 tracking-wider">🌟 포털 채널데스크</h4>
+                          <h4 className="text-[10px] font-black text-zinc-450 tracking-wider">🌟 포털 채널데스크</h4>
                           <div className="grid grid-cols-1 gap-1">
                             {topNavItems.map((item) => (
                               <button
@@ -11246,7 +11303,7 @@ const Navbar = ({
                         </div>
 
                         <div className="border-t border-zinc-800 pt-3 space-y-2">
-                          <h4 className="text-[10px] font-black text-zinc-400 tracking-wider">🎨 시민 참여 공방</h4>
+                          <h4 className="text-[10px] font-black text-zinc-450 tracking-wider">🎨 시민 참여 공방</h4>
                           <button
                             onClick={() => {
                               onPageChange("isol-post", "이솔공방");
@@ -11442,6 +11499,214 @@ const Navbar = ({
         </div>
       )}
     </nav>
+  );
+};
+
+const RealtimeHotClicksWidget = ({
+  citizenNews,
+  activeHotClickTab,
+  setActiveHotClickTab,
+  setSelectedNews,
+  playHapticClick,
+  sanitizeDisplayCategory,
+  className = "",
+}: {
+  citizenNews: CitizenNews[];
+  activeHotClickTab: "popular" | "trending";
+  setActiveHotClickTab: (tab: "popular" | "trending") => void;
+  setSelectedNews: (news: CitizenNews) => void;
+  playHapticClick: any;
+  sanitizeDisplayCategory: (category: string, title: string) => string;
+  className?: string;
+}) => {
+  return (
+    <div className={`bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/85 rounded-3xl p-6 space-y-5 shadow-sm ${className}`} id="realtime-hot-clicks-widget">
+      {/* Header section with live icon and metadata */}
+      <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 pb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse flex items-center justify-center shrink-0">
+            <span className="w-1 h-1 rounded-full bg-white animate-ping" />
+          </div>
+          <h4 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tight font-sans flex items-center gap-1.5">
+            실시간 핫클릭
+            <span className="text-[10px] font-extrabold text-red-600 bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded-md uppercase tracking-widest animate-pulse">
+              LIVE
+            </span>
+          </h4>
+        </div>
+        <span className="text-[9px] font-black text-zinc-450 dark:text-zinc-505 font-mono">
+          {new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 기준
+        </span>
+      </div>
+
+      {/* Sub-tabs for switching between "실시간 인기" and "급상승 기사" */}
+      <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+            setActiveHotClickTab("popular");
+          }}
+          className={`flex-1 text-[11px] font-black py-2 rounded-lg transition-all cursor-pointer ${
+            activeHotClickTab === "popular"
+              ? "bg-white dark:bg-zinc-850 text-red-600 dark:text-red-400 shadow-sm"
+              : "text-zinc-500 dark:text-zinc-450 hover:text-zinc-800 dark:hover:text-zinc-200"
+          }`}
+        >
+          🔥 실시간 인기
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+            setActiveHotClickTab("trending");
+          }}
+          className={`flex-1 text-[11px] font-black py-2 rounded-lg transition-all cursor-pointer ${
+            activeHotClickTab === "trending"
+              ? "bg-white dark:bg-zinc-850 text-amber-600 dark:text-amber-400 shadow-sm"
+              : "text-zinc-500 dark:text-zinc-450 hover:text-zinc-800 dark:hover:text-zinc-200"
+          }`}
+        >
+          ⚡ 급상승 기사
+        </button>
+      </div>
+
+      {/* Hot Clicks Feed Content */}
+      <div className="space-y-4">
+        {(() => {
+          const items = (citizenNews || [])
+            .filter((art: any) => art.isApproved !== false && art.status !== "pending")
+            .sort((a: any, b: any) => {
+              if (activeHotClickTab === "popular") {
+                return (b.likes || 0) - (a.likes || 0);
+              } else {
+                const scoreA = (a.likes || 0) * 1.8 + (a.title ? a.title.length * 0.1 : 0);
+                const scoreB = (b.likes || 0) * 1.8 + (b.title ? b.title.length * 0.1 : 0);
+                return scoreB - scoreA;
+              }
+            })
+            .slice(0, 5);
+
+          if (items.length === 0) {
+            return (
+              <p className="text-xs text-zinc-400 text-center py-4">인기 기사가 아직 존재하지 않습니다.</p>
+            );
+          }
+
+          const topItem = items[0];
+          const remainingItems = items.slice(1);
+
+          return (
+            <>
+              {/* Premium #1 Hero Item card with visual image */}
+              <div
+                className="group relative overflow-hidden rounded-2xl bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-150 dark:border-zinc-900/40 p-3 flex flex-col gap-3 cursor-pointer hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
+                onClick={() => {
+                  if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                  setSelectedNews(topItem);
+                  setTimeout(() => {
+                    const readerElem = document.getElementById("inline-news-reader-container");
+                    if (readerElem) {
+                      readerElem.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }, 100);
+                }}
+              >
+                <div className="aspect-[16/9] w-full rounded-xl overflow-hidden relative border border-zinc-200/50 dark:border-zinc-800/40 shadow-xs">
+                  <img
+                    src={topItem.thumbnail}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-104 animate-in fade-in duration-300"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src =
+                        "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=400";
+                    }}
+                    alt="1st Hot Click"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute top-2 left-2 z-10">
+                    <span className="bg-red-600 text-white text-[10px] font-black w-6 h-6 rounded-lg flex items-center justify-center shadow-md border border-red-500/30 font-sans italic">
+                      1
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <h5 className="text-[12.5px] font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                    {topItem.title}
+                  </h5>
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-black text-red-600 bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                        {sanitizeDisplayCategory(topItem.category, topItem.title) || "인기"}
+                      </span>
+                      <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
+                        {topItem.author || "시민"} 기자
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-black text-rose-500 flex items-center gap-0.5">
+                      🔥 {topItem.likes || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Rank 2-5 Sleek Text rows with elegant typography & hover transitions */}
+              <div className="space-y-1 pt-1">
+                {remainingItems.map((item: any, idx: number) => {
+                  const rank = idx + 2;
+                  const textColors = [
+                    "text-orange-500 dark:text-orange-400", // 2
+                    "text-amber-500 dark:text-amber-400",  // 3
+                    "text-zinc-400 dark:text-zinc-500",    // 4
+                    "text-zinc-400 dark:text-zinc-500"     // 5
+                  ];
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="group flex items-start gap-3.5 p-2 rounded-xl hover:bg-zinc-100/50 dark:hover:bg-zinc-900/30 transition-all duration-200 cursor-pointer"
+                      onClick={() => {
+                        if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                        setSelectedNews(item);
+                        setTimeout(() => {
+                          const readerElem = document.getElementById("inline-news-reader-container");
+                          if (readerElem) {
+                            readerElem.scrollIntoView({ behavior: "smooth" });
+                          }
+                        }, 100);
+                      }}
+                    >
+                      <span className={`text-base font-black italic select-none w-4 shrink-0 pt-0.5 font-sans leading-none text-center ${textColors[idx] || "text-zinc-400"}`}>
+                        {rank}
+                      </span>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <h5 className="text-[12px] font-bold text-zinc-800 dark:text-zinc-200 leading-snug group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors line-clamp-2">
+                          {item.title}
+                        </h5>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[8.5px] font-bold text-zinc-400 dark:text-zinc-505 uppercase">
+                              {sanitizeDisplayCategory(item.category, item.title) || "기사"}
+                            </span>
+                            <span className="w-0.5 h-0.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+                            <span className="text-[9.5px] font-bold text-zinc-450 dark:text-zinc-505">
+                              {item.author || "시민"} 기자
+                            </span>
+                          </div>
+                          <span className="text-[9.5px] font-bold text-rose-500/90 flex items-center gap-0.5">
+                            👍 {item.likes || 0}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          );
+        })()}
+      </div>
+    </div>
   );
 };
 
@@ -11708,12 +11973,74 @@ const IsolPost = ({
         onHeadlineClick={(n: any) => setSelectedNews(n)}
         searchQuery={newsSearchQuery}
         onSearchChange={setNewsSearchQuery}
+        citizenNews={citizenNews}
       />
+
+      {/* 🌟 보완 1: 모바일 한 손 터치 추천 키워드 태그 슬라이더 */}
+      <div className="w-full bg-zinc-50 dark:bg-zinc-950/80 border-b border-zinc-150 dark:border-white/5 py-2.5 px-4 overflow-hidden select-none z-40 relative">
+        <div className="max-w-7xl mx-auto flex items-center gap-2">
+          <span className="text-[9px] font-black text-red-655 bg-red-50 dark:bg-red-950/35 px-1.5 py-0.5 rounded-md uppercase tracking-widest shrink-0 border border-red-500/10">
+            인기태그
+          </span>
+          <div className="flex-1 overflow-x-auto no-scrollbar flex items-center gap-1.5 py-0.5">
+            {[
+              { label: "#이솔AI", query: "이솔AI", type: "search" },
+              { label: "#팩트체크", query: "팩트체크", type: "search" },
+              { label: "#여론조사", query: "여론조사", type: "search" },
+              { label: "#비건", query: "비건", type: "search" },
+              { label: "#시사만평", category: "만평", type: "category" },
+              { label: "#시민기자실", page: "soul-center", type: "page" },
+              { label: "#AI 영화", category: "이솔공방::🎬 AI 영화 큐시트", type: "category" },
+            ].map((tag) => {
+              const isSelected = 
+                (tag.type === "search" && newsSearchQuery === tag.query) ||
+                (tag.type === "category" && activeCategory === tag.category) ||
+                (tag.type === "page" && currentPage === tag.page);
+              
+              return (
+                <button
+                  key={tag.label}
+                  onClick={() => {
+                    if (typeof playHapticClick === "function") playHapticClick(600, 0.04);
+                    if (tag.type === "search") {
+                      if (newsSearchQuery === tag.query) {
+                        setNewsSearchQuery("");
+                      } else {
+                        setNewsSearchQuery(tag.query);
+                        setActiveCategory("전체기사");
+                      }
+                    } else if (tag.type === "category") {
+                      if (tag.category.startsWith("이솔공방::")) {
+                        const subCat = tag.category.split("::")[1];
+                        setActiveCategory("이솔공방");
+                        setWorkshopSubCategory(subCat);
+                      } else {
+                        setActiveCategory(tag.category);
+                      }
+                      setNewsSearchQuery("");
+                    } else if (tag.type === "page") {
+                      onPageChange(tag.page);
+                    }
+                  }}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full text-[10.5px] font-extrabold transition-all border whitespace-nowrap cursor-pointer",
+                    isSelected
+                      ? "bg-red-655 border-red-600 text-white shadow-sm"
+                      : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-red-655 hover:border-red-550/30"
+                  )}
+                >
+                  {tag.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
       <main className={
         activeCategory === "이솔공방"
-          ? "pt-[60px] sm:pt-[65px] md:pt-[70px] lg:pt-[75px] pb-16"
-          : "pt-[140px] sm:pt-[150px] md:pt-[160px] lg:pt-[165px] pb-16"
+          ? "pt-[60px] sm:pt-[65px] md:pt-[70px] lg:pt-[75px] pb-28 sm:pb-16"
+          : "pt-[140px] sm:pt-[150px] md:pt-[160px] lg:pt-[165px] pb-28 sm:pb-16"
       }>
         <div className="max-w-7xl mx-auto px-4 md:px-6 mt-2 md:mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-8">
           <div className={activeCategory === "이솔공방" ? "lg:col-span-12 space-y-6 md:space-y-12" : "lg:col-span-9 space-y-6 md:space-y-12"}>
@@ -12108,16 +12435,16 @@ const IsolPost = ({
                               </span>
                             </div>
                             
-                            <h3 className="text-xl sm:text-3xl font-black text-zinc-900 dark:text-white leading-tight group-hover:text-red-700 transition-colors tracking-tight select-none">
+                            <h3 className="text-xl sm:text-3xl font-black text-zinc-900 dark:text-white leading-tight group-hover:text-red-700 transition-colors tracking-tight">
                               {topNews.title}
                             </h3>
                             
-                            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-450 line-clamp-4 font-medium leading-relaxed">
+                            <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-450 line-clamp-4 font-medium leading-relaxed mt-2">
                               {topNews.content || "상세한 보도 내용을 직접 확인하시고 시민 사회의 투명한 여론 진작에 동참하여 주시길 바랍니다."}
                             </p>
                           </div>
 
-                          <div className="pt-4 border-t border-zinc-150 dark:border-zinc-800/60 flex items-center justify-between">
+                          <div className="pt-4 border-t border-zinc-150 dark:border-zinc-850 flex items-center justify-between">
                             <div className="flex items-center gap-2.5">
                               <div className="w-8 h-8 rounded-full bg-red-600/10 flex items-center justify-center border border-red-200">
                                 <span className="text-[10px] font-black text-red-655 font-sans">솔</span>
@@ -12141,98 +12468,312 @@ const IsolPost = ({
                   })()
                 )}
 
-                {/* 2. Secondary grid of regular news (the remaining articles) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 pt-4">
-                  {(activeCategory === "전체기사"
-                    ? displayFilteredNews.filter(n => n.id !== featured?.id).slice(0, 15)
-                    : displayFilteredNews.slice(1, 16)
-                  ).map((item) => {
-                    if (!item) return null;
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex flex-col gap-4 group cursor-pointer border-b border-zinc-100 dark:border-zinc-900/60 pb-6 items-stretch text-left"
-                        onClick={() => setSelectedNews(item)}
-                      >
-                        <div className="aspect-video w-full overflow-hidden rounded-2xl bg-zinc-950 border border-zinc-900 relative flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
-                          <img
-                            src={item.thumbnail || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400"}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400";
-                            }}
-                            alt="thumb"
-                          />
-                          <div className="absolute bottom-3 left-3">
-                            <span className="bg-zinc-900/80 backdrop-blur-md text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider font-mono">
-                              2 MIN READ
-                            </span>
-                          </div>
-                        </div>
-                        <div className="space-y-2 flex-1 min-w-0 pr-0.5">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="bg-red-50 dark:bg-red-950/20 text-red-655 dark:text-red-400 text-[8.5px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
-                              {sanitizeDisplayCategory(item.category, item.title) || "일반"}
-                            </span>
-                            {item.isFeatured && (
-                              <span className="bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 text-[8.5px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
-                                헤드라인
-                              </span>
-                            )}
-                          </div>
-                          
-                          <h4 className="text-base font-extrabold text-zinc-900 dark:text-white group-hover:text-red-750 transition-colors leading-snug line-clamp-2">
-                            {item.title || "제목 없음"}
-                          </h4>
-                          
-                          <p className="text-xs text-zinc-450 dark:text-zinc-500 line-clamp-2 leading-relaxed">
-                            {item.content || "상세 뉴스를 누르시면 지능형 AI 독립 언론 이솔나라의 팹트체크 전문을 열람할 수 있습니다."}
-                          </p>
+            <div className="hidden" id="realtime-hot-clicks-widget">
+              {/* Background accent ambient glows in dark mode */}
+              <div className="absolute top-0 right-0 w-36 h-36 bg-red-500/5 dark:bg-red-500/10 rounded-full blur-3xl pointer-events-none -mr-12 -mt-12" />
+              <div className="absolute bottom-0 left-0 w-36 h-36 bg-amber-500/5 dark:bg-amber-500/5 rounded-full blur-3xl pointer-events-none -ml-12 -mb-12" />
 
-                          <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider pt-2 border-t border-zinc-100/50 dark:border-zinc-900/40">
-                            {item.date || ""} | {item.author || "시민기자"} 기자
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
+              {/* Header section with live icon and metadata */}
+              <div className="relative flex items-center justify-between border-b border-zinc-200/50 dark:border-zinc-900 pb-3.5">
+                <div className="flex items-center gap-2.5">
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                  </span>
+                  <h4 className="text-[13.5px] font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-tight flex items-center gap-2">
+                    실시간 핫클릭
+                    <span className="text-[9px] font-black text-red-600 dark:text-red-400 bg-red-500/10 dark:bg-red-500/20 px-2 py-0.5 rounded border border-red-500/20 uppercase tracking-widest animate-pulse font-mono">
+                      LIVE
+                    </span>
+                  </h4>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[9.5px] font-bold text-zinc-450 dark:text-zinc-500 font-mono tracking-wider uppercase">
+                    {new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 업데이트
+                  </span>
                 </div>
               </div>
 
+              {/* Sub-tabs for switching between "실시간 인기" and "급상승 기사" */}
+              <div className="relative flex bg-zinc-150/60 dark:bg-zinc-950 p-1 rounded-xl border border-zinc-200/20 dark:border-zinc-900">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                    setActiveHotClickTab("popular");
+                  }}
+                  className={`flex-1 text-[11px] font-extrabold py-2 rounded-lg transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 ${
+                    activeHotClickTab === "popular"
+                      ? "bg-white dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-zinc-200/10 dark:border-red-500/20 shadow-sm dark:shadow-[0_0_15px_rgba(239,68,68,0.12)]"
+                      : "text-zinc-500 dark:text-zinc-450 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  <span className="text-[12px]">🔥</span> 실시간 인기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                    setActiveHotClickTab("trending");
+                  }}
+                  className={`flex-1 text-[11px] font-extrabold py-2 rounded-lg transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 ${
+                    activeHotClickTab === "trending"
+                      ? "bg-white dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border border-zinc-200/10 dark:border-amber-500/20 shadow-sm dark:shadow-[0_0_15px_rgba(245,158,11,0.12)]"
+                      : "text-zinc-500 dark:text-zinc-450 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  <span className="text-[12px]">⚡</span> 급상승 기사
+                </button>
+              </div>
+
+              {/* Hot Clicks Feed Content */}
+              <div className="relative space-y-5">
+                {(() => {
+                  const items = (citizenNews || [])
+                    .filter((art: any) => art.isApproved !== false && art.status !== "pending")
+                    .sort((a: any, b: any) => {
+                      if (activeHotClickTab === "popular") {
+                        return (b.likes || 0) - (a.likes || 0);
+                      } else {
+                        const scoreA = (a.likes || 0) * 1.8 + (a.title ? a.title.length * 0.1 : 0);
+                        const scoreB = (b.likes || 0) * 1.8 + (b.title ? b.title.length * 0.1 : 0);
+                        return scoreB - scoreA;
+                      }
+                    })
+                    .slice(0, 5);
+
+                  if (items.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-8 text-center space-y-2">
+                        <span className="text-xl">📊</span>
+                        <p className="text-xs text-zinc-400 dark:text-zinc-500 font-extrabold">인기 분석 데이터 집계 중입니다.</p>
+                      </div>
+                    );
+                  }
+
+                  // 1st item rendered as premium card with thumbnail
+                  const topItem = items[0];
+                  const remainingItems = items.slice(1);
+
+                  return (
+                    <>
+                      {/* Premium #1 Hero Item card with visual image */}
+                      <div
+                        className="group relative overflow-hidden rounded-[1.5rem] bg-white dark:bg-zinc-900/30 border border-zinc-150 dark:border-zinc-800/60 p-3.5 flex flex-col gap-3.5 cursor-pointer hover:-translate-y-1 hover:border-red-500/30 dark:hover:border-red-500/35 hover:shadow-xl dark:hover:shadow-[0_12px_30px_rgba(239,68,68,0.06)] transition-all duration-350"
+                        onClick={() => {
+                          if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                          setSelectedNews(topItem);
+                          setTimeout(() => {
+                            const readerElem = document.getElementById("inline-news-reader-container");
+                            if (readerElem) {
+                              readerElem.scrollIntoView({ behavior: "smooth" });
+                            }
+                          }, 100);
+                        }}
+                      >
+                        <div className="aspect-[16/10] w-full rounded-2xl overflow-hidden relative border border-zinc-200/50 dark:border-zinc-850 shadow-sm">
+                          <img
+                            src={topItem.thumbnail}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-104 animate-in fade-in duration-300"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src =
+                                "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=400";
+                            }}
+                            alt="1st Hot Click"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div className="absolute top-3 left-3 z-10">
+                            <span className="bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded-lg flex items-center justify-center gap-1 shadow-lg border border-red-500/30 font-sans tracking-tight italic">
+                              <span className="inline-block animate-bounce">🏆</span> NO. 1
+                            </span>
+                          </div>
+                          
+                          {/* Modern gradient overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 dark:opacity-80 transition-opacity duration-300" />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <h5 className="text-[13px] font-black text-zinc-900 dark:text-zinc-100 line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                            {topItem.title}
+                          </h5>
+                          
+                          {/* Live heat indicator bars */}
+                          <div className="space-y-1.5 pt-1">
+                            <div className="flex justify-between items-center text-[8.5px] font-black text-zinc-400 dark:text-zinc-500 font-mono">
+                              <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping shrink-0" /> 실시간 관심도 점유율</span>
+                              <span className="text-red-500 dark:text-red-400 font-black">{activeHotClickTab === "popular" ? "98.4%" : "96.7%"} ULTRA HOT</span>
+                            </div>
+                            <div className="w-full h-1 bg-zinc-100 dark:bg-zinc-850 rounded-full overflow-hidden">
+                              <div className="h-full bg-gradient-to-r from-red-500 via-amber-500 to-yellow-400 rounded-full animate-pulse" style={{ width: activeHotClickTab === "popular" ? "98.4%" : "96.7%" }} />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1.5 border-t border-zinc-100 dark:border-zinc-800/60">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[8.5px] font-black text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 px-2 py-0.5 rounded border border-red-200/50 dark:border-red-500/10 uppercase tracking-wider">
+                                {sanitizeDisplayCategory(topItem.category, topItem.title) || "인기"}
+                              </span>
+                              <span className="text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400">
+                                {topItem.author || "시민"} 기자
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-black text-rose-500 dark:text-rose-400 flex items-center gap-0.5">
+                              🔥 {topItem.likes || 0}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Rank 2-5 Sleek Text rows with elegant typography & hover transitions */}
+                      <div className="space-y-2 pt-1">
+                        {remainingItems.map((item: any, idx: number) => {
+                          const rank = idx + 2;
+                          const progressWidths = ["84.5%", "72.1%", "61.8%", "49.3%"];
+                          const heatColors = [
+                            "from-orange-500 to-amber-400", // 2
+                            "from-amber-500 to-yellow-400",  // 3
+                            "from-zinc-400 to-zinc-500",    // 4
+                            "from-zinc-500 to-zinc-600"     // 5
+                          ];
+
+                          return (
+                            <div
+                              key={item.id}
+                              className="group flex items-start gap-4 p-3 rounded-2xl bg-transparent hover:bg-white dark:hover:bg-zinc-900/30 border border-transparent hover:border-zinc-200/60 dark:hover:border-zinc-800/30 hover:shadow-sm transition-all duration-300 cursor-pointer"
+                              onClick={() => {
+                                if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                                setSelectedNews(item);
+                                setTimeout(() => {
+                                  const readerElem = document.getElementById("inline-news-reader-container");
+                                  if (readerElem) {
+                                    readerElem.scrollIntoView({ behavior: "smooth" });
+                                  }
+                                }, 100);
+                              }}
+                            >
+                              {/* Left-side Rank Badge */}
+                              <div className="flex flex-col items-center justify-center shrink-0 w-8">
+                                <span className={`text-[15px] font-black italic tracking-tighter font-sans leading-none text-center bg-clip-text text-transparent bg-gradient-to-br ${rank === 2 ? "from-orange-500 to-red-500" : rank === 3 ? "from-amber-500 to-orange-400" : "from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600"}`}>
+                                  0{rank}
+                                </span>
+                                <span className="text-[6.5px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mt-1">RANK</span>
+                              </div>
+
+                              {/* Right-side Content */}
+                              <div className="flex-1 min-w-0 space-y-2">
+                                <h5 className="text-[12px] font-extrabold text-zinc-850 dark:text-zinc-200 leading-snug group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors line-clamp-2">
+                                  {item.title}
+                                </h5>
+                                
+                                <div className="flex items-center justify-between gap-4">
+                                  <div className="flex items-center gap-1.5 text-[8.5px] font-extrabold text-zinc-450 dark:text-zinc-500">
+                                    <span className="text-red-500 dark:text-red-400/90 uppercase tracking-wider font-black">
+                                      {sanitizeDisplayCategory(item.category, item.title) || "기사"}
+                                    </span>
+                                    <span className="w-0.5 h-0.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+                                    <span>{item.author || "시민"} 기자</span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2">
+                                    {/* Velocity representation bar */}
+                                    <div className="w-12 h-1 bg-zinc-150 dark:bg-zinc-850 rounded-full overflow-hidden hidden sm:block border border-zinc-200/20">
+                                      <div className={`h-full bg-gradient-to-r ${heatColors[idx] || "from-zinc-400 to-zinc-500"}`} style={{ width: progressWidths[idx] }} />
+                                    </div>
+                                    <span className="text-[9.5px] font-black text-rose-500 dark:text-rose-400/90 font-mono shrink-0">
+                                      🔥 {item.likes || 0}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+              
+              {/* 2. Secondary grid of regular news (the remaining articles) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 pt-4">
+                {(activeCategory === "전체기사"
+                  ? displayFilteredNews.filter(n => n.id !== featured?.id).slice(0, 15)
+                  : displayFilteredNews.slice(1, 16)
+                ).map((item) => {
+                  if (!item) return null;
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex flex-col gap-4 group cursor-pointer border-b border-zinc-100 dark:border-zinc-900/60 pb-6 items-stretch text-left"
+                      onClick={() => setSelectedNews(item)}
+                    >
+                      <div className="aspect-video w-full overflow-hidden rounded-2xl bg-zinc-950 border border-zinc-900 relative flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
+                        <img
+                          src={item.thumbnail || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400"}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400";
+                          }}
+                          alt="thumb"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="absolute bottom-3 left-3">
+                          <span className="bg-zinc-900/80 backdrop-blur-md text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider font-mono">
+                            2 MIN READ
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-2 flex-1 min-w-0 pr-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="bg-red-50 dark:bg-red-950/20 text-red-655 dark:text-red-400 text-[8.5px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
+                            {sanitizeDisplayCategory(item.category, item.title) || "일반"}
+                          </span>
+                          {item.isFeatured && (
+                            <span className="bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 text-[8.5px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
+                              헤드라인
+                            </span>
+                          )}
+                        </div>
+                        
+                        <h4 className="text-base font-extrabold text-zinc-900 dark:text-white group-hover:text-red-750 transition-colors leading-snug line-clamp-2">
+                          {item.title || "제목 없음"}
+                        </h4>
+                        
+                        <p className="text-xs text-zinc-450 dark:text-zinc-500 line-clamp-2 leading-relaxed">
+                          {item.content || "상세 뉴스를 누르시면 지능형 AI 독립 언론 이솔나라의 팩트체크 전문을 열람할 수 있습니다."}
+                        </p>
+
+                        <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider pt-2 border-t border-zinc-100/50 dark:border-zinc-900/40">
+                          {item.date || ""} | {item.author || "시민기자"} 기자
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             ) : activeCategory === "후원계좌/복지부통장" ? (
               <div className="space-y-24 py-10">
                 {/* Branding Header */}
                 <div className="text-center space-y-8 max-w-4xl mx-auto">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 text-red-600 text-xs font-black uppercase tracking-[0.25em]"
-                  >
-                    <Zap size={14} className="fill-red-600" /> Independent
-                    Journalism Campaign
-                  </motion.div>
-                  <motion.h2
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="text-5xl md:text-7xl font-black tracking-tighter text-zinc-900 leading-[1.05]"
-                  >
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 text-red-600 text-xs font-black uppercase tracking-[0.25em]">
+                    <Zap size={14} className="fill-red-600" /> Independent Journalism Campaign
+                  </div>
+                  <h2 className="text-5xl md:text-7xl font-black tracking-tighter text-zinc-900 dark:text-white leading-[1.05]">
                     진실을 향한 독립된 목소리, <br />
                     <span className="text-red-600">
                       여러분의 후원이 만듭니다
                     </span>
-                  </motion.h2>
-                  <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-xl text-zinc-500 font-medium leading-relaxed max-w-2xl mx-auto"
-                  >
+                  </h2>
+                  <p className="text-zinc-500 dark:text-zinc-400 text-xl font-medium leading-relaxed max-w-2xl mx-auto">
                     이솔나라는 국내 최초의 비건 AI 창작 기반 독립 언론사로서,
                     기술의 윤리와 생명의 가치를 보도합니다. 거대 권력으로부터
                     자유로운 진실된 보도를 위해 시민 여러분의 힘이 필요합니다.
-                  </motion.p>
+                  </p>
                 </div>
 
                 {/* Info Box: Where funds go */}
@@ -12251,27 +12792,23 @@ const IsolPost = ({
                     {
                       icon: ShieldCheck,
                       title: "독립 저널리즘",
-                      desc: "자본과 광고로부터 독립하여 중립을 지킬 수 있는 지속 가능한 뉴스룸 환경 구축",
+                      desc: "자본 and 광고로부터 독립하여 중립을 지킬 수 있는 지속 가능한 뉴스룸 환경 구축",
                     },
                   ].map((item, idx) => (
-                    <motion.div
+                    <div
                       key={idx}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="bg-white border border-zinc-100 p-10 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-red-500/5 transition-all duration-500 group"
+                      className="bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-10 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:shadow-red-500/5 transition-all duration-500 group"
                     >
-                      <div className="w-16 h-16 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 mb-8 group-hover:bg-red-600 group-hover:text-white transition-all duration-500 transform group-hover:rotate-6">
+                      <div className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 mb-8 group-hover:bg-red-600 group-hover:text-white transition-all duration-500 transform group-hover:rotate-6">
                         <item.icon size={30} />
                       </div>
-                      <h4 className="text-2xl font-black text-zinc-900 mb-4 font-sans leading-none">
+                      <h4 className="text-2xl font-black text-zinc-900 dark:text-white mb-4 font-sans leading-none">
                         {item.title}
                       </h4>
-                      <p className="text-zinc-500 text-base font-medium leading-relaxed">
+                      <p className="text-zinc-500 dark:text-zinc-400 text-base font-medium leading-relaxed">
                         {item.desc}
                       </p>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
 
@@ -12747,6 +13284,19 @@ const IsolPost = ({
                   </div>
                 )}
               </div>
+            )}
+
+            {/* 🔥 실시간 핫클릭 (Real-time Hot Clicks) - Mobile only here */}
+            {!newsSearchQuery.trim() && (
+              <RealtimeHotClicksWidget
+                citizenNews={citizenNews}
+                activeHotClickTab={activeHotClickTab}
+                setActiveHotClickTab={setActiveHotClickTab}
+                setSelectedNews={setSelectedNews}
+                playHapticClick={playHapticClick}
+                sanitizeDisplayCategory={sanitizeDisplayCategory}
+                className="lg:hidden mb-6"
+              />
             )}
 
             {/* 🔥 독자 소통 서비스 퀵 툴바 (📊 여론조사, ✉️ 이솔레터, 💝 취재후원) */}
@@ -14003,6 +14553,9 @@ const SoulCenter = ({
     
     let x, y;
     if ("touches" in e) {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
       if (e.touches.length === 0) return;
       x = e.touches[0].clientX - rect.left;
       y = e.touches[0].clientY - rect.top;
@@ -14030,6 +14583,9 @@ const SoulCenter = ({
     
     let x, y;
     if ("touches" in e) {
+      if (e.cancelable) {
+        e.preventDefault();
+      }
       if (e.touches.length === 0) return;
       x = e.touches[0].clientX - rect.left;
       y = e.touches[0].clientY - rect.top;
@@ -14171,6 +14727,32 @@ const SoulCenter = ({
   };
 
   const [editorFontSize, setEditorFontSize] = useState<"sm" | "base" | "lg" | "xl">("base");
+  const [isSttSimulating, setIsSttSimulating] = useState(false);
+
+  const runMockStt = () => {
+    if (isSttSimulating) return;
+    setIsSttSimulating(true);
+    if (typeof playHapticClick === "function") playHapticClick(800, 0.1, "sine");
+    const toastId = toast.loading("🎙️ [AI 음성 정합 연산]: 스마트폰 마이크 주파수를 수집하여 정론 6하원칙 서술문으로 실시간 타이핑 중...");
+    
+    const targetText = " [특종 보도] 오늘 이솔나라 중앙광장에서 시민들과 기술진들이 공동으로 '미래 주권 선포식'을 개최했습니다. 이번 행사는 독립적이고 생명 친화적인 저널리즘을 추구하는 시민들의 자발적 참여로 이루어졌습니다. 이솔뉴스 팩트쉴드를 통해 허위 정보를 차단하고 정직한 진실 보도만을 제공하겠다고 선언했습니다.";
+    
+    let currentIdx = 0;
+    const interval = setInterval(() => {
+      setPostData((prev) => {
+        if (currentIdx >= targetText.length) {
+          clearInterval(interval);
+          setIsSttSimulating(false);
+          toast.success("🎙️ [AI 음성 받아쓰기 완료]: 구술 내용이 정론 보도문으로 교열 완료되었습니다!", { id: toastId });
+          if (typeof playHapticClick === "function") playHapticClick(1200, 0.15, "triangle");
+          return prev;
+        }
+        const nextContent = prev.content + targetText[currentIdx];
+        currentIdx++;
+        return { ...prev, content: nextContent };
+      });
+    }, 25);
+  };
 
   const [postData, setPostData] = useState({
     title: "",
@@ -15661,7 +16243,59 @@ const SoulCenter = ({
                           <LinkIcon size={11} className="text-zinc-500" />
                           <span>링크</span>
                         </button>
+                        
+                        <button
+                          type="button"
+                          onClick={runMockStt}
+                          disabled={isSttSimulating}
+                          className={cn(
+                            "px-2.5 py-1.5 rounded-lg text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer border shrink-0",
+                            isSttSimulating
+                              ? "bg-red-500/20 border-red-500 text-red-500 animate-pulse"
+                              : "bg-red-500/10 hover:bg-red-500/20 text-red-650 border-red-500/20 dark:border-red-500/40"
+                          )}
+                          title="스마트폰 마이크 AI 받아쓰기 모의 체험 (구술 기사 작성)"
+                        >
+                          <Mic size={11} className={cn("text-red-500", isSttSimulating && "animate-bounce")} />
+                          <span>AI 음성구술</span>
+                        </button>
                       </div>
+
+                      <style>{`
+                        @keyframes soundWavePulse {
+                          0% { transform: scaleY(0.3); opacity: 0.5; }
+                          100% { transform: scaleY(1.3); opacity: 1; }
+                        }
+                      `}</style>
+
+                      {/* 🌟 보완 10: AI 음성 받아쓰기 음파 물결 애니메이션 바 */}
+                      {isSttSimulating && (
+                        <div className="flex items-center gap-2.5 px-4.5 py-3.5 bg-red-500/5 dark:bg-red-500/10 border border-red-500/20 rounded-2xl animate-in fade-in slide-in-from-top-2">
+                          <span className="text-[9px] font-black text-white bg-red-600 px-1.5 py-0.5 rounded uppercase tracking-wider animate-pulse shrink-0">
+                            ON AIR
+                          </span>
+                          <div className="flex items-center gap-1.5 h-5 flex-1 justify-center">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map((idx) => {
+                              const delay = (idx * 0.08) % 0.8;
+                              const heightRatio = [15, 35, 60, 20, 80, 45, 20, 15, 35, 70, 90, 20, 15, 45, 25, 10, 30, 50, 20, 10][idx - 1] || 25;
+                              return (
+                                <div
+                                  key={idx}
+                                  style={{
+                                    animation: `soundWavePulse 0.5s ease-in-out infinite alternate`,
+                                    animationDelay: `${delay}s`,
+                                    height: `${heightRatio}%`,
+                                  }}
+                                  className="w-[3px] bg-red-655 dark:bg-red-500 rounded-full"
+                                />
+                              );
+                            })}
+                          </div>
+                          <span className="text-[10px] font-extrabold text-red-500 dark:text-red-400 whitespace-nowrap animate-pulse">
+                            음성 6하원칙 타이핑 중...
+                          </span>
+                        </div>
+                      )}
 
                       <textarea
                         required
@@ -16459,7 +17093,7 @@ const SoulCenter = ({
                           onTouchStart={startDrawing}
                           onTouchMove={draw}
                           onTouchEnd={stopDrawing}
-                          className="w-full bg-white dark:bg-zinc-950/20 max-w-full rounded-xl cursor-crosshair border border-dashed border-zinc-200 dark:border-zinc-800 h-[100px]"
+                          className="w-full bg-white dark:bg-zinc-950/20 max-w-full rounded-xl cursor-crosshair border border-dashed border-zinc-200 dark:border-zinc-800 h-[100px] touch-none"
                         />
                         <div className="w-full flex justify-between items-center px-2 py-1 bg-zinc-100 dark:bg-zinc-900 text-[10px] text-zinc-400 font-bold border-t border-zinc-200 dark:border-zinc-800 mt-1.5 rounded-lg">
                           <span className="flex items-center gap-1 text-[9px]"><Fingerprint size={12} className="text-purple-500" /> 화면의 박스 영역을 쓸어서 서명해주세요.</span>
@@ -19711,6 +20345,23 @@ function App() {
   const [isSeedingConfirming, setIsSeedingConfirming] = React.useState(false);
   const [isFlashing, setIsFlashing] = React.useState(false);
   const [isGenerating, setIsGenerating] = React.useState(false);
+
+  // 🌟 보완 2: 카카오톡 AI 비서 웰컴 플로팅 말풍선 롤링 텍스트
+  const [kakaoTooltipIdx, setKakaoTooltipIdx] = React.useState(0);
+  const tooltipTexts = React.useMemo(() => [
+    "💬 무엇이든 물어보세요!",
+    "🔥 실시간 팩트체크 의뢰",
+    "🎁 기사 제보 시 고구마 쿠폰!",
+    "🤖 6하원칙 AI 기사작성 추천",
+    "💡 모바일 터치 사용법 물어보기"
+  ], []);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setKakaoTooltipIdx((prev) => (prev + 1) % tooltipTexts.length);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [tooltipTexts]);
   const [editingNews, setEditingNews] = React.useState<CitizenNews | null>(
     null,
   );
@@ -19825,7 +20476,7 @@ function App() {
   });
 
   const [isManualOpen, setIsManualOpen] = React.useState(false);
-  const [selectedManualTab, setSelectedManualTab] = React.useState<"intro" | "menu_guide" | "admin_guide" | "faq">("intro");
+  const [selectedManualTab, setSelectedManualTab] = React.useState<"intro" | "mobile_guide" | "menu_guide" | "admin_guide" | "faq">("intro");
   const [selectedCharacterId, setSelectedCharacterId] = React.useState<string>("isol_bee");
   
   const activeChar = CHATBOT_CHARACTERS.find(c => c.id === selectedCharacterId) || CHATBOT_CHARACTERS[0];
@@ -21219,6 +21870,64 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
         />
       )}
 
+      {/* 📰 이솔 국영 뉴스룸 초강도 실시간 속보 무한 롤링 티커 바 */}
+      <style>{`
+        @keyframes tickerMarquee {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-50%, 0, 0); }
+        }
+        .animate-ticker-marquee {
+          display: flex;
+          width: max-content;
+          animation: tickerMarquee 40s linear infinite;
+        }
+        .animate-ticker-marquee:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
+      
+      <div className="w-full bg-red-600/95 dark:bg-red-750 text-white py-2.5 px-4 overflow-hidden border-b border-red-500/30 flex items-center gap-3 select-none text-xs font-sans z-40 relative">
+        <span className="bg-black text-red-500 font-black text-[10px] px-2 py-0.5 rounded-md uppercase tracking-wider animate-pulse flex items-center gap-1 shrink-0 shadow-sm border border-red-500/20">
+          <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
+          FLASH
+        </span>
+        <div className="flex-1 overflow-hidden relative">
+          <div className="animate-ticker-marquee flex gap-12 whitespace-nowrap">
+            {[
+              { text: "📢 [속보] 이솔나라 중앙은행, 인공지능 주도형 핀테크 공적 자금 무한 제휴 체결!", query: "중앙은행" },
+              { text: "🔥 [특보] 시민기자 소울센터, 독립 저널리즘 기사 발행량 역대 최고 누적 기록 돌파!", query: "소울센터" },
+              { text: "⚖️ [팩트체크] 이솔광장 소강의 여론조사 '정의 주권 비율 98.7%' 무결성 검정 완료", query: "여론조사" },
+              { text: "🚀 [AI 연구소] 차세대 국산 언어모델 이솔AI 엔진 4.0 전격 상용화 선포!", query: "이솔AI" },
+              { text: "🧸 [웹툰마당] 오리지널 메타버스 캐릭터 IP 및 오감 일러스트 대왕 공모전 성황리 개최", query: "웹툰마당" },
+              // Loop cloning items for seamless infinite rolling
+              { text: "📢 [속보] 이솔나라 중앙은행, 인공지능 주도형 핀테크 공적 자금 무한 제휴 체결!", query: "중앙은행" },
+              { text: "🔥 [특보] 시민기자 소울센터, 독립 저널리즘 기사 발행량 역대 최고 누적 기록 돌파!", query: "소울센터" },
+              { text: "⚖️ [팩트체크] 이솔광장 소강의 여론조사 '정의 주권 비율 98.7%' 무결성 검정 완료", query: "여론조사" },
+              { text: "🚀 [AI 연구소] 차세대 국산 언어모델 이솔AI 엔진 4.0 전격 상용화 선포!", query: "이솔AI" },
+              { text: "🧸 [웹툰마당] 오리지널 메타버스 캐릭터 IP 및 오감 일러스트 대왕 공모전 성황리 개최", query: "웹툰마당" }
+            ].map((item, idx) => (
+              <span
+                key={idx}
+                onClick={() => {
+                  if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
+                  setSearchQuery(item.query);
+                  setSelectedNewsCategory("전체기사");
+                  setCurrentPage("isol-post");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  toast.success(`🔍 속보 검색 연동: '${item.query}' 정밀 관측 필터가 발동되었습니다!`);
+                }}
+                className="font-extrabold flex items-center gap-2 hover:text-[#fee500] cursor-pointer transition-colors text-[11px]"
+              >
+                {item.text}
+              </span>
+            ))}
+          </div>
+        </div>
+        <span className="text-[10px] opacity-80 font-black hidden sm:inline-block border-l border-white/20 pl-3 whitespace-nowrap shrink-0">
+          {new Date().toLocaleDateString("ko-KR", { month: "short", day: "numeric" })} 실시간 특보
+        </span>
+      </div>
+
       <AdminQuickActions onSeed={handleSeedDB} onAI={handleAIDailyGenerate} />
 
       <main className="pt-0">
@@ -22013,6 +22722,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
               <div className="bg-zinc-50 dark:bg-zinc-905 border-b border-zinc-200 dark:border-white/5 p-2 flex gap-1 scrollbar-none overflow-x-auto shrink-0 select-none">
                 {[
                   { id: "intro", label: "🏠 가이드 소개", icon: Globe },
+                  { id: "mobile_guide", label: "📱 모바일 터치 마스터", icon: Smartphone },
                   { id: "menu_guide", label: "📰 독자 활용법 (Reading)", icon: Newspaper },
                   { id: "admin_guide", label: "📝 시민기자 집필법 (Writing)", icon: Edit3 },
                   { id: "faq", label: "⚙️ 백엔드/관리 가이드", icon: Scale },
@@ -22042,6 +22752,59 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
 
               {/* Handbook Scrollable Content Core */}
               <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+
+                {/* 🌟 보완 5: 설명서 내 '모바일 꿀팁 & 서명 제스처 가이드 탭' 신설 */}
+                {selectedManualTab === "mobile_guide" && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="space-y-5 text-xs text-zinc-600 dark:text-zinc-300"
+                  >
+                    <div className="border-l-4 border-red-550 pl-4 py-1">
+                      <h4 className="text-xs font-black text-zinc-800 dark:text-zinc-200">
+                        모바일 터치 마스터 가이드 📱 (Smart Mobile Controls)
+                      </h4>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-150 dark:border-white/5 rounded-2xl space-y-2">
+                        <h5 className="font-extrabold text-zinc-800 dark:text-zinc-100 flex items-center gap-1.5">
+                          ✍️ 서명 서판 드로잉 제어
+                        </h5>
+                        <p className="leading-relaxed text-[11px] text-zinc-500">
+                          모바일 폰에서 서판을 문지를 때 스크롤이 흔들리거나 화면이 밀려나지 않도록 <b>Touch-None 특수 잠금막</b>을 구현했습니다. 손가락 끝으로 서판 안을 편안히 쓸어서 정형화된 서명을 작성해 보십시오.
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-150 dark:border-white/5 rounded-2xl space-y-2">
+                        <h5 className="font-extrabold text-zinc-800 dark:text-zinc-100 flex items-center gap-1.5">
+                          🎙️ 원터치 AI 음성 구술 (STT)
+                        </h5>
+                        <p className="leading-relaxed text-[11px] text-zinc-500">
+                          글쓰기가 어려운 지하철이나 버스 안이라면, 집필실 내 기사 작성 창에서 <b>[AI 음성구술]</b> 단추를 가볍게 터치해 구술 음성 녹음 시뮬레이션을 가동해 보세요. AI가 구어를 세련된 정론 6하원칙 보도문으로 즉각 완성해 드립니다.
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-150 dark:border-white/5 rounded-2xl space-y-2">
+                        <h5 className="font-extrabold text-zinc-800 dark:text-zinc-100 flex items-center gap-1.5">
+                          🖤 OLED 칠흑 암막 모드 스킨
+                        </h5>
+                        <p className="leading-relaxed text-[11px] text-zinc-500">
+                          야간 기사 탐독 시 모바일 배터리를 대폭 보존하고 안구 피로도를 제로로 수렴시키기 위해 기사 상세 창 우측 상단의 <b>B 스킨(Pure Black, #000000)</b>를 마련했습니다. 원터치 햅틱 진동과 함께 안심 독서를 만끽해 보세요.
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-150 dark:border-white/5 rounded-2xl space-y-2">
+                        <h5 className="font-extrabold text-zinc-800 dark:text-zinc-100 flex items-center gap-1.5">
+                          ⚡ 모바일 최적 하단바 & 퀵 액션
+                        </h5>
+                        <p className="leading-relaxed text-[11px] text-zinc-500">
+                          양손 제어가 어려운 모바일 기기를 고려하여, 한 손 엄지만으로 모든 탭 워프가 가능한 <b>Sticky Bottom Navigation</b>과 글자 크기 가나다를 실시간 피드백하는 <b>FAB 퀵 액션 드로어</b>가 상시 가동 중입니다.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
                 
                 {/* 1. INTRO / WELCOME TAB */}
                 {selectedManualTab === "intro" && (
@@ -22393,8 +23156,19 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
               </p>
               
               {/* Font Resizing Row */}
-              <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-bold text-zinc-500">글자 크기 (Reader Font)</span>
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-zinc-500">글자 크기 (Reader Font)</span>
+                  <span className={cn(
+                    "font-black bg-gray-100 dark:bg-zinc-900 border border-zinc-200/20 px-1.5 py-0.5 rounded text-zinc-700 dark:text-zinc-300 transition-all",
+                    readerFontSize === "sm" && "text-[8px]",
+                    readerFontSize === "base" && "text-[10px]",
+                    readerFontSize === "lg" && "text-[12px]",
+                    readerFontSize === "xl" && "text-[14px]"
+                  )}>
+                    가나다 (ABC)
+                  </span>
+                </div>
                 <div className="grid grid-cols-4 gap-1 bg-gray-100 dark:bg-zinc-900 rounded-lg p-1">
                   {(["sm", "base", "lg", "xl"] as const).map((sz) => (
                     <button
@@ -22452,42 +23226,44 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
 
         {/* Scroll To Top & Scroll To Bottom Buttons */}
         <motion.button
-          whileHover={{ scale: 1.1, y: -2 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.15, y: -3 }}
+          whileTap={{ scale: 0.9 }}
           onClick={() => {
-            playHapticClick(400, 0.03);
+            if (typeof playHapticClick === "function") playHapticClick(500, 0.04);
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
-          className="w-11 h-11 rounded-full bg-zinc-900 dark:bg-zinc-800 border border-zinc-700/85 dark:border-white/10 flex items-center justify-center text-white shadow-xl hover:bg-red-655 dark:hover:bg-red-655 transition-all cursor-pointer"
+          className="w-12 h-12 rounded-full bg-zinc-950 dark:bg-zinc-900 border border-red-550/30 dark:border-red-500/30 flex items-center justify-center text-white shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:shadow-[0_0_20px_rgba(239,68,68,0.5)] transition-all cursor-pointer"
           title="맨 위로 가기 (Scroll To Top)"
         >
-          <ArrowUp size={18} className="stroke-[2.5]" />
+          <ArrowUp size={19} className="stroke-[2.5] text-red-500" />
         </motion.button>
 
         <motion.button
-          whileHover={{ scale: 1.1, y: 2 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.15, y: 3 }}
+          whileTap={{ scale: 0.9 }}
           onClick={() => {
-            playHapticClick(400, 0.03);
+            if (typeof playHapticClick === "function") playHapticClick(500, 0.04);
             window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
           }}
-          className="w-11 h-11 rounded-full bg-zinc-900 dark:bg-zinc-800 border border-zinc-700/85 dark:border-white/10 flex items-center justify-center text-white shadow-xl hover:bg-red-655 dark:hover:bg-red-655 transition-all cursor-pointer"
+          className="w-12 h-12 rounded-full bg-zinc-950 dark:bg-zinc-900 border border-red-550/30 dark:border-red-500/30 flex items-center justify-center text-white shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:shadow-[0_0_20px_rgba(239,68,68,0.5)] transition-all cursor-pointer"
           title="맨 아래로 가기 (Scroll To Bottom)"
         >
-          <ArrowDown size={18} className="stroke-[2.5]" />
+          <ArrowDown size={19} className="stroke-[2.5] text-red-500" />
         </motion.button>
 
         {/* Modern Trendy AI Chatbot Floating Button (Kakao Style) */}
         <div className="relative group/chat">
           {/* Animated notification tooltip bubble */}
           <motion.div 
-            initial={{ opacity: 0, scale: 0.8, x: 20 }}
+            key={kakaoTooltipIdx}
+            initial={{ opacity: 0, scale: 0.8, x: 10 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
-            transition={{ delay: 1 }}
-            className="absolute right-14 top-1/2 -translate-y-1/2 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border border-zinc-200/10 text-[10.5px] font-extrabold px-3 py-1.5 rounded-xl shadow-lg whitespace-nowrap hidden sm:flex items-center gap-1.5 select-none pointer-events-none group-hover/chat:opacity-100 transition-opacity"
+            exit={{ opacity: 0, scale: 0.8, x: 10 }}
+            transition={{ duration: 0.3 }}
+            className="absolute right-13 top-1/2 -translate-y-1/2 bg-zinc-950 text-white dark:bg-white dark:text-zinc-900 border border-zinc-200/10 text-[9.5px] sm:text-[10.5px] font-black px-2.5 py-1 rounded-xl shadow-lg whitespace-nowrap flex items-center gap-1.5 select-none pointer-events-none transition-all"
           >
-            <span className="w-2 h-2 rounded-full bg-[#fee500] animate-ping" />
-            <span>AI 비서에게 무엇이든 물어보세요!</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#fee500] animate-ping shrink-0" />
+            <span>{tooltipTexts[kakaoTooltipIdx]}</span>
           </motion.div>
           
           <motion.button
