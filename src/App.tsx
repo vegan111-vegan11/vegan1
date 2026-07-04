@@ -297,6 +297,61 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const getArticleScore = (title: string, content: string, thumbnail: string) => {
+  let score = 0;
+  const checklist = [];
+  
+  // 1. Title Check (max 30 pts)
+  const titleLen = title ? title.trim().length : 0;
+  if (titleLen >= 15 && titleLen <= 35) {
+    score += 30;
+    checklist.push({ label: "헤드라인 글자 수 이상적 (15~35자)", passed: true });
+  } else if (titleLen > 0) {
+    score += 15;
+    checklist.push({ label: "헤드라인이 너무 짧거나 깁니다 (" + titleLen + "자)", passed: false });
+  } else {
+    checklist.push({ label: "헤드라인 입력 필요", passed: false });
+  }
+
+  // 2. Content Check (max 40 pts)
+  const contentLen = content ? content.trim().length : 0;
+  if (contentLen >= 500) {
+    score += 40;
+    checklist.push({ label: "기사 본문 분량 충분 (500자 이상)", passed: true });
+  } else if (contentLen >= 150) {
+    score += 25;
+    checklist.push({ label: "본문 분량이 약간 짧음 (현재: " + contentLen + "자)", passed: false });
+  } else if (contentLen > 0) {
+    score += 10;
+    checklist.push({ label: "본문 분량이 너무 짧음 (" + contentLen + "자)", passed: false });
+  } else {
+    checklist.push({ label: "기사 본문 내용 입력 필요", passed: false });
+  }
+
+  // 3. Formatting Check (max 15 pts)
+  const hasHeading = content && (content.includes("##") || content.includes("###"));
+  const hasHighlights = content && (content.includes("**") || content.includes("<mark>"));
+  if (hasHeading && hasHighlights) {
+    score += 15;
+    checklist.push({ label: "소제목 및 핵심 강조 서식 사용 완료", passed: true });
+  } else if (hasHeading || hasHighlights) {
+    score += 8;
+    checklist.push({ label: "소제목 또는 강조 서식 추가 권장", passed: false });
+  } else {
+    checklist.push({ label: "소제목(##) 또는 강조 서식 없음", passed: false });
+  }
+
+  // 4. Thumbnail Check (max 15 pts)
+  if (thumbnail && thumbnail.trim().startsWith("http")) {
+    score += 15;
+    checklist.push({ label: "대표 썸네일 이미지 연결 완료", passed: true });
+  } else {
+    checklist.push({ label: "대표 이미지 없음", passed: false });
+  }
+
+  return { score, checklist };
+};
+
 const playHapticClick = (frequency = 800, duration = 0.05, type = "sine") => {
   try {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -13063,7 +13118,7 @@ const IsolPost = ({
                           className={`group snap-center flex-shrink-0 px-4 py-3 rounded-2xl text-xs font-black transition-all duration-300 cursor-pointer select-none flex items-center gap-3 border ${
                             isActive
                               ? "bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 scale-[1.03] shadow-[0_10px_20px_-5px_rgba(0,0,0,0.15)]"
-                              : "bg-white hover:bg-zinc-50 hover:-translate-y-0.5 text-zinc-650 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 border-zinc-200/75 dark:border-zinc-800 shadow-sm"
+                              : "bg-white hover:bg-zinc-50 hover:-translate-y-0.5 text-zinc-650 dark:bg-zinc-900/30 dark:text-zinc-300 dark:hover:bg-zinc-800 border-zinc-200/75 dark:border-zinc-800 shadow-sm"
                           }`}
                         >
                           {/* 3D Glassmorphic / Claymorphic Icon Container */}
@@ -13100,6 +13155,7 @@ const IsolPost = ({
                     <p className="text-xs text-gray-400 mt-2">상단의 'REPORT/제보' 버튼을 눌러 이솔공방 카테고리로 새로운 작품을 첫 번째로 투고해 주시면 실시간 반영됩니다!</p>
                   </div>
                 ) : (
+
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                     {filteredNews.map((item) => {
                       // Dynamically infer a sub-type badge based on title/content or default
@@ -13665,6 +13721,11 @@ const AdminNewsCenter = ({
   );
   const [deletingArticleId, setDeletingArticleId] = useState<string | null>(null);
 
+  // Advanced search & category filtering for mobile and desktop speed
+  const [adminSearchQuery, setAdminSearchQuery] = useState("");
+  const [selectedAdminCategory, setSelectedAdminCategory] = useState("전체");
+  const [selectedAdminStatus, setSelectedAdminStatus] = useState("전체"); // 전체, 승인대기, 헤드라인
+
   // States for intuitive news custom editing
   const [editingNews, setEditingNews] = useState<CitizenNews | null>(null);
   const [inlineForm, setInlineForm] = useState({
@@ -13675,10 +13736,235 @@ const AdminNewsCenter = ({
     thumbnail: "",
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isPolishing, setIsPolishing] = useState(false);
+  const [polishResult, setPolishResult] = useState<{
+    correctionLog: string;
+    hashtags: string[];
+    check6w1h: { who: string; when: string; where: string; what: string; how: string; why: string };
+  } | null>(null);
+  const [previewMode, setPreviewMode] = useState<"edit" | "mobile_preview">("edit");
+
+  const [isGeneratingTitlesAdmin, setIsGeneratingTitlesAdmin] = useState(false);
+  const [adminTitleSuggestions, setAdminTitleSuggestions] = useState<{
+    sensational: string;
+    seo: string;
+    opinion: string;
+    simple: string;
+    inquisitive: string;
+  } | null>(null);
+
+  const [isGeneratingImageAdmin, setIsGeneratingImageAdmin] = useState(false);
+
+  const handleGenerateTitlesAdmin = async () => {
+    if (!inlineForm.content || inlineForm.content.trim().length < 5) {
+      toast.error("기사 제목을 생성하기 위해 본문 내용을 최소 5자 이상 적어주세요.");
+      return;
+    }
+    setIsGeneratingTitlesAdmin(true);
+    const toastId = toast.loading("🪄 AI가 본문 맥락을 분석하여 최적의 저널리즘 헤드라인 후보를 생성 중...");
+    try {
+      const response = await fetch("/api/generate-titles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: inlineForm.content,
+          category: inlineForm.category
+        })
+      });
+      if (!response.ok) throw new Error("Title generation failed");
+      const data = await response.json();
+      setAdminTitleSuggestions(data);
+      toast.success("✨ 기사 유형별 맞춤형 헤드라인 후보 5가지가 완비되었습니다!", { id: toastId });
+    } catch (e) {
+      console.error(e);
+      toast.error("헤드라인 생성 중 지연이 발생하여 기본 후보군이 출력되었습니다.", { id: toastId });
+      setAdminTitleSuggestions({
+        sensational: `[단독] ${inlineForm.title || "미정"} 행정 특별 보도 긴급 진단`,
+        seo: `${inlineForm.title || "미정"} 관련 주요 쟁점 현황과 심층 실증 보고`,
+        opinion: `${inlineForm.title || "미정"}: 더 나은 이솔나라를 향한 올바른 나침반`,
+        simple: `${inlineForm.title || "미정"}에 담긴 시민들의 솔직한 목소리`,
+        inquisitive: `과연 어떻게 전개될까? ${inlineForm.title || "미정"}의 앞날`
+      });
+    } finally {
+      setIsGeneratingTitlesAdmin(false);
+    }
+  };
+
+  const handleGenerateImageAdmin = async () => {
+    if (!inlineForm.title || inlineForm.title.trim().length < 2) {
+      toast.error("썸네일 이미지를 생성하기 위해 기사 제목을 먼저 간략하게 적어주세요.");
+      return;
+    }
+    setIsGeneratingImageAdmin(true);
+    const toastId = toast.loading("🎨 AI가 기사 제목에 어울리는 최적의 프레스 썸네일 그래픽을 렌더링 중...");
+    try {
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: `${inlineForm.title} - newspaper editorial style photo, journalism photography, high-fidelity crisp news photo, detailed realism`,
+          aspectRatio: "16:9"
+        })
+      });
+      if (!response.ok) throw new Error("Image generation failed");
+      const data = await response.json();
+      setInlineForm(prev => ({ ...prev, thumbnail: data.imageUrl }));
+      toast.success("✨ 기사에 꼭 맞는 프레스 썸네일 아트웍이 교체 부착되었습니다!", { id: toastId });
+    } catch (e) {
+      console.error(e);
+      toast.error("썸네일 생성 도중 일시적인 네트워크 지연이 생겼습니다.", { id: toastId });
+    } finally {
+      setIsGeneratingImageAdmin(false);
+    }
+  };
+
+  const [isAiWritingAdmin, setIsAiWritingAdmin] = useState(false);
+
+  const handleAiWriterAdmin = async (action: "elevate" | "mz_trendy" | "summarize" | "expand") => {
+    if (!inlineForm.content || inlineForm.content.trim().length < 5) {
+      toast.error("기사 본문을 최소 5자 이상 적어주세요.");
+      return;
+    }
+    setIsAiWritingAdmin(true);
+    const label = action === "mz_trendy" ? "MZ 세대 톤" : action === "summarize" ? "핵심 3대 강령 요약" : action === "expand" ? "기사 심층 확장" : "저널리즘 윤문";
+    const toastId = toast.loading(`🪄 AI가 관리자용 기사 본문을 '${label}' 스타일로 변환 및 윤문하는 중...`);
+    try {
+      const response = await fetch("/api/ai-writer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: inlineForm.content, action })
+      });
+      if (!response.ok) throw new Error("AI Writer API failed");
+      const data = await response.json();
+      if (data.success) {
+        setInlineForm(prev => ({ ...prev, content: data.text }));
+        toast.success(`✨ 기사 본문이 '${label}'으로 완벽 교정되었습니다!`, { id: toastId });
+      } else {
+        throw new Error(data.error || "Unknown error");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("문장 교정 도중 일시적 지연이 발생했습니다.", { id: toastId });
+    } finally {
+      setIsAiWritingAdmin(false);
+    }
+  };
+
+  // Local Storage Draft Recovery States
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftContent, setDraftContent] = useState<any>(null);
+
+  // Monitor editingNews and look for a saved recovery draft
+  useEffect(() => {
+    if (editingNews) {
+      const savedDraft = localStorage.getItem(`isol_admin_article_draft_${editingNews.id}`);
+      if (savedDraft) {
+        try {
+          const parsed = JSON.parse(savedDraft);
+          // Only offer recovery if draft content differs from current content
+          if (parsed.content !== editingNews.content || parsed.title !== editingNews.title) {
+            setDraftContent(parsed);
+            setHasDraft(true);
+          } else {
+            setHasDraft(false);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      } else {
+        setHasDraft(false);
+      }
+    } else {
+      setHasDraft(false);
+      setDraftContent(null);
+    }
+  }, [editingNews]);
+
+  // Auto-save draft on form field changes
+  useEffect(() => {
+    if (editingNews && inlineForm.content) {
+      localStorage.setItem(
+        `isol_admin_article_draft_${editingNews.id}`,
+        JSON.stringify({
+          ...inlineForm,
+          savedAt: new Date().toISOString()
+        })
+      );
+    }
+  }, [inlineForm, editingNews]);
+
+  const restoreDraft = () => {
+    if (draftContent) {
+      setInlineForm({
+        title: draftContent.title,
+        content: draftContent.content,
+        author: draftContent.author,
+        category: draftContent.category,
+        thumbnail: draftContent.thumbnail,
+      });
+      setHasDraft(false);
+      toast.success("✨ 임시 작성본 복구 완료: 비정상 종료 시점의 기사 내용을 안전하게 복원했습니다.");
+      if (typeof playHapticClick === "function") playHapticClick(650, 0.08);
+    }
+  };
+
+  const discardDraft = () => {
+    if (editingNews) {
+      localStorage.removeItem(`isol_admin_article_draft_${editingNews.id}`);
+      setHasDraft(false);
+      toast.success("임시 저장본을 안전하게 파기했습니다.");
+      if (typeof playHapticClick === "function") playHapticClick(400, 0.05);
+    }
+  };
+
+  const handleAiPolish = async () => {
+    if (!inlineForm.content.trim()) {
+      toast.error("기사 본문 내용이 작성되어야 AI 교정 및 분석이 가능합니다.");
+      return;
+    }
+    setIsPolishing(true);
+    if (typeof playHapticClick === "function") playHapticClick(700, 0.05);
+    const toastId = toast.loading("🪄 AI 데스크에서 문장 교정 및 6하원칙 사실 조회를 가동 중...");
+    try {
+      const response = await fetch("/api/polish-article", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: inlineForm.title,
+          content: inlineForm.content,
+          category: inlineForm.category,
+        }),
+      });
+      if (!response.ok) throw new Error("AI 교정 요청 실패");
+      const data = await response.json();
+      
+      setPolishResult({
+        correctionLog: data.correctionLog,
+        hashtags: data.hashtags || [],
+        check6w1h: data.check6w1h,
+      });
+
+      // Update title and content
+      setInlineForm(prev => ({
+        ...prev,
+        title: data.polishedTitle || prev.title,
+        content: data.polishedContent || prev.content,
+      }));
+
+      toast.success("✨ 이솔AI 특수 교정관이 제목 윤문, 본문 문법 보정, 6하원칙 분류를 완료했습니다!", { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error("AI 데스크 연결 중 일시적 지연이 발생했습니다.", { id: toastId });
+    } finally {
+      setIsPolishing(false);
+    }
+  };
 
   const insertAdminFormat = (formatType: "bold" | "highlight" | "quote" | "h2" | "bullet" | "link") => {
     const textarea = document.getElementById("admin_edit_input_content") as HTMLTextAreaElement | null;
     if (!textarea) return;
+
+    if (typeof playHapticClick === "function") playHapticClick(500, 0.03);
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
@@ -13733,6 +14019,7 @@ const AdminNewsCenter = ({
   ];
 
   const handleDeleteNews = async (id: string) => {
+    if (typeof playHapticClick === "function") playHapticClick(450, 0.08);
     if (deletingArticleId !== id) {
       setDeletingArticleId(id);
       toast.error("정말 기사를 영구히 삭제하시려면 휴지통을 한 번 더 클릭해주세요.", { duration: 3000 });
@@ -13750,6 +14037,7 @@ const AdminNewsCenter = ({
   };
 
   const toggleApproval = async (id: string, current: boolean) => {
+    if (typeof playHapticClick === "function") playHapticClick(current ? 600 : 800, 0.05);
     try {
       await updateDoc(doc(db, "citizen_news", id), { isApproved: !current });
       toast.success(current ? "기사 승인 취소" : "기사 승인 완료");
@@ -13759,6 +14047,7 @@ const AdminNewsCenter = ({
   };
 
   const toggleFeatured = async (id: string, current: boolean) => {
+    if (typeof playHapticClick === "function") playHapticClick(current ? 500 : 700, 0.06);
     try {
       await updateDoc(doc(db, "citizen_news", id), { isFeatured: !current });
       toast.success(current ? "헤드라인 해제" : "헤드라인 설정");
@@ -13768,6 +14057,7 @@ const AdminNewsCenter = ({
   };
 
   const approveReporter = async (id: string, current: boolean) => {
+    if (typeof playHapticClick === "function") playHapticClick(current ? 400 : 750, 0.05);
     try {
       await updateDoc(doc(db, "reporters", id), { isApproved: !current });
       toast.success(current ? "기자 자격 정지" : "기자 자격 승인");
@@ -13804,7 +14094,10 @@ const AdminNewsCenter = ({
         thumbnail: inlineForm.thumbnail.trim() || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800",
         updatedAt: new Date().toISOString(),
       });
+      // Clear localStorage draft upon successful save
+      localStorage.removeItem(`isol_admin_article_draft_${editingNews.id}`);
       toast.success("기사 교정 및 업데이트가 완벽히 저장되었습니다!", { id: toastId });
+      if (typeof playHapticClick === "function") playHapticClick(900, 0.1);
       setEditingNews(null);
     } catch (error) {
       console.error("Admin editorial save error:", error);
@@ -13818,6 +14111,30 @@ const AdminNewsCenter = ({
     return (
       <div className="p-20 text-center font-black">접근 권한이 없습니다.</div>
     );
+
+  const totalArticles = citizenNews.length;
+  const unapprovedArticles = citizenNews.filter(n => !n.isApproved).length;
+  const featuredArticles = citizenNews.filter(n => n.isFeatured).length;
+  const totalReporters = reporters.length;
+  const activeReporters = reporters.filter(r => r.isApproved).length;
+
+  const filteredArticlesList = citizenNews.filter((news) => {
+    const matchesSearch = 
+      !adminSearchQuery.trim() ||
+      news.title?.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+      news.content?.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+      news.author?.toLowerCase().includes(adminSearchQuery.toLowerCase());
+    
+    const matchesCategory = selectedAdminCategory === "전체" || news.category === selectedAdminCategory;
+    
+    const matchesStatus = 
+      selectedAdminStatus === "전체" ||
+      (selectedAdminStatus === "승인대기" && !news.isApproved) ||
+      (selectedAdminStatus === "승인완료" && news.isApproved) ||
+      (selectedAdminStatus === "헤드라인" && news.isFeatured);
+
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
   return (
     <div className="min-h-screen pt-32 px-6 md:px-16 pb-20 bg-zinc-50 dark:bg-black">
@@ -13858,115 +14175,287 @@ const AdminNewsCenter = ({
         </div>
       </header>
 
+      {/* Soul Fact Insight Dashboard Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10" id="admin_insight_cards">
+        <motion.div 
+          whileHover={{ y: -4 }}
+          className="bg-white dark:bg-zinc-900 p-5 rounded-[2rem] border border-zinc-200/60 dark:border-zinc-800/60 shadow-xs flex flex-col justify-between"
+        >
+          <div>
+            <span className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">전체 기사 발송</span>
+            <h3 className="text-3xl font-black text-zinc-950 dark:text-white mt-1">{totalArticles}건</h3>
+          </div>
+          <div className="mt-4 flex items-center justify-between">
+            <span className="text-[9px] font-bold text-zinc-450 dark:text-zinc-500">데이터베이스 실시간 상태</span>
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -4 }}
+          className="bg-white dark:bg-zinc-900 p-5 rounded-[2rem] border border-zinc-200/60 dark:border-zinc-800/60 shadow-xs flex flex-col justify-between"
+        >
+          <div>
+            <span className="text-[10px] font-black uppercase text-zinc-400 tracking-wider text-red-650">승인 대기 기사</span>
+            <h3 className="text-3xl font-black text-red-650 mt-1">{unapprovedArticles}건</h3>
+          </div>
+          <div className="mt-4">
+            <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+              <div 
+                className="bg-red-600 h-full rounded-full transition-all duration-500" 
+                style={{ width: `${totalArticles ? (unapprovedArticles / totalArticles) * 100 : 0}%` }}
+              ></div>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -4 }}
+          className="bg-white dark:bg-zinc-900 p-5 rounded-[2rem] border border-zinc-200/60 dark:border-zinc-800/60 shadow-xs flex flex-col justify-between"
+        >
+          <div>
+            <span className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">지정 헤드라인 비율</span>
+            <h3 className="text-3xl font-black text-zinc-950 dark:text-white mt-1">{featuredArticles}건</h3>
+          </div>
+          <div className="mt-4">
+            <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+              <div 
+                className="bg-zinc-900 dark:bg-white h-full rounded-full transition-all duration-500" 
+                style={{ width: `${totalArticles ? (featuredArticles / totalArticles) * 100 : 0}%` }}
+              ></div>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -4 }}
+          className="bg-white dark:bg-zinc-900 p-5 rounded-[2rem] border border-zinc-200/60 dark:border-zinc-800/60 shadow-xs flex flex-col justify-between"
+        >
+          <div>
+            <span className="text-[10px] font-black uppercase text-zinc-400 tracking-wider">소속 기자 현황</span>
+            <h3 className="text-3xl font-black text-zinc-950 dark:text-white mt-1">{activeReporters} / {totalReporters}명</h3>
+          </div>
+          <div className="mt-4">
+            <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+              <div 
+                className="bg-orange-500 h-full rounded-full transition-all duration-500" 
+                style={{ width: `${totalReporters ? (activeReporters / totalReporters) * 100 : 0}%` }}
+              ></div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
       {activeTab === "articles" ? (
-        <div className="grid gap-4" id="admin_articles_grid">
-          {citizenNews.map((news) => (
-            <div
-              key={news.id}
-              className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row gap-6 items-start md:items-center shadow-lg hover:shadow-xl transition-all duration-300"
-              id={`admin_news_card_${news.id}`}
-            >
-              <img
-                src={news.thumbnail}
-                className="w-full md:w-40 h-24 object-cover rounded-2xl shadow-inner bg-zinc-100"
-                alt=""
-                referrerPolicy="no-referrer"
-              />
-              <div className="flex-1 w-full">
-                <div className="flex items-center gap-2 mb-1.5Packed flex-wrap">
-                  <span className="text-[10px] font-black bg-zinc-100 dark:bg-black/40 px-2.5 py-1 rounded text-zinc-500 dark:text-zinc-400 uppercase tracking-widest border border-zinc-200/50 dark:border-zinc-800/50">
-                    {news.category}
-                  </span>
-                  <span className="text-[10px] font-bold text-zinc-400">
-                    {news.author} 기자
-                  </span>
-                </div>
-                <h4 className="font-bold text-xl mb-3 text-zinc-900 dark:text-gray-100 line-clamp-2 leading-snug">{news.title}</h4>
-                <div className="flex flex-wrap items-center gap-3.5 mt-2">
-                  {/* 1. 기사 본문 간편 수정 (Pencil Icon) */}
-                  <div className="relative group/tooltip">
-                    <button
-                      id={`admin_edit_btn_${news.id}`}
-                      onClick={() => {
-                        setInlineForm({
-                          title: news.title || "",
-                          content: news.content || "",
-                          author: news.author || "",
-                          category: news.category || "사회/정치",
-                          thumbnail: news.thumbnail || "",
-                        });
-                        setEditingNews(news);
-                      }}
-                      className="w-10 h-10 rounded-full border border-zinc-250 dark:border-zinc-800 hover:border-zinc-950 dark:hover:border-white text-zinc-650 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850 flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    {/* Custom Highly-Styled Tooltip */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 text-[10.5px] font-black text-white rounded-lg shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50">
-                      ✏️ 기사 본문 내용 간편 수정
-                    </div>
-                  </div>
+        <div className="space-y-6">
+          {/* Advanced Search & Filtering Dashboard Panel (Trendy & Mobile-Optimized) */}
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-zinc-200/60 dark:border-zinc-800/60 shadow-xs space-y-4">
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="relative w-full md:w-96">
+                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="기사 제목, 본문 내용, 기자 성함 실시간 검색..."
+                  value={adminSearchQuery}
+                  onChange={(e) => setAdminSearchQuery(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 bg-zinc-50 dark:bg-black/40 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all"
+                />
+                {adminSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setAdminSearchQuery("")}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-450 hover:text-zinc-650 dark:text-zinc-500 dark:hover:text-zinc-300 text-xs font-bold cursor-pointer"
+                  >
+                    지우기
+                  </button>
+                )}
+              </div>
 
-                  {/* 2. 보도 승인 여부 토글 (Shield Alert Icon) */}
-                  <div className="relative group/tooltip">
-                    <button
-                      id={`admin_approve_btn_${news.id}`}
-                      onClick={() => toggleApproval(news.id, !!news.isApproved)}
-                      className={cn(
-                        "w-10 h-10 rounded-full border flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm",
-                        news.isApproved
-                          ? "border-emerald-550/35 text-emerald-600 bg-emerald-500/5 hover:bg-emerald-500/10"
-                          : "border-amber-500/35 text-amber-500 bg-amber-500/5 hover:bg-amber-500/10"
-                      )}
-                    >
-                      <ShieldAlert size={16} />
-                    </button>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 text-[10.5px] font-black text-white rounded-lg shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50">
-                      🛡️ 보도 심사: {news.isApproved ? "승인 완료 (사이트 보도중)" : "심사 대기중"}
-                    </div>
-                  </div>
-
-                  {/* 3. 헤드라인 포탈 메인 송출 (Exit Arrow Icon mimicking mockup) */}
-                  <div className="relative group/tooltip">
-                    <button
-                      id={`admin_featured_btn_${news.id}`}
-                      onClick={() => toggleFeatured(news.id, !!news.isFeatured)}
-                      className={cn(
-                        "w-10 h-10 rounded-full border flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm",
-                        news.isFeatured
-                          ? "border-blue-500/35 text-blue-500 bg-blue-500/5 hover:bg-blue-500/10"
-                          : "border-zinc-250 dark:border-zinc-800 text-zinc-500 hover:border-zinc-950 hover:bg-zinc-50 dark:hover:bg-zinc-850"
-                      )}
-                    >
-                      <LogOut size={16} className="transform rotate-180" />
-                    </button>
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 text-[10.5px] font-black text-white rounded-lg shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50">
-                      🚀 중요 보도: {news.isFeatured ? "헤드라인 메인 송출 해제" : "헤드라인 메인 송출"}
-                    </div>
-                  </div>
-
-                  {/* 4. 기사 영구 삭제 (Trash Icon positioned on the right) */}
-                  <div className="relative group/tooltip ml-auto md:ml-3">
-                    <button
-                      id={`admin_delete_btn_${news.id}`}
-                      onClick={() => handleDeleteNews(news.id)}
-                      className={cn(
-                        "w-10 h-10 rounded-full border flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-sm",
-                        deletingArticleId === news.id
-                          ? "border-red-500/60 text-red-600 bg-red-500/10 scale-110 animate-pulse font-bold"
-                          : "border-zinc-250 dark:border-zinc-800 text-zinc-400 hover:text-red-600 hover:border-red-500/40 hover:bg-red-500/5"
-                      )}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                    <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 text-[10.5px] font-black text-white rounded-lg shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50">
-                      {deletingArticleId === news.id ? "⚠️ 한 번 더 눌러 영구 파기" : "🗑️ 데이터베이스 기사 영구 삭제"}
-                    </div>
-                  </div>
-                </div>
+              {/* Segmented Filter for Approval Status */}
+              <div className="bg-zinc-100 dark:bg-black/60 p-1 rounded-2xl flex items-center border border-zinc-200/50 dark:border-zinc-800 w-full md:w-auto overflow-x-auto no-scrollbar">
+                {[
+                  { value: "전체", label: "📄 전체 기사" },
+                  { value: "승인대기", label: "⏳ 승인대기" },
+                  { value: "승인완료", label: "✅ 승인완료" },
+                  { value: "헤드라인", label: "🚀 헤드라인" }
+                ].map((tab) => (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    onClick={() => {
+                      if (typeof playHapticClick === "function") playHapticClick(600, 0.02);
+                      setSelectedAdminStatus(tab.value);
+                    }}
+                    className={cn(
+                      "px-3.5 py-2 rounded-xl text-[10.5px] font-black tracking-wide transition-all cursor-pointer whitespace-nowrap flex-1 md:flex-none",
+                      selectedAdminStatus === tab.value
+                        ? "bg-white dark:bg-zinc-850 text-red-600 dark:text-red-400 shadow-sm border border-zinc-200/10"
+                        : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-350"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
             </div>
-          ))}
+
+            {/* Category horizontal scrolling pills */}
+            <div className="border-t border-zinc-100 dark:border-zinc-800/60 pt-4 flex flex-col gap-2">
+              <span className="text-[9.5px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
+                기사 분류 카테고리 필터
+              </span>
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                {["전체", ...categoriesList].map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => {
+                      if (typeof playHapticClick === "function") playHapticClick(600, 0.02);
+                      setSelectedAdminCategory(cat);
+                    }}
+                    className={cn(
+                      "px-3.5 py-2 rounded-full text-[10px] font-black transition-all cursor-pointer whitespace-nowrap border shrink-0",
+                      selectedAdminCategory === cat
+                        ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
+                        : "bg-zinc-50 dark:bg-black/20 border-zinc-200 dark:border-zinc-800/80 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-350"
+                    )}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Articles list */}
+          {filteredArticlesList.length === 0 ? (
+            <div className="text-center py-24 bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-dashed border-zinc-200 dark:border-zinc-800 shadow-xs flex flex-col items-center justify-center">
+              <span className="text-4xl animate-bounce">🔍</span>
+              <h4 className="text-base font-black text-zinc-800 dark:text-zinc-250 mt-4">부합하는 기사 보도자료가 존재하지 않습니다</h4>
+              <p className="text-xs text-zinc-400 font-bold mt-1">검색어를 지우거나 필터를 전체로 변경해 주시기 바랍니다.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setAdminSearchQuery("");
+                  setSelectedAdminCategory("전체");
+                  setSelectedAdminStatus("전체");
+                }}
+                className="mt-6 px-5 py-2.5 bg-red-600 text-white rounded-xl text-xs font-black hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-md"
+              >
+                검색 필터 초기화
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-4" id="admin_articles_grid">
+              {filteredArticlesList.map((news) => (
+                <div
+                  key={news.id}
+                  className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 flex flex-col md:flex-row gap-6 items-start md:items-center shadow-lg hover:shadow-xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 duration-200"
+                  id={`admin_news_card_${news.id}`}
+                >
+                  <img
+                    src={news.thumbnail}
+                    className="w-full md:w-40 h-24 object-cover rounded-2xl shadow-inner bg-zinc-100"
+                    alt=""
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="flex-1 w-full">
+                    <div className="flex items-center gap-2 mb-1.5Packed flex-wrap">
+                      <span className="text-[10px] font-black bg-zinc-100 dark:bg-black/40 px-2.5 py-1 rounded text-zinc-500 dark:text-zinc-400 uppercase tracking-widest border border-zinc-200/50 dark:border-zinc-800/50">
+                        {news.category}
+                      </span>
+                      <span className="text-[10px] font-bold text-zinc-400">
+                        {news.author} 기자
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-xl mb-3 text-zinc-900 dark:text-gray-100 line-clamp-2 leading-snug">{news.title}</h4>
+                    <div className="flex flex-wrap items-center gap-3.5 mt-2">
+                      {/* 1. 기사 본문 간편 수정 (Pencil Icon) */}
+                      <div className="relative group/tooltip">
+                        <button
+                          id={`admin_edit_btn_${news.id}`}
+                          onClick={() => {
+                            setInlineForm({
+                              title: news.title || "",
+                              content: news.content || "",
+                              author: news.author || "",
+                              category: news.category || "사회/정치",
+                              thumbnail: news.thumbnail || "",
+                            });
+                            setEditingNews(news);
+                          }}
+                          className="w-10 h-10 rounded-full border border-zinc-250 dark:border-zinc-800 hover:border-zinc-950 dark:hover:border-white text-zinc-650 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850 flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        {/* Custom Highly-Styled Tooltip */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 text-[10.5px] font-black text-white rounded-lg shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50">
+                          ✏️ 기사 본문 내용 간편 수정
+                        </div>
+                      </div>
+
+                      {/* 2. 보도 승인 여부 토글 (Shield Alert Icon) */}
+                      <div className="relative group/tooltip">
+                        <button
+                          id={`admin_approve_btn_${news.id}`}
+                          onClick={() => toggleApproval(news.id, !!news.isApproved)}
+                          className={cn(
+                            "w-10 h-10 rounded-full border flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm",
+                            news.isApproved
+                              ? "border-emerald-550/35 text-emerald-600 bg-emerald-500/5 hover:bg-emerald-500/10"
+                              : "border-amber-500/35 text-amber-500 bg-amber-500/5 hover:bg-amber-500/10"
+                          )}
+                        >
+                          <ShieldAlert size={16} />
+                        </button>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 text-[10.5px] font-black text-white rounded-lg shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50">
+                          🛡️ 보도 심사: {news.isApproved ? "승인 완료 (사이트 보도중)" : "심사 대기중"}
+                        </div>
+                      </div>
+
+                      {/* 3. 헤드라인 포탈 메인 송출 (Exit Arrow Icon mimicking mockup) */}
+                      <div className="relative group/tooltip">
+                        <button
+                          id={`admin_featured_btn_${news.id}`}
+                          onClick={() => toggleFeatured(news.id, !!news.isFeatured)}
+                          className={cn(
+                            "w-10 h-10 rounded-full border flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm",
+                            news.isFeatured
+                              ? "border-blue-500/35 text-blue-500 bg-blue-500/5 hover:bg-blue-500/10"
+                              : "border-zinc-250 dark:border-zinc-800 text-zinc-500 hover:border-zinc-950 hover:bg-zinc-50 dark:hover:bg-zinc-850"
+                          )}
+                        >
+                          <LogOut size={16} className="transform rotate-180" />
+                        </button>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 text-[10.5px] font-black text-white rounded-lg shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50">
+                          🚀 중요 보도: {news.isFeatured ? "헤드라인 메인 송출 해제" : "헤드라인 메인 송출"}
+                        </div>
+                      </div>
+
+                      {/* 4. 기사 영구 삭제 (Trash Icon positioned on the right) */}
+                      <div className="relative group/tooltip ml-auto md:ml-3">
+                        <button
+                          id={`admin_delete_btn_${news.id}`}
+                          onClick={() => handleDeleteNews(news.id)}
+                          className={cn(
+                            "w-10 h-10 rounded-full border flex items-center justify-center transition-all cursor-pointer active:scale-95 shadow-sm",
+                            deletingArticleId === news.id
+                              ? "border-red-500/60 text-red-600 bg-red-500/10 scale-110 animate-pulse font-bold"
+                              : "border-zinc-250 dark:border-zinc-800 text-zinc-400 hover:text-red-600 hover:border-red-500/40 hover:bg-red-500/5"
+                          )}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                        <div className="absolute bottom-full right-0 mb-2 px-2.5 py-1.5 bg-zinc-900 border border-zinc-800 text-[10.5px] font-black text-white rounded-lg shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-150 whitespace-nowrap z-50">
+                          {deletingArticleId === news.id ? "⚠️ 한 번 더 눌러 영구 파기" : "🗑️ 데이터베이스 기사 영구 삭제"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="admin_reporters_grid">
@@ -14045,165 +14534,501 @@ const AdminNewsCenter = ({
                     Quick Editorial Adjustment - Firestore Sync Nodes
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setEditingNews(null)}
-                  className="w-10 h-10 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center border border-zinc-100 dark:border-zinc-800 text-zinc-400 hover:text-zinc-600 transition-all cursor-pointer"
-                >
-                  <XCircle size={20} />
-                </button>
+                {/* 1. Mode selection tabs */}
+                <div className="flex items-center gap-3">
+                  <div className="bg-zinc-100 dark:bg-zinc-800/80 p-1 rounded-2xl flex items-center border border-zinc-200/50 dark:border-zinc-700/50">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode("edit")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl text-[11px] font-black tracking-wide transition-all cursor-pointer flex items-center gap-1",
+                        previewMode === "edit"
+                          ? "bg-white dark:bg-zinc-900 text-red-600 shadow-md"
+                          : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                      )}
+                    >
+                      <Edit2 size={11} />
+                      <span>교정 모드</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewMode("mobile_preview")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-xl text-[11px] font-black tracking-wide transition-all cursor-pointer flex items-center gap-1",
+                        previewMode === "mobile_preview"
+                          ? "bg-white dark:bg-zinc-900 text-red-600 shadow-md"
+                          : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                      )}
+                    >
+                      <Smartphone size={11} />
+                      <span>모바일 뷰</span>
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEditingNews(null)}
+                    className="w-10 h-10 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 flex items-center justify-center border border-zinc-100 dark:border-zinc-800 text-zinc-400 hover:text-zinc-600 transition-all cursor-pointer"
+                  >
+                    <XCircle size={20} />
+                  </button>
+                </div>
               </div>
 
               <form onSubmit={handleSaveEdit} className="space-y-5 overflow-y-auto pr-2 no-scrollbar flex-1" id="admin_edit_modal_form">
-                {/* Title */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
-                    기사 헤드라인 제목
-                  </label>
-                  <input
-                    id="admin_edit_input_title"
-                    type="text"
-                    value={inlineForm.title}
-                    onChange={(e) => setInlineForm({ ...inlineForm, title: e.target.value })}
-                    className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold text-zinc-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
-                    placeholder="제목을 입력하세요"
-                  />
-                </div>
+                {previewMode === "edit" ? (
+                  <>
+                    {/* 2. AI Polish Command Bar */}
+                    <div className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/10 rounded-[1.5rem] mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-red-600/10 flex items-center justify-center text-red-600">
+                          <Sparkles size={18} className={cn(isPolishing && "animate-spin")} />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-black text-zinc-800 dark:text-zinc-200">이솔AI 원클릭 통합 교정관</h4>
+                          <p className="text-[10px] text-zinc-400 font-bold">제목 윤문, 맞춤법 보정, 6하원칙 사실 조회를 1초만에 실행</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAiPolish}
+                        disabled={isPolishing}
+                        className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer disabled:opacity-50"
+                      >
+                        <span>{isPolishing ? "가동중..." : "AI 교정"}</span>
+                        <Sparkles size={11} />
+                      </button>
+                    </div>
 
-                {/* Author and Category Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
-                      작성 기자 성함
-                    </label>
-                    <input
-                      id="admin_edit_input_author"
-                      type="text"
-                      value={inlineForm.author}
-                      onChange={(e) => setInlineForm({ ...inlineForm, author: e.target.value })}
-                      className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold text-zinc-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
-                    />
-                  </div>
+                    {/* 3. AI Polish Results (6W1H bento grid) */}
+                    {polishResult && (
+                      <div className="p-4 bg-zinc-50 dark:bg-black/40 rounded-3xl border border-zinc-200 dark:border-zinc-800 space-y-3.5">
+                        <div className="flex items-center gap-2 pb-2 border-b border-zinc-200 dark:border-zinc-850">
+                          <CheckCircle2 size={13} className="text-emerald-500" />
+                          <h4 className="text-xs font-black text-zinc-800 dark:text-zinc-200">AI 기사 분석 및 6하원칙 리포트</h4>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          <div className="bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-150 dark:border-zinc-800">
+                            <span className="text-[9px] text-zinc-400 font-black block">누가 (Who)</span>
+                            <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mt-0.5 truncate">{polishResult.check6w1h.who || "-"}</p>
+                          </div>
+                          <div className="bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-150 dark:border-zinc-800">
+                            <span className="text-[9px] text-zinc-400 font-black block">언제 (When)</span>
+                            <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mt-0.5 truncate">{polishResult.check6w1h.when || "-"}</p>
+                          </div>
+                          <div className="bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-150 dark:border-zinc-800">
+                            <span className="text-[9px] text-zinc-400 font-black block">어디서 (Where)</span>
+                            <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mt-0.5 truncate">{polishResult.check6w1h.where || "-"}</p>
+                          </div>
+                          <div className="bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-150 dark:border-zinc-800">
+                            <span className="text-[9px] text-zinc-400 font-black block">무엇을 (What)</span>
+                            <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mt-0.5 truncate">{polishResult.check6w1h.what || "-"}</p>
+                          </div>
+                          <div className="bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-150 dark:border-zinc-800">
+                            <span className="text-[9px] text-zinc-400 font-black block">어떻게 (How)</span>
+                            <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mt-0.5 truncate">{polishResult.check6w1h.how || "-"}</p>
+                          </div>
+                          <div className="bg-white dark:bg-zinc-900 p-2.5 rounded-xl border border-zinc-150 dark:border-zinc-800">
+                            <span className="text-[9px] text-zinc-400 font-black block">왜 (Why)</span>
+                            <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300 mt-0.5 truncate">{polishResult.check6w1h.why || "-"}</p>
+                          </div>
+                        </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
-                      기사 분류 카테고리
-                    </label>
-                    <select
-                      id="admin_edit_select_category"
-                      value={inlineForm.category}
-                      onChange={(e) => setInlineForm({ ...inlineForm, category: e.target.value })}
-                      className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-red-500 cursor-pointer"
-                    >
-                      {categoriesList.map((c) => (
-                        <option key={c} value={c} className="bg-white dark:bg-zinc-950">
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Thumbnail */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
-                    기사 대표 썸네일 경로
-                  </label>
-                  <div className="flex gap-4 items-center">
-                    <input
-                      id="admin_edit_input_thumbnail"
-                      type="text"
-                      value={inlineForm.thumbnail}
-                      onChange={(e) => setInlineForm({ ...inlineForm, thumbnail: e.target.value })}
-                      className="flex-1 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold text-zinc-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none transition-all"
-                      placeholder="https://images.unsplash.com/..."
-                    />
-                    {inlineForm.thumbnail && (
-                      <img
-                        src={inlineForm.thumbnail}
-                        className="w-14 h-14 rounded-xl object-cover bg-zinc-100 border border-zinc-200 dark:border-zinc-800"
-                        alt="미리보기"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
+                        <div className="bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-xl text-left">
+                          <span className="text-[9px] text-emerald-600 font-black block">📝 교정 사항 코멘트 (Correction Log)</span>
+                          <p className="text-[11px] text-zinc-600 dark:text-zinc-300 mt-1 leading-relaxed whitespace-pre-line">{polishResult.correctionLog}</p>
+                        </div>
+                      </div>
                     )}
+
+                    {/* Title */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
+                          기사 헤드라인 제목
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleGenerateTitlesAdmin}
+                          disabled={isGeneratingTitlesAdmin}
+                          className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50 text-red-500 rounded-lg text-[10px] font-black flex items-center gap-1 transition-all cursor-pointer border border-red-500/15"
+                        >
+                          {isGeneratingTitlesAdmin ? (
+                            <>
+                              <Loader2 size={10} className="animate-spin mr-1" />
+                              <span>AI 헤드라인 구상 중...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles size={10} className="mr-1 text-red-500" />
+                              <span>🪄 AI 헤드라인 추천</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <input
+                        id="admin_edit_input_title"
+                        type="text"
+                        value={inlineForm.title}
+                        onChange={(e) => setInlineForm({ ...inlineForm, title: e.target.value })}
+                        className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold text-zinc-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+                        placeholder="제목을 입력하세요"
+                      />
+
+                      {/* AI Headline Suggestion Drawer Component */}
+                      {adminTitleSuggestions && (
+                        <div className="p-3.5 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl space-y-2 text-left mt-2 animate-in slide-in-from-top-2 duration-200">
+                          <div className="flex justify-between items-center border-b border-zinc-150 dark:border-zinc-800 pb-1.5 mb-1.5">
+                            <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                              ✨ AI 저널리즘 헤드라인 대조 추천안 (원클릭 이식)
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setAdminTitleSuggestions(null)}
+                              className="text-[9px] text-zinc-400 hover:text-zinc-600 font-bold"
+                            >
+                              닫기
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 gap-1.5 text-[11px]">
+                            {[
+                              { key: "sensational", type: "속보/이슈형 🔥", text: adminTitleSuggestions.sensational },
+                              { key: "seo", type: "검색최적화형 🔍", text: adminTitleSuggestions.seo },
+                              { key: "opinion", type: "사설/칼럼형 ✍️", text: adminTitleSuggestions.opinion },
+                              { key: "simple", type: "직관간결형 📱", text: adminTitleSuggestions.simple },
+                              { key: "inquisitive", type: "독자자극형 ❓", text: adminTitleSuggestions.inquisitive }
+                            ].map((suggestion) => (
+                              <button
+                                key={suggestion.key}
+                                type="button"
+                                onClick={() => {
+                                  setInlineForm(prev => ({ ...prev, title: suggestion.text }));
+                                  toast.success(`✨ '${suggestion.type}' 헤드라인으로 치환되었습니다!`);
+                                }}
+                                className="w-full p-2.5 bg-white hover:bg-red-500/[0.03] dark:bg-zinc-950 dark:hover:bg-red-500/[0.03] border border-zinc-150 hover:border-red-500/30 dark:border-zinc-805 dark:hover:border-red-500/30 rounded-xl transition-all flex items-start gap-2.5 text-left font-sans cursor-pointer group"
+                              >
+                                <span className="text-[9px] px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-900 group-hover:bg-red-500/10 text-zinc-500 dark:text-zinc-400 group-hover:text-red-500 font-black rounded-md whitespace-nowrap tracking-wide">
+                                  {suggestion.type}
+                                </span>
+                                <span className="font-extrabold text-zinc-800 dark:text-zinc-200 leading-snug flex-1">
+                                  {suggestion.text}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Author and Category Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
+                          작성 기자 성함
+                        </label>
+                        <input
+                          id="admin_edit_input_author"
+                          type="text"
+                          value={inlineForm.author}
+                          onChange={(e) => setInlineForm({ ...inlineForm, author: e.target.value })}
+                          className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold text-zinc-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
+                          기사 분류 카테고리
+                        </label>
+                        <select
+                          id="admin_edit_select_category"
+                          value={inlineForm.category}
+                          onChange={(e) => setInlineForm({ ...inlineForm, category: e.target.value })}
+                          className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-red-500 cursor-pointer"
+                        >
+                          {categoriesList.map((c) => (
+                            <option key={c} value={c} className="bg-white dark:bg-zinc-950">
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Thumbnail */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
+                          기사 대표 썸네일 경로
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleGenerateImageAdmin}
+                          disabled={isGeneratingImageAdmin}
+                          className="px-2.5 py-1 bg-orange-500/10 hover:bg-orange-500/20 disabled:opacity-50 text-orange-600 rounded-lg text-[10px] font-black flex items-center gap-1 transition-all cursor-pointer border border-orange-500/15"
+                        >
+                          {isGeneratingImageAdmin ? (
+                            <>
+                              <Loader2 size={10} className="animate-spin mr-1" />
+                              <span>AI 썸네일 생성 중...</span>
+                            </>
+                          ) : (
+                            <>
+                              <ImageIcon size={10} className="mr-1 text-orange-500" />
+                              <span>🎨 AI 썸네일 생성</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <div className="flex gap-4 items-center">
+                        <input
+                          id="admin_edit_input_thumbnail"
+                          type="text"
+                          value={inlineForm.thumbnail}
+                          onChange={(e) => setInlineForm({ ...inlineForm, thumbnail: e.target.value })}
+                          className="flex-1 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold text-zinc-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none transition-all"
+                          placeholder="https://images.unsplash.com/..."
+                        />
+                        {inlineForm.thumbnail && (
+                          <img
+                            src={inlineForm.thumbnail}
+                            className="w-14 h-14 rounded-xl object-cover bg-zinc-100 border border-zinc-200 dark:border-zinc-800 shrink-0"
+                            alt="미리보기"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="space-y-1.5 animate-in fade-in duration-300">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
+                          기사 본문 내용
+                        </label>
+                        <div className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
+                          <span className="bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded">
+                            {inlineForm.content ? inlineForm.content.length : 0}자
+                          </span>
+                          <span className="bg-zinc-100 dark:bg-zinc-900 px-1.5 py-0.5 rounded">
+                            {inlineForm.content ? inlineForm.content.split(/\s+/).filter(Boolean).length : 0}단어
+                          </span>
+                          <span className="bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            ⏱️ 약 {Math.max(1, Math.ceil((inlineForm.content ? inlineForm.content.length : 0) / 400))}분 분량
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 🛠️ 관리자 전용 교정 툴바 (Admin Formatting Toolbelt) */}
+                      <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-zinc-50 dark:bg-zinc-950/40 rounded-xl border border-zinc-200/50 dark:border-zinc-800/80 my-1">
+                        <button
+                          type="button"
+                          onClick={() => insertAdminFormat("bold")}
+                          className="px-2 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-zinc-200/30 shadow-xs shrink-0"
+                          title="굵게 강조 (**강조**)"
+                        >
+                          <Bold size={10} className="text-red-500" />
+                          <span>굵게</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertAdminFormat("highlight")}
+                          className="px-2 py-1 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-700 dark:text-yellow-450 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-yellow-500/20 shrink-0"
+                          title="형광펜 강조 (<mark>강조</mark>)"
+                        >
+                          <Highlighter size={10} className="text-yellow-600 dark:text-yellow-450" />
+                          <span>형광펜</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertAdminFormat("quote")}
+                          className="px-2 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-zinc-200/30 shadow-xs shrink-0"
+                          title="인용 박스 (> 인용구)"
+                        >
+                          <Quote size={10} className="text-amber-500" />
+                          <span>인용</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertAdminFormat("h2")}
+                          className="px-2 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-zinc-200/30 shadow-xs shrink-0"
+                          title="소제목 (## 소제목)"
+                        >
+                          <Heading2 size={10} className="text-blue-500" />
+                          <span>소제목</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertAdminFormat("bullet")}
+                          className="px-2 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-zinc-200/30 shadow-xs shrink-0"
+                          title="목록 기호 (- 항목)"
+                        >
+                          <List size={10} className="text-emerald-500" />
+                          <span>글머리</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertAdminFormat("link")}
+                          className="px-2 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-zinc-200/30 shadow-xs shrink-0"
+                          title="참조 링크 ([명칭](링크))"
+                        >
+                          <LinkIcon size={10} className="text-purple-500" />
+                          <span>링크</span>
+                        </button>
+
+                        {/* Divider */}
+                        <div className="h-4 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-1"></div>
+
+                        {/* AI Quick Controls */}
+                        <div className="flex flex-wrap items-center gap-1.5 bg-red-500/5 dark:bg-red-500/[0.02] border border-red-500/10 px-2.5 py-0.5 rounded-lg">
+                          <span className="text-[9px] font-black text-red-500 uppercase tracking-widest flex items-center gap-0.5">
+                            <Sparkles size={10} /> AI 글쓰기 코치:
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleAiWriterAdmin("elevate")}
+                            disabled={isAiWritingAdmin}
+                            className="px-2 py-0.5 bg-white hover:bg-zinc-150 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 rounded text-[9.5px] font-extrabold flex items-center gap-0.5 cursor-pointer disabled:opacity-50"
+                            title="기사 내용을 품격 있는 정론 저널리즘 기사체로 격상합니다."
+                          >
+                            정론체
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAiWriterAdmin("mz_trendy")}
+                            disabled={isAiWritingAdmin}
+                            className="px-2 py-0.5 bg-white hover:bg-zinc-150 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 rounded text-[9.5px] font-extrabold flex items-center gap-0.5 cursor-pointer disabled:opacity-50"
+                            title="기사 내용을 감각적이고 이모지가 가득한 MZ세대 모바일 전용 톤앤매너로 변경합니다."
+                          >
+                            MZ세대톤
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAiWriterAdmin("summarize")}
+                            disabled={isAiWritingAdmin}
+                            className="px-2 py-0.5 bg-white hover:bg-zinc-150 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 rounded text-[9.5px] font-extrabold flex items-center gap-0.5 cursor-pointer disabled:opacity-50"
+                            title="본 기사 내용의 에센스를 3개 핵심 핵심 요약 문장으로 요약 재작성합니다."
+                          >
+                            3줄요약
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAiWriterAdmin("expand")}
+                            disabled={isAiWritingAdmin}
+                            className="px-2 py-0.5 bg-white hover:bg-zinc-150 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 rounded text-[9.5px] font-extrabold flex items-center gap-0.5 cursor-pointer disabled:opacity-50"
+                            title="기본 내용을 바탕으로 심층적이고 풍부한 저널리즘적 맥락을 확장 보충합니다."
+                          >
+                            분량살붙이기
+                          </button>
+                        </div>
+                      </div>
+
+                      <textarea
+                        id="admin_edit_input_content"
+                        value={inlineForm.content}
+                        onChange={(e) => setInlineForm({ ...inlineForm, content: e.target.value })}
+                        rows={8}
+                        className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-medium text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-red-500 leading-relaxed font-serif"
+                        placeholder="기사 상세 내용을 입력하세요..."
+                      />
+
+                      {/* 🎯 AI 보도 완성도 지수 및 실시간 가이드라인 (Real-time Completeness Score Card) */}
+                      {(() => {
+                        const { score, checklist } = getArticleScore(inlineForm.title, inlineForm.content, inlineForm.thumbnail);
+                        return (
+                          <div className="p-4 bg-zinc-50 dark:bg-zinc-900/40 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-3 mt-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Sparkles size={14} className="text-red-500 animate-pulse" />
+                                <span className="text-[11px] font-black tracking-wider uppercase text-zinc-500 dark:text-zinc-400">실시간 기사 완성도 및 SEO 진단</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 bg-red-500/10 text-red-600 px-2.5 py-1 rounded-lg text-xs font-black">
+                                <span>완성도 Score:</span>
+                                <span>{score}점</span>
+                              </div>
+                            </div>
+                            {/* Dynamic Score Bar */}
+                            <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                              <div 
+                                className="bg-gradient-to-r from-red-500 to-amber-500 h-full rounded-full transition-all duration-500" 
+                                style={{ width: `${score}%` }}
+                              ></div>
+                            </div>
+                            {/* Quick Checklist Bento Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                              {checklist.map((item, index) => (
+                                <div key={index} className="flex items-center gap-2 text-[10.5px] font-bold">
+                                  {item.passed ? (
+                                    <span className="text-emerald-500 shrink-0">✓</span>
+                                  ) : (
+                                    <span className="text-zinc-350 shrink-0">○</span>
+                                  )}
+                                  <span className={item.passed ? "text-zinc-700 dark:text-zinc-350" : "text-zinc-400"}>
+                                    {item.label}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </>
+                ) : (
+                  /* 4. Live Mobile Preview Screen Mockup */
+                  <div className="flex flex-col items-center py-6 bg-zinc-50 dark:bg-black/30 rounded-[2rem] border border-zinc-200/50 dark:border-zinc-800/50 animate-in fade-in duration-300">
+                    <div className="w-[320px] h-[520px] bg-white dark:bg-zinc-950 rounded-[2.5rem] border-[8px] border-zinc-800 shadow-2xl overflow-hidden relative flex flex-col text-left">
+                      {/* Top status bar */}
+                      <div className="h-7 bg-zinc-900 px-5 flex justify-between items-center text-[10px] font-mono text-zinc-400 select-none">
+                        <span>9:41</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 bg-zinc-600 rounded-full"></span>
+                          <div className="w-5 h-2.5 border border-zinc-500 rounded-sm p-[1px] flex items-center">
+                            <div className="h-full w-4 bg-zinc-400 rounded-2xs"></div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Simulated Screen Body */}
+                      <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-3.5">
+                        {inlineForm.thumbnail && (
+                          <div className="aspect-[16/9] w-full rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200/40 dark:border-zinc-800/40">
+                            <img src={inlineForm.thumbnail} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-black tracking-widest text-red-600 bg-red-500/10 px-2.5 py-0.5 rounded-full border border-red-500/20 uppercase">
+                            {inlineForm.category || "이솔뉴스"}
+                          </span>
+                        </div>
+                        <h1 className="text-base font-extrabold tracking-tight text-zinc-900 dark:text-white leading-snug">
+                          {inlineForm.title || "제목 없음"}
+                        </h1>
+                        <div className="flex justify-between items-center text-[9px] text-zinc-400 pb-2 border-b border-zinc-100 dark:border-zinc-900 font-bold uppercase tracking-wider">
+                          <span>작성: {inlineForm.author || "시민 기자"}</span>
+                          <span>방금 전</span>
+                        </div>
+                        <div className="text-[11.5px] text-zinc-600 dark:text-zinc-300 leading-relaxed font-serif whitespace-pre-wrap break-all space-y-2">
+                          {inlineForm.content || "기사 내용이 입력되지 않았습니다."}
+                        </div>
+
+                        {polishResult && polishResult.hashtags && polishResult.hashtags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-3 border-t border-dashed border-zinc-200 dark:border-zinc-800/80">
+                            {polishResult.hashtags.map((h, i) => (
+                              <span key={i} className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold bg-zinc-100 dark:bg-zinc-900 px-2 py-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/80">
+                                {h}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <p className="text-[10px] font-bold text-zinc-400 mt-3 tracking-wide">
+                      📱 이솔포스트 실시간 모바일 독자 화면 렌더링
+                    </p>
                   </div>
-                </div>
-
-                {/* Content */}
-                <div className="space-y-1.5 animate-in fade-in duration-300">
-                  <label className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
-                    기사 본문 내용
-                  </label>
-
-                  {/* 🛠️ 관리자 전용 교정 툴바 (Admin Formatting Toolbelt) */}
-                  <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-zinc-50 dark:bg-zinc-950/40 rounded-xl border border-zinc-200/50 dark:border-zinc-800/80 my-1">
-                    <button
-                      type="button"
-                      onClick={() => insertAdminFormat("bold")}
-                      className="px-2 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-zinc-200/30 shadow-xs shrink-0"
-                      title="굵게 강조 (**강조**)"
-                    >
-                      <Bold size={10} className="text-red-500" />
-                      <span>굵게</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertAdminFormat("highlight")}
-                      className="px-2 py-1 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-700 dark:text-yellow-450 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-yellow-500/20 shrink-0"
-                      title="형광펜 강조 (<mark>강조</mark>)"
-                    >
-                      <Highlighter size={10} className="text-yellow-600 dark:text-yellow-450" />
-                      <span>형광펜</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertAdminFormat("quote")}
-                      className="px-2 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-zinc-200/30 shadow-xs shrink-0"
-                      title="인용 박스 (> 인용구)"
-                    >
-                      <Quote size={10} className="text-amber-500" />
-                      <span>인용</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertAdminFormat("h2")}
-                      className="px-2 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-zinc-200/30 shadow-xs shrink-0"
-                      title="소제목 (## 소제목)"
-                    >
-                      <Heading2 size={10} className="text-blue-500" />
-                      <span>소제목</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertAdminFormat("bullet")}
-                      className="px-2 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-zinc-200/30 shadow-xs shrink-0"
-                      title="목록 기호 (- 항목)"
-                    >
-                      <List size={10} className="text-emerald-500" />
-                      <span>글머리</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertAdminFormat("link")}
-                      className="px-2 py-1 bg-white hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10.5px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-zinc-200/30 shadow-xs shrink-0"
-                      title="참조 링크 ([명칭](링크))"
-                    >
-                      <LinkIcon size={10} className="text-purple-500" />
-                      <span>링크</span>
-                    </button>
-                  </div>
-
-                  <textarea
-                    id="admin_edit_input_content"
-                    value={inlineForm.content}
-                    onChange={(e) => setInlineForm({ ...inlineForm, content: e.target.value })}
-                    rows={8}
-                    className="w-full bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-medium text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-red-500 leading-relaxed font-serif"
-                    placeholder="기사 상세 내용을 입력하세요..."
-                  />
-                </div>
+                )}
 
                 {/* Actions bottom bar */}
                 <div className="flex gap-4 pt-6 border-t border-zinc-150 dark:border-zinc-850">
@@ -14797,6 +15622,112 @@ const SoulCenter = ({
   const [showEthicsRules, setShowEthicsRules] = useState<boolean>(false);
   const [isCleaningContent, setIsCleaningContent] = useState<boolean>(false);
 
+  const [isGeneratingTitlesUser, setIsGeneratingTitlesUser] = useState(false);
+  const [userTitleSuggestions, setUserTitleSuggestions] = useState<{
+    sensational: string;
+    seo: string;
+    opinion: string;
+    simple: string;
+    inquisitive: string;
+  } | null>(null);
+
+  const [isGeneratingImageUser, setIsGeneratingImageUser] = useState(false);
+
+  const handleGenerateTitlesUser = async () => {
+    if (!postData.content || postData.content.trim().length < 5) {
+      toast.error("기사 제목을 생성하기 위해 본문 내용을 최소 5자 이상 적어주세요.");
+      return;
+    }
+    setIsGeneratingTitlesUser(true);
+    const toastId = toast.loading("🪄 AI가 본문 맥락을 분석하여 최적의 저널리즘 헤드라인 후보를 생성 중...");
+    try {
+      const response = await fetch("/api/generate-titles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: postData.content,
+          category: postData.category
+        })
+      });
+      if (!response.ok) throw new Error("Title generation failed");
+      const data = await response.json();
+      setUserTitleSuggestions(data);
+      toast.success("✨ 기사 유형별 맞춤형 헤드라인 후보 5가지가 완비되었습니다!", { id: toastId });
+    } catch (e) {
+      console.error(e);
+      toast.error("헤드라인 생성 중 지연이 발생하여 기본 후보군이 출력되었습니다.", { id: toastId });
+      setUserTitleSuggestions({
+        sensational: `[단독] ${postData.title || "미정"} 행정 특별 보도 긴급 진단`,
+        seo: `${postData.title || "미정"} 관련 주요 쟁점 현황과 심층 실증 보고`,
+        opinion: `${postData.title || "미정"}: 더 나은 이솔나라를 향한 올바른 나침반`,
+        simple: `${postData.title || "미정"}에 담긴 시민들의 솔직한 목소리`,
+        inquisitive: `과연 어떻게 전개될까? ${postData.title || "미정"}의 앞날`
+      });
+    } finally {
+      setIsGeneratingTitlesUser(false);
+    }
+  };
+
+  const handleGenerateImageUser = async () => {
+    if (!postData.title || postData.title.trim().length < 2) {
+      toast.error("썸네일 이미지를 생성하기 위해 기사 제목을 먼저 간략하게 적어주세요.");
+      return;
+    }
+    setIsGeneratingImageUser(true);
+    const toastId = toast.loading("🎨 AI가 기사 제목에 어울리는 최적의 프레스 썸네일 그래픽을 렌더링 중...");
+    try {
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: `${postData.title} - newspaper editorial style photo, journalism photography, high-fidelity crisp news photo, detailed realism`,
+          aspectRatio: "16:9"
+        })
+      });
+      if (!response.ok) throw new Error("Image generation failed");
+      const data = await response.json();
+      setPostData(prev => ({ ...prev, thumbnail: data.imageUrl }));
+      toast.success("✨ 기사에 꼭 맞는 프레스 썸네일 아트웍이 교체 부착되었습니다!", { id: toastId });
+    } catch (e) {
+      console.error(e);
+      toast.error("썸네일 생성 도중 일시적인 네트워크 지연이 생겼습니다.", { id: toastId });
+    } finally {
+      setIsGeneratingImageUser(false);
+    }
+  };
+
+  const [isAiWritingUser, setIsAiWritingUser] = useState(false);
+
+  const handleAiWriterUser = async (action: "elevate" | "mz_trendy" | "summarize" | "expand") => {
+    if (!postData.content || postData.content.trim().length < 5) {
+      toast.error("기사 본문을 최소 5자 이상 적어주세요.");
+      return;
+    }
+    setIsAiWritingUser(true);
+    const label = action === "mz_trendy" ? "MZ 세대 톤" : action === "summarize" ? "핵심 3대 강령 요약" : action === "expand" ? "기사 심층 확장" : "저널리즘 윤문";
+    const toastId = toast.loading(`🪄 AI가 기사 본문을 '${label}' 스타일로 변환 및 다듬는 중...`);
+    try {
+      const response = await fetch("/api/ai-writer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: postData.content, action })
+      });
+      if (!response.ok) throw new Error("AI Writer API failed");
+      const data = await response.json();
+      if (data.success) {
+        setPostData(prev => ({ ...prev, content: data.text }));
+        toast.success(`✨ 기사가 '${label}'으로 전격 개편되었습니다!`, { id: toastId });
+      } else {
+        throw new Error(data.error || "Unknown error");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("문장 변환 도중 일시적 지연이 발생했습니다.", { id: toastId });
+    } finally {
+      setIsAiWritingUser(false);
+    }
+  };
+
   const insertFormat = (formatType: "bold" | "highlight" | "quote" | "h2" | "bullet" | "link") => {
     const textarea = document.getElementById("soul-textarea") as HTMLTextAreaElement | null;
     if (!textarea) return;
@@ -14861,35 +15792,13 @@ const SoulCenter = ({
     setIsProofreading(true);
     const tidyToastId = toast.loading("이솔 국영 정론 보도 맞춤법 가이드라인 연산망 활성화 중...");
     try {
-      const ai_gen = new GoogleGenAI({
-        apiKey: process.env.GEMINI_API_KEY || "",
-        httpOptions: { headers: { "User-Agent": "aistudio-build" } }
+      const response = await fetch("/api/proofread-article", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: postData.content })
       });
-
-      const prompt = `
-        You are a senior Korean press proofreader. Analyze the Korean draft provided below. Correct all typos, spelling mistakes, dangling modifiers, and journalistic flow inconsistencies. Provide detailed list of what you corrected.
-        
-        DRAFT:
-        "${postData.content}"
-
-        Respond ONLY with a JSON object holding these keys:
-        {
-          "corrected": "The fully corrected Korean draft content here (preserve layout and core logic)",
-          "errorsCount": 3,
-          "feedback": "Overall review in Korean.",
-          "grammarIssueList": ["Corrected typo '할거임' -> '할 것임'", "Fixed wrong spacing"]
-        }
-      `;
-
-      const response = await ai_gen.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json"
-        }
-      });
-
-      const data = JSON.parse(response.text || "{}");
+      if (!response.ok) throw new Error("AI 교정 요청 실패");
+      const data = await response.json();
       setProofreadResult(data);
       setShowProofreadModal(true);
       toast.success("✨ 원고 교정 분석이 완료되어 데스크에 수록되었습니다!", { id: tidyToastId });
@@ -14969,7 +15878,7 @@ const SoulCenter = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfFileInputRef = useRef<HTMLInputElement>(null);
   const mobileCameraInputRef = useRef<HTMLInputElement>(null); // 📸 모바일 현장 킬러 카메라 연동포트
-  const [imageInputMode, setImageInputMode] = useState<"upload" | "url">("upload");
+  const [imageInputMode, setImageInputMode] = useState<"upload" | "url" | "ai">("upload");
   const [isDragActive, setIsDragActive] = useState(false); // 🛠️ 드래그앤드롭 맥동 효과 트리거
   const [originalSizeStr, setOriginalSizeStr] = useState<string>("");
   const [compressedSizeStr, setCompressedSizeStr] = useState<string>("");
@@ -15664,9 +16573,29 @@ const SoulCenter = ({
               {/* Form Content */}
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
-                  <label className="block text-xs font-black uppercase tracking-widest text-zinc-400">
-                    Headline
-                  </label>
+                  <div className="flex items-center gap-2">
+                    <label className="block text-xs font-black uppercase tracking-widest text-zinc-400">
+                      Headline
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleGenerateTitlesUser}
+                      disabled={isGeneratingTitlesUser}
+                      className="px-2 py-0.5 bg-red-500/10 hover:bg-red-500/20 disabled:opacity-50 text-red-500 rounded text-[9px] font-black flex items-center gap-1 transition-all cursor-pointer border border-red-500/15"
+                    >
+                      {isGeneratingTitlesUser ? (
+                        <>
+                          <Loader2 size={9} className="animate-spin mr-1" />
+                          <span>AI 구상 중...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={9} className="mr-1 text-red-500" />
+                          <span>🪄 AI 제목 추천</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                   {/* 머리말 속성 간편 전환 토글 */}
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-bold hidden sm:inline">전문 머리글 빠른 필터:</span>
@@ -15699,6 +16628,50 @@ const SoulCenter = ({
                   className="w-full bg-zinc-50 dark:bg-black/20 border-b-2 border-zinc-200 dark:border-zinc-800 px-0 py-4 text-3xl font-black text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-orange-500 transition-colors placeholder:text-zinc-300 dark:placeholder:text-zinc-700"
                   placeholder="뉴스 제목을 입력하세요..."
                 />
+
+                {/* AI Headline Suggestion list for User */}
+                {userTitleSuggestions && (
+                  <div className="p-3.5 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/60 dark:border-zinc-800 rounded-2xl space-y-2 text-left animate-in slide-in-from-top-2 duration-200">
+                    <div className="flex justify-between items-center border-b border-zinc-150 dark:border-zinc-800 pb-1.5 mb-1.5">
+                      <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+                        ✨ AI 저널리즘 헤드라인 추천 (선택 시 자동 이식)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setUserTitleSuggestions(null)}
+                        className="text-[9px] text-zinc-400 hover:text-zinc-600 font-bold"
+                      >
+                        닫기
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5 text-[11px]">
+                      {[
+                        { key: "sensational", type: "속보/이슈형 🔥", text: userTitleSuggestions.sensational },
+                        { key: "seo", type: "검색최적화형 🔍", text: userTitleSuggestions.seo },
+                        { key: "opinion", type: "사설/칼럼형 ✍️", text: userTitleSuggestions.opinion },
+                        { key: "simple", type: "직관간결형 📱", text: userTitleSuggestions.simple },
+                        { key: "inquisitive", type: "독자자극형 ❓", text: userTitleSuggestions.inquisitive }
+                      ].map((suggestion) => (
+                        <button
+                          key={suggestion.key}
+                          type="button"
+                          onClick={() => {
+                            setPostData(prev => ({ ...prev, title: suggestion.text }));
+                            toast.success(`✨ '${suggestion.type}' 헤드라인으로 치환되었습니다!`);
+                          }}
+                          className="w-full p-2.5 bg-white hover:bg-red-500/[0.03] dark:bg-zinc-950 dark:hover:bg-red-500/[0.03] border border-zinc-150 hover:border-red-500/30 dark:border-zinc-805 dark:hover:border-red-500/30 rounded-xl transition-all flex items-start gap-2.5 text-left font-sans cursor-pointer group"
+                        >
+                          <span className="text-[9px] px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-900 group-hover:bg-red-500/10 text-zinc-500 dark:text-zinc-400 group-hover:text-red-500 font-black rounded-md whitespace-nowrap tracking-wide">
+                            {suggestion.type}
+                          </span>
+                          <span className="font-extrabold text-zinc-800 dark:text-zinc-200 leading-snug flex-1">
+                            {suggestion.text}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 기고자 정보 맞춤 설정 */}
@@ -15798,33 +16771,46 @@ const SoulCenter = ({
                       </span>
                     </div>
 
-                    {/* Pro Segmented Tabs (Direct Upload vs Image URL) */}
-                    <div className="grid grid-cols-2 gap-1 bg-zinc-100 dark:bg-zinc-900/60 p-1 rounded-xl">
+                     {/* Pro Segmented Tabs (Direct Upload vs AI Generate vs Image URL) */}
+                    <div className="grid grid-cols-3 gap-1 bg-zinc-100 dark:bg-zinc-900/60 p-1 rounded-xl">
                       <button
                         type="button"
                         onClick={() => setImageInputMode("upload")}
                         className={cn(
-                          "py-2 text-[11px] font-black rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                          "py-2 text-[10px] font-black rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer",
                           imageInputMode === "upload"
                             ? "bg-white dark:bg-zinc-800 text-purple-650 dark:text-purple-400 shadow-sm"
                             : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
                         )}
                       >
-                        <Upload size={13} />
-                        파일 직접 업로드
+                        <Upload size={11} />
+                        직접 업로드
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImageInputMode("ai")}
+                        className={cn(
+                          "py-2 text-[10px] font-black rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer",
+                          imageInputMode === "ai"
+                            ? "bg-white dark:bg-zinc-800 text-orange-600 dark:text-orange-400 shadow-sm"
+                            : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                        )}
+                      >
+                        <Sparkles size={11} />
+                        AI 자동 생성
                       </button>
                       <button
                         type="button"
                         onClick={() => setImageInputMode("url")}
                         className={cn(
-                          "py-2 text-[11px] font-black rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                          "py-2 text-[10px] font-black rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer",
                           imageInputMode === "url"
                             ? "bg-white dark:bg-zinc-800 text-amber-600 dark:text-amber-400 shadow-sm"
                             : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
                         )}
                       >
-                        <LinkIcon size={13} />
-                        외부 웹 이미지 URL
+                        <LinkIcon size={11} />
+                        외부 주소 입력
                       </button>
                     </div>
 
@@ -16006,6 +16992,77 @@ const SoulCenter = ({
                             capture="environment"
                             className="hidden"
                           />
+                        </div>
+                      ) : imageInputMode === "ai" ? (
+                        /* AI IMAGE GENERATION PANEL WITH GORGEOUS LIVE PREVIEW */
+                        <div className="space-y-4">
+                          <div className="p-4 bg-orange-500/5 dark:bg-orange-500/[0.02] border border-orange-500/15 rounded-2xl space-y-3">
+                            <p className="text-[11px] font-bold text-zinc-750 dark:text-zinc-300 leading-relaxed text-left">
+                              💡 <b>이솔 AI 썸네일 합성 엔진:</b> 입력해주신 헤드라인(뉴스 제목)을 반영하여 독창적인 신문 지면 보도 전용 일러스트/사진을 즉시 생성 및 기사에 삽입합니다.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={handleGenerateImageUser}
+                              disabled={isGeneratingImageUser}
+                              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 disabled:opacity-50 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-98"
+                            >
+                              {isGeneratingImageUser ? (
+                                <>
+                                  <Loader2 size={13} className="animate-spin mr-1 text-white" />
+                                  <span>AI 썸네일 화풍 렌더링 중...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles size={13} className="text-white" />
+                                  <span>🎨 AI 맞춤 썸네일 즉시 생성하기</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          {postData.thumbnail ? (
+                            <div className="space-y-3">
+                              <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 shadow-lg animate-in fade-in duration-300">
+                                <img
+                                  src={postData.thumbnail}
+                                  alt="AI Preview"
+                                  className="w-full h-full object-cover rounded-3xl"
+                                  referrerPolicy="no-referrer"
+                                />
+                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 flex flex-col gap-2.5 text-left">
+                                  <div className="flex items-center gap-2">
+                                    <span className="relative flex h-2 w-2 shrink-0">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                                    </span>
+                                    <span className="text-[10px] font-black tracking-widest text-orange-400 uppercase">
+                                      이솔 AI 가 생성한 기사용 썸네일 아트웍
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="text-xs font-bold text-white truncate flex-1">
+                                      ✨ AI_Generated_Press_Image.png
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }));
+                                      }}
+                                      className="px-2.5 py-1.5 bg-red-650 hover:bg-red-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
+                                    >
+                                      <Trash2 size={11} />
+                                      삭제
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="w-full aspect-video rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center p-6 text-center select-none bg-zinc-50/50 dark:bg-zinc-950/20">
+                              <ImageIcon size={32} className="text-zinc-300 dark:text-zinc-700 mb-2" />
+                              <p className="text-xs font-bold text-zinc-400">아직 생성되거나 지정된 대표 사진이 없습니다</p>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         /* WEB URL INPUT WITH GORGEOUS LIVE PREVIEW WINDOW */
@@ -16259,6 +17316,52 @@ const SoulCenter = ({
                           <Mic size={11} className={cn("text-red-500", isSttSimulating && "animate-bounce")} />
                           <span>AI 음성구술</span>
                         </button>
+
+                        {/* Divider */}
+                        <div className="h-4 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-1"></div>
+
+                        {/* AI Quick Controls for User */}
+                        <div className="flex flex-wrap items-center gap-1.5 bg-red-500/5 dark:bg-red-500/[0.02] border border-red-500/10 px-2.5 py-0.5 rounded-lg">
+                          <span className="text-[9px] font-black text-red-500 uppercase tracking-widest flex items-center gap-0.5">
+                            <Sparkles size={10} /> AI 글쓰기 코치:
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleAiWriterUser("elevate")}
+                            disabled={isAiWritingUser}
+                            className="px-2 py-0.5 bg-white hover:bg-zinc-150 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 rounded text-[9.5px] font-extrabold flex items-center gap-0.5 cursor-pointer disabled:opacity-50"
+                            title="기사 내용을 품격 있는 정론 저널리즘 기사체로 격상합니다."
+                          >
+                            정론체
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAiWriterUser("mz_trendy")}
+                            disabled={isAiWritingUser}
+                            className="px-2 py-0.5 bg-white hover:bg-zinc-150 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 rounded text-[9.5px] font-extrabold flex items-center gap-0.5 cursor-pointer disabled:opacity-50"
+                            title="기사 내용을 감각적이고 이모지가 가득한 MZ세대 모바일 전용 톤앤매너로 변경합니다."
+                          >
+                            MZ세대톤
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAiWriterUser("summarize")}
+                            disabled={isAiWritingUser}
+                            className="px-2 py-0.5 bg-white hover:bg-zinc-150 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 rounded text-[9.5px] font-extrabold flex items-center gap-0.5 cursor-pointer disabled:opacity-50"
+                            title="본 기사 내용의 에센스를 3개 핵심 핵심 요약 문장으로 요약 재작성합니다."
+                          >
+                            3줄요약
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAiWriterUser("expand")}
+                            disabled={isAiWritingUser}
+                            className="px-2 py-0.5 bg-white hover:bg-zinc-150 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-700 dark:text-zinc-300 rounded text-[9.5px] font-extrabold flex items-center gap-0.5 cursor-pointer disabled:opacity-50"
+                            title="기본 내용을 바탕으로 심층적이고 풍부한 저널리즘적 맥락을 확장 보충합니다."
+                          >
+                            분량살붙이기
+                          </button>
+                        </div>
                       </div>
 
                       <style>{`
@@ -16299,6 +17402,7 @@ const SoulCenter = ({
 
                       <textarea
                         required
+                        id="soul-textarea"
                         value={postData.content}
                         onChange={(e) => setPostData({ ...postData, content: e.target.value })}
                         className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-805 rounded-2xl px-4 py-4 text-xs font-semibold text-zinc-900 dark:text-zinc-105 focus:outline-none focus:border-orange-500 transition-colors h-80 font-serif leading-relaxed"
@@ -16328,6 +17432,47 @@ const SoulCenter = ({
                           )}
                         </button>
                       </div>
+
+                      {/* 🎯 시민 투고용 AI 보도 완성도 지수 및 실시간 가이드라인 */}
+                      {(() => {
+                        const { score, checklist } = getArticleScore(postData.title, postData.content, postData.thumbnail);
+                        return (
+                          <div className="p-4 bg-zinc-50 dark:bg-zinc-900/40 rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-3 mt-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Sparkles size={14} className="text-red-500 animate-pulse" />
+                                <span className="text-[11px] font-black tracking-wider uppercase text-zinc-500 dark:text-zinc-400">투고 완성도 및 기사성 진단</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 bg-red-500/10 text-red-650 px-2.5 py-1 rounded-lg text-xs font-black">
+                                <span>완성도 Score:</span>
+                                <span>{score}점</span>
+                              </div>
+                            </div>
+                            {/* Dynamic Score Bar */}
+                            <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
+                              <div 
+                                className="bg-gradient-to-r from-red-500 to-amber-500 h-full rounded-full transition-all duration-500" 
+                                style={{ width: `${score}%` }}
+                              ></div>
+                            </div>
+                            {/* Quick Checklist Bento Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-1">
+                              {checklist.map((item, index) => (
+                                <div key={index} className="flex items-center gap-2 text-[10.5px] font-bold">
+                                  {item.passed ? (
+                                    <span className="text-emerald-500 shrink-0">✓</span>
+                                  ) : (
+                                    <span className="text-zinc-350 shrink-0">○</span>
+                                  )}
+                                  <span className={item.passed ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400"}>
+                                    {item.label}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* AI Proofread Modal */}
