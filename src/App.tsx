@@ -118,6 +118,7 @@ import {
   Percent,
   Loader2,
   Mic,
+  Bookmark,
 } from "lucide-react";
 import { GoogleGenAI, Type } from "@google/genai";
 import { Toaster, toast } from "sonner";
@@ -158,6 +159,7 @@ import {
 import { PREMIUM_CITIZEN_NEWS } from "./realDataFallback";
 import CinePortraitApp from "./components/CinePortraitApp";
 import AiAppStudioApp from "./components/AiAppStudioApp";
+import CitizenAgora from "./components/CitizenAgora";
 import {
   RagDocument,
   chunkText,
@@ -8962,7 +8964,7 @@ const NewsDetailModal: React.FC<{
 }) => {
   const [selectedLang, setSelectedLang] = useState<"KOR" | "ENG" | "JPN">("KOR");
   const [isTranslating, setIsTranslating] = useState(false);
-  const [eyeCareBg, setEyeCareBg] = useState<"default" | "sepia" | "charcoal" | "pure_black">("default");
+  const [eyeCareBg, setEyeCareBg] = useState<"default" | "sepia" | "charcoal" | "pure_black" | "nord_blue" | "warm_sand">("default");
   const [localFontSize, setLocalFontSize] = useState<"sm" | "base" | "lg" | "xl" | "2xl">("base");
   const [readerFontFamily, setReaderFontFamily] = useState<"serif" | "sans" | "mono">("sans");
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -8983,6 +8985,37 @@ const NewsDetailModal: React.FC<{
   const [isShareSheetOpen, setIsShareSheetOpen] = useState(false);
   const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
+
+  // Scroll Progress indicator inside the article reader modal
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const el = document.getElementById("news-modal-scroll-viewport");
+      if (el) {
+        const total = el.scrollHeight - el.clientHeight;
+        if (total > 0) {
+          const progress = (el.scrollTop / total) * 100;
+          setScrollProgress(progress);
+        } else {
+          setScrollProgress(0);
+        }
+      }
+    };
+
+    const el = document.getElementById("news-modal-scroll-viewport");
+    if (el) {
+      el.addEventListener("scroll", handleScroll, { passive: true });
+    }
+    // Also run once initially to reset
+    setScrollProgress(0);
+
+    return () => {
+      if (el) {
+        el.removeEventListener("scroll", handleScroll);
+      }
+    };
+  }, [news]);
 
   // New features state variables
   const [aiAnalysisReport, setAiAnalysisReport] = useState<any | null>(null);
@@ -9120,6 +9153,36 @@ const NewsDetailModal: React.FC<{
       onNavigate(allNews[nextIdx]);
     }
   };
+
+  // 🌟 보완 4: 데스크톱 유저용 키보드 단축키(Esc로 닫기, 좌우 방향키로 다음/이전 기사 탐색) 등록
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 입력창 혹은 텍스트에어리어에 포커스가 있는 경우 단축키 동작 차단
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA" ||
+        (document.activeElement as HTMLElement)?.isContentEditable
+      ) {
+        return;
+      }
+      
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        navigateArticle("prev");
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        navigateArticle("next");
+      }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [currentIndex, totalCount, onNavigate, onClose]);
 
   const aiSummaryPoints = news.aiSummaryPoints || news.summaryPoints || (news.aiSummary ? news.aiSummary.split('\n').filter((l: string) => l.trim().length > 0) : ["시민 공동체 저널리즘 기반 사실 전당", "모든 시민은 기자다 철학 이념 구현", "이솔포스트 팩트체크 시스템 연동"]);
 
@@ -9415,9 +9478,17 @@ const NewsDetailModal: React.FC<{
 
   const coreBody =
     <div className={cn(
-      "w-full h-full flex flex-col font-sans selection:bg-red-500/20 selection:text-red-500",
-      eyeCareBg === "sepia" ? "bg-[#f4ebd0] text-[#433422]" : eyeCareBg === "charcoal" ? "bg-[#1e252b] text-[#c9d1d9]" : eyeCareBg === "pure_black" ? "bg-black text-white" : "bg-white dark:bg-[#0c0c0f] text-zinc-900 dark:text-zinc-100"
+      "w-full h-full flex flex-col font-sans relative selection:bg-red-500/20 selection:text-red-500",
+      eyeCareBg === "sepia" ? "bg-[#f4ebd0] text-[#433422]" : eyeCareBg === "charcoal" ? "bg-[#1e252b] text-[#c9d1d9]" : eyeCareBg === "pure_black" ? "bg-black text-white" : eyeCareBg === "nord_blue" ? "bg-[#2e3440] text-[#eceff4]" : eyeCareBg === "warm_sand" ? "bg-[#faf6f0] text-[#2c2c2c]" : "bg-white dark:bg-[#0c0c0f] text-zinc-900 dark:text-zinc-100"
     )}>
+      {/* 🌟 보완: 최신 트렌드 스크롤 읽기 진행 상황 인디케이터 (Scroll Progress Line) */}
+      <div className="absolute top-0 left-0 right-0 h-[3.5px] bg-zinc-150 dark:bg-zinc-900 z-50 overflow-hidden pointer-events-none">
+        <div 
+          className="h-full bg-gradient-to-r from-red-600 via-red-500 to-orange-500 transition-all duration-75"
+          style={{ width: `${scrollProgress}%` }}
+        />
+      </div>
+
       {/* Scrollable Container */}
       <div className="flex-1 overflow-y-auto px-6 py-8 md:px-12 md:py-10 space-y-8 no-scrollbar" id="news-modal-scroll-viewport">
         {/* Dynamic Reader Head */}
@@ -9518,6 +9589,22 @@ const NewsDetailModal: React.FC<{
                     translateText(news.title, selectedLang)
                   )}
                 </h3>
+
+                {/* 🌟 보완 3: 고급스러운 독자 친화적 메타 데이터 뱃지 라인 */}
+                <div className="flex flex-wrap items-center gap-2 text-[10.5px] font-extrabold text-zinc-500 dark:text-zinc-400 select-none pb-2">
+                  <span className="bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 rounded-lg text-[10px]">
+                    📅 {news.date || "2026.07.04"}
+                  </span>
+                  <span className="bg-red-50 dark:bg-red-950/30 text-red-655 dark:text-red-400 px-2.5 py-1 rounded-lg text-[10px] flex items-center gap-1 font-black">
+                    ⏱️ 읽는 시간 약 {Math.ceil((news.content?.length || 100) / 450)}분
+                  </span>
+                  <span className="bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-lg text-[10px]">
+                    🔥 실시간 조회 {news.clicks || 250}회
+                  </span>
+                  <span className="hidden sm:inline bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-white/5 px-2.5 py-1 rounded-lg text-[9.5px] text-zinc-400 font-medium">
+                    ⌨️ 단축키 안내: <kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 py-0.2 rounded text-[8.5px] shadow-xs">Esc</kbd> 닫기, <kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 py-0.2 rounded text-[8.5px] shadow-xs">←</kbd> <kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 py-0.2 rounded text-[8.5px] shadow-xs">→</kbd> 이동
+                  </span>
+                </div>
 
                 {/* Reporter block */}
                 <div className="flex items-center gap-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
@@ -9669,7 +9756,7 @@ const NewsDetailModal: React.FC<{
                 <span className="text-[10px] font-black uppercase text-zinc-400 dark:text-zinc-500 tracking-wider font-sans">
                   EReader Reading Mode Controls
                 </span>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                   <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-lg border border-zinc-200/55 dark:border-zinc-800 font-sans">
                     <button
                       onClick={() => setEyeCareBg("default")}
@@ -9711,8 +9798,29 @@ const NewsDetailModal: React.FC<{
                     >
                       B
                     </button>
+                    <button
+                      onClick={() => setEyeCareBg("nord_blue")}
+                      className={cn(
+                        "w-4 h-4 rounded-full bg-[#2e3440] text-[#eceff4] border border-[#434c5e] transition-all flex items-center justify-center text-[8px] font-bold cursor-pointer",
+                        eyeCareBg === "nord_blue" && "ring-2 ring-red-500 scale-110"
+                      )}
+                      title="고급 노르딕 블루 오션"
+                    >
+                      N
+                    </button>
+                    <button
+                      onClick={() => setEyeCareBg("warm_sand")}
+                      className={cn(
+                        "w-4 h-4 rounded-full bg-[#faf6f0] text-[#2c2c2c] border border-[#e5dec9] transition-all flex items-center justify-center text-[8px] font-bold cursor-pointer",
+                        eyeCareBg === "warm_sand" && "ring-2 ring-red-500 scale-110"
+                      )}
+                      title="샌드 에디토리얼 페이퍼"
+                    >
+                      W
+                    </button>
                   </div>
 
+                  {/* 🌟 보완 5: 글자 크기 실시간 변경 시 시인성 높은 스케일 수치 인디케이터 배가 */}
                   <div className="flex items-center gap-1 border-l border-zinc-200 dark:border-zinc-800 pl-3 font-sans">
                     <button
                       type="button"
@@ -9727,7 +9835,7 @@ const NewsDetailModal: React.FC<{
                       가-
                     </button>
                     <span className="text-[10px] font-black text-zinc-405 capitalize px-1 font-sans">
-                      {localFontSize === "base" ? "일반" : localFontSize === "sm" ? "작게" : localFontSize === "lg" ? "크게" : localFontSize === "xl" ? "아주크게" : "최대"}
+                      {localFontSize === "base" ? "일반 (100%)" : localFontSize === "sm" ? "작게 (85%)" : localFontSize === "lg" ? "크게 (120%)" : localFontSize === "xl" ? "아주크게 (140%)" : "최대 (160%)"}
                     </span>
                     <button
                       type="button"
@@ -9751,6 +9859,8 @@ const NewsDetailModal: React.FC<{
                 eyeCareBg === "sepia" && "bg-[#FBF6E9] text-[#3D2C1B] border border-[#E9DFCA] shadow-inner",
                 eyeCareBg === "charcoal" && "bg-[#161B22] text-[#E6EDF0] border border-[#30363D] shadow-inner",
                 eyeCareBg === "pure_black" && "bg-black text-zinc-100 border border-zinc-900 shadow-none",
+                eyeCareBg === "nord_blue" && "bg-[#3b4252] text-[#eceff4] border border-[#4c566a] shadow-inner",
+                eyeCareBg === "warm_sand" && "bg-[#fcfaf7] text-[#1a1a1a] border border-[#f0eae1] shadow-inner",
                 eyeCareBg === "default" && "bg-transparent text-zinc-900 dark:text-zinc-100"
               )}>
                 <div className={cn(
@@ -11123,6 +11233,20 @@ const Navbar = ({
           </button>
 
           <button
+            onClick={() => onPageChange("community")}
+            className={cn(
+              "flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-black transition-all cursor-pointer h-8 border",
+              currentPage === "community"
+                ? "bg-red-655 border-red-600 text-white shadow-sm"
+                : "bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100"
+            )}
+            title="시민들이 자율적으로 소통하고 스마트팜, 버스킹 등 소모임을 교류하는 소모임 광장으로 이동합니다"
+          >
+            <Users size={13} className={currentPage === "community" ? "text-white" : "text-red-500"} />
+            <span>이솔 소모임 (클럽)</span>
+          </button>
+
+          <button
             onClick={onKakaoClick}
             className="flex items-center gap-1 px-3 py-1.5 bg-[#FEE500] hover:bg-[#FEE500]/90 text-[#191919] rounded-md text-xs font-black transition-all cursor-pointer h-8 shadow-sm"
             title="복잡한 메뉴 대신 카톡 챗봇에게 한마디 전하여 direct 처리합니다"
@@ -11483,6 +11607,30 @@ const Navbar = ({
                       </div>
                     ))}
                   </div>
+                </div>
+
+                <div className="space-y-3 w-full">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 block select-none">
+                    시민 모임 광장
+                  </span>
+                  <button
+                    onClick={() => {
+                      onPageChange("community");
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center justify-between py-2.5 px-3.5 rounded-xl text-left transition-all duration-150 cursor-pointer font-extrabold text-[12.5px] border border-zinc-150 shadow-sm",
+                      currentPage === "community"
+                        ? "bg-red-50 text-red-655 font-black"
+                        : "bg-white text-zinc-700 hover:text-red-500 hover:bg-zinc-50"
+                    )}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Users size={15} className="text-red-500" />
+                      <span>이솔 소모임 (클럽)</span>
+                    </span>
+                    <ChevronRight size={14} className="text-zinc-400" />
+                  </button>
                 </div>
 
                 <div className="space-y-3 w-full">
@@ -11874,6 +12022,29 @@ const IsolPost = ({
     return subType.replace(/[^\w\sㄱ-ㅎㅏ-ㅣ가-힣]/g, "").trim();
   };
 
+  const highlightMatch = (text: string, queryText: string) => {
+    if (!queryText || !queryText.trim()) return text;
+    try {
+      const escapedQuery = queryText.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
+      return (
+        <>
+          {parts.map((part, index) => 
+            part.toLowerCase() === queryText.toLowerCase() ? (
+              <mark key={index} className="bg-yellow-100 dark:bg-yellow-950/80 text-yellow-900 dark:text-yellow-200 px-0.5 rounded font-black border-b-2 border-yellow-400 dark:border-yellow-600 transition-all">
+                {part}
+              </mark>
+            ) : (
+              part
+            )
+          )}
+        </>
+      );
+    } catch (e) {
+      return text;
+    }
+  };
+
   React.useEffect(() => {
     const q = query(
       collection(db, "citizen_news"),
@@ -12097,6 +12268,65 @@ const IsolPost = ({
           ? "pt-[60px] sm:pt-[65px] md:pt-[70px] lg:pt-[75px] pb-28 sm:pb-16"
           : "pt-[140px] sm:pt-[150px] md:pt-[160px] lg:pt-[165px] pb-28 sm:pb-16"
       }>
+        {/* 🌟 보완: 모바일 및 태블릿 최적화 실시간 통합 & AI 음성 검색기 */}
+        <div className="max-w-7xl mx-auto px-4 md:px-6 mt-4 lg:hidden">
+          <div className="relative flex items-center shadow-xs">
+            <Search size={15} className="absolute left-3.5 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="뉴스 제목, 기자명, 보도 본문 실시간 검색..."
+              value={newsSearchQuery}
+              onChange={(e) => setNewsSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-28 py-3 bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-xs font-bold text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-red-500/10 focus:border-red-500 transition-all shadow-inner"
+            />
+            <div className="absolute right-2.5 flex items-center gap-1.5">
+              {newsSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setNewsSearchQuery("")}
+                  className="text-[10px] font-black text-zinc-400 hover:text-zinc-650 px-1 py-1 cursor-pointer"
+                >
+                  지우기
+                </button>
+              )}
+              {/* Voice Search Button with Web Speech recognition */}
+              <button
+                type="button"
+                onClick={() => {
+                  const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                  if (SpeechRec) {
+                    if (typeof playHapticClick === "function") playHapticClick(800, 0.05);
+                    const rec = new SpeechRec();
+                    rec.lang = "ko-KR";
+                    rec.interimResults = false;
+                    const toastId = toast.loading("🎙️ [음성 검색 중]: 찾으실 키워드를 말씀해 주세요...");
+                    rec.onresult = (e: any) => {
+                      const txt = e.results[0][0].transcript;
+                      if (txt) {
+                        setNewsSearchQuery(txt);
+                        setActiveCategory("전체기사");
+                        toast.success(`🔍 "${txt}" 검색 완료!`, { id: toastId });
+                        if (typeof playHapticClick === "function") playHapticClick(900, 0.08);
+                      }
+                    };
+                    rec.onerror = () => {
+                      toast.dismiss(toastId);
+                      toast.error("🎙️ 마이크 권한이 차단되었거나 음성이 인식되지 않았습니다.");
+                    };
+                    rec.start();
+                  } else {
+                    toast.error("🎙️ 이 브라우저는 음성 검색을 지원하지 않습니다.");
+                  }
+                }}
+                className="p-1.5 bg-red-50 dark:bg-red-950/40 text-red-655 hover:bg-red-100 rounded-xl flex items-center justify-center transition-all cursor-pointer"
+                title="음성 인식 뉴스 검색"
+              >
+                <Mic size={13.5} className="text-red-500 animate-pulse" />
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div className="max-w-7xl mx-auto px-4 md:px-6 mt-2 md:mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-8">
           <div className={activeCategory === "이솔공방" ? "lg:col-span-12 space-y-6 md:space-y-12" : "lg:col-span-9 space-y-6 md:space-y-12"}>
 
@@ -13200,7 +13430,7 @@ const IsolPost = ({
                           </div>
                           <div className="space-y-1">
                             <h4 className="text-sm font-black text-zinc-900 dark:text-white group-hover:text-orange-600 transition-colors leading-snug line-clamp-2">
-                              {item.title}
+                              {highlightMatch(item.title, newsSearchQuery)}
                             </h4>
                             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 line-clamp-2 font-medium leading-relaxed">
                               {item.content}
@@ -13249,7 +13479,7 @@ const IsolPost = ({
                         </span>
                       </div>
                       <h4 className="text-white text-[12px] sm:text-[14px] md:text-[15px] font-black line-clamp-2 leading-tight tracking-tight group-hover:text-red-350 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">
-                        {item.title}
+                        {highlightMatch(item.title, newsSearchQuery)}
                       </h4>
                       <p className="text-zinc-400 text-[10px] sm:text-[11px] flex items-center justify-between mt-1.5 font-bold font-sans">
                         <span>{item.date}</span>
@@ -13293,7 +13523,7 @@ const IsolPost = ({
                         {/* Dark Gradient Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/100 via-black/45 to-transparent p-2.5 md:p-4 flex flex-col justify-end z-10 w-full h-full text-left">
                           <h4 className="text-white text-[10.5px] sm:text-[14px] font-black line-clamp-2 leading-snug tracking-tight group-hover:text-red-350 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">
-                            {item.title}
+                            {highlightMatch(item.title, newsSearchQuery)}
                           </h4>
                           <p className="text-zinc-450 text-[8px] sm:text-[10px] font-bold mt-0.5">
                             {item.date} {item.author && `| ${item.author} 기자`}
@@ -13330,7 +13560,7 @@ const IsolPost = ({
                           <div className="flex-1 min-w-0">
                             <span className="text-[8px] font-black text-zinc-400">{sanitizeDisplayCategory(item.category, item.title)}</span>
                             <h5 className="text-[11px] sm:text-xs font-bold text-zinc-900 dark:text-zinc-100 line-clamp-1 leading-tight group-hover:text-red-750 transition-colors">
-                              {item.title}
+                              {highlightMatch(item.title, newsSearchQuery)}
                             </h5>
                             <p className="text-[8px] text-zinc-400 mt-0.5">{item.date} | {item.author}</p>
                           </div>
@@ -14086,17 +14316,37 @@ const AdminNewsCenter = ({
     setIsSaving(true);
     const toastId = toast.loading("기사 내용을 기획부 데이터베이스에 동기화 중...");
     try {
-      await updateDoc(doc(db, "citizen_news", editingNews.id), {
-        title: inlineForm.title.trim(),
-        content: inlineForm.content.trim(),
-        author: inlineForm.author.trim(),
-        category: inlineForm.category || "사회/정치",
-        thumbnail: inlineForm.thumbnail.trim() || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800",
-        updatedAt: new Date().toISOString(),
-      });
-      // Clear localStorage draft upon successful save
-      localStorage.removeItem(`isol_admin_article_draft_${editingNews.id}`);
-      toast.success("기사 교정 및 업데이트가 완벽히 저장되었습니다!", { id: toastId });
+      if (editingNews.id === "new_admin_article") {
+        const newDocRef = doc(collection(db, "citizen_news"));
+        await setDoc(newDocRef, {
+          id: newDocRef.id,
+          title: inlineForm.title.trim(),
+          content: inlineForm.content.trim(),
+          author: inlineForm.author.trim(),
+          category: inlineForm.category || "사회/정치",
+          thumbnail: inlineForm.thumbnail.trim() || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isApproved: true, // Auto-approved since created by Administrator
+          isFeatured: false,
+          likes: 0,
+          views: 0,
+          shares: 0,
+        });
+        localStorage.removeItem(`isol_admin_article_draft_${editingNews.id}`);
+        toast.success("새로운 정론보도 기사가 성공적으로 발행되었습니다!", { id: toastId });
+      } else {
+        await updateDoc(doc(db, "citizen_news", editingNews.id), {
+          title: inlineForm.title.trim(),
+          content: inlineForm.content.trim(),
+          author: inlineForm.author.trim(),
+          category: inlineForm.category || "사회/정치",
+          thumbnail: inlineForm.thumbnail.trim() || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800",
+          updatedAt: new Date().toISOString(),
+        });
+        localStorage.removeItem(`isol_admin_article_draft_${editingNews.id}`);
+        toast.success("기사 교정 및 업데이트가 완벽히 저장되었습니다!", { id: toastId });
+      }
       if (typeof playHapticClick === "function") playHapticClick(900, 0.1);
       setEditingNews(null);
     } catch (error) {
@@ -14171,6 +14421,33 @@ const AdminNewsCenter = ({
             )}
           >
             기자 관리
+          </button>
+          
+          <button
+            id="admin_direct_publish_btn"
+            onClick={() => {
+              if (typeof playHapticClick === "function") playHapticClick(800, 0.08);
+              setInlineForm({
+                title: "",
+                content: "",
+                author: "이솔 국영 편집실",
+                category: "사회/정치",
+                thumbnail: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800",
+              });
+              setEditingNews({
+                id: "new_admin_article",
+                title: "",
+                content: "",
+                author: "이솔 국영 편집실",
+                category: "사회/정치",
+                thumbnail: "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800",
+                isApproved: true,
+              } as any);
+              setPreviewMode("edit");
+            }}
+            className="px-5 py-2 rounded-full font-black text-sm bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20 transition-all cursor-pointer flex items-center gap-1.5 hover:scale-105 active:scale-95 whitespace-nowrap"
+          >
+            <span>⚡ 직접 기사 발행</span>
           </button>
         </div>
       </header>
@@ -14529,9 +14806,11 @@ const AdminNewsCenter = ({
             >
               <div className="flex justify-between items-center pb-6 border-b border-zinc-150 dark:border-zinc-800/80 mb-6">
                 <div>
-                  <h3 className="text-2xl font-black tracking-tight" id="admin_edit_modal_headline">기사 정보 간편 교정</h3>
+                  <h3 className="text-2xl font-black tracking-tight" id="admin_edit_modal_headline">
+                    {editingNews.id === "new_admin_article" ? "신규 보도자료 직접 발행" : "기사 정보 간편 교정"}
+                  </h3>
                   <p className="text-[11px] font-bold text-zinc-400 tracking-wider uppercase mt-1">
-                    Quick Editorial Adjustment - Firestore Sync Nodes
+                    {editingNews.id === "new_admin_article" ? "Direct Press Release Publishing - Editorial Node" : "Quick Editorial Adjustment - Firestore Sync Nodes"}
                   </p>
                 </div>
                 {/* 1. Mode selection tabs */}
@@ -15554,10 +15833,8 @@ const SoulCenter = ({
   const [editorFontSize, setEditorFontSize] = useState<"sm" | "base" | "lg" | "xl">("base");
   const [isSttSimulating, setIsSttSimulating] = useState(false);
 
-  const runMockStt = () => {
-    if (isSttSimulating) return;
-    setIsSttSimulating(true);
-    if (typeof playHapticClick === "function") playHapticClick(800, 0.1, "sine");
+  const runMockStt = (toastIdToDismiss?: string) => {
+    if (toastIdToDismiss) toast.dismiss(toastIdToDismiss);
     const toastId = toast.loading("🎙️ [AI 음성 정합 연산]: 스마트폰 마이크 주파수를 수집하여 정론 6하원칙 서술문으로 실시간 타이핑 중...");
     
     const targetText = " [특종 보도] 오늘 이솔나라 중앙광장에서 시민들과 기술진들이 공동으로 '미래 주권 선포식'을 개최했습니다. 이번 행사는 독립적이고 생명 친화적인 저널리즘을 추구하는 시민들의 자발적 참여로 이루어졌습니다. 이솔뉴스 팩트쉴드를 통해 허위 정보를 차단하고 정직한 진실 보도만을 제공하겠다고 선언했습니다.";
@@ -15577,6 +15854,63 @@ const SoulCenter = ({
         return { ...prev, content: nextContent };
       });
     }, 25);
+  };
+
+  const runRealOrMockStt = () => {
+    if (isSttSimulating) return;
+    
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      if (typeof playHapticClick === "function") playHapticClick(800, 0.05, "sine");
+      
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.lang = "ko-KR";
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        
+        const toastId = toast.loading("🎙️ [실시간 AI 음성 구술]: 마이크가 활성화되었습니다. 말씀해 주세요...");
+        setIsSttSimulating(true);
+        
+        recognition.onstart = () => {
+          if (typeof playHapticClick === "function") playHapticClick(1000, 0.05, "triangle");
+        };
+        
+        recognition.onresult = (event: any) => {
+          const speechToText = event.results[0][0].transcript;
+          if (speechToText) {
+            setPostData((prev) => ({
+              ...prev,
+              content: prev.content ? `${prev.content} ${speechToText}` : speechToText
+            }));
+            toast.success(`🎙️ [음성 인식 완료]: "${speechToText}"`, { id: toastId });
+          }
+        };
+        
+        recognition.onerror = (event: any) => {
+          console.error("Speech recognition error", event);
+          setIsSttSimulating(false);
+          toast.dismiss(toastId);
+          // Fallback immediately to the cool simulation
+          toast.info("🎙️ [보안 또는 권한 차단]: 마이크 직접 사용이 제한되어 AI 시뮬레이터로 보도문을 작성합니다.");
+          setIsSttSimulating(true);
+          runMockStt();
+        };
+        
+        recognition.onend = () => {
+          setIsSttSimulating(false);
+        };
+        
+        recognition.start();
+      } catch (err) {
+        console.error("Speech recognition start failed", err);
+        setIsSttSimulating(true);
+        runMockStt();
+      }
+    } else {
+      setIsSttSimulating(true);
+      runMockStt();
+    }
   };
 
   const [postData, setPostData] = useState({
@@ -16499,13 +16833,16 @@ const SoulCenter = ({
               className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-8 rounded-[2rem] shadow-2xl space-y-8"
             >
               {/* 📲 모바일 특화 기사 집필 고도화 툴바 (10대 개선사항 적용) */}
-              <div className="bg-zinc-50 dark:bg-zinc-950/50 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 p-4 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="bg-gradient-to-r from-emerald-500/5 to-teal-500/5 dark:from-emerald-950/20 dark:to-teal-950/20 rounded-3xl border border-emerald-500/20 p-4.5 flex flex-wrap items-center justify-between gap-4 shadow-sm animate-in fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 shadow-[0_0_8px_#10B981]"></span>
+                  </div>
                   <div className="space-y-0.5">
-                    <p className="text-[11px] font-black uppercase text-zinc-400 tracking-wider">모바일 기사 저장소</p>
-                    <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                      {lastSavedTime ? `자동 임시 저장 완료 (${lastSavedTime})` : "실시간 임시저장 항시 작동 중"}
+                    <p className="text-[9.5px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-widest">REALTIME AUTO-BACKUP CORE</p>
+                    <p className="text-xs font-black text-zinc-800 dark:text-zinc-200">
+                      {lastSavedTime ? `기사 초안 자동 안전 백업 완료 (${lastSavedTime})` : "실시간 안심 임시저장 항시 가동 중..."}
                     </p>
                   </div>
                 </div>
@@ -17197,6 +17534,41 @@ const SoulCenter = ({
                           <option value="이솔나라북">📚 이솔나라북</option>
                           <option value="온에어">🎙️ 온에어</option>
                         </select>
+
+                        {/* 🌟 보완 6: 모바일 터치 대응 카테고리 퀵 패스트 태그 피커 */}
+                        <div className="mt-2.5 flex flex-wrap gap-1.5 p-2 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200/50 dark:border-white/5 rounded-xl">
+                          {[
+                            { value: "사회/정치", label: "정치/사회" },
+                            { value: "경제/문화", label: "경제/문화" },
+                            { value: "복지/미래비전", label: "복지/미래" },
+                            { value: "팩트체크", label: "팩트체크" },
+                            { value: "AI 기사", label: "AI 기사" },
+                            { value: "만평", label: "만평" },
+                            { value: "지역", label: "지역" },
+                            { value: "이솔나라포토", label: "포토" },
+                            { value: "온에어", label: "온에어" }
+                          ].map((cat) => {
+                            const isCatSelected = postData.category === cat.value;
+                            return (
+                              <button
+                                key={cat.value}
+                                type="button"
+                                onClick={() => {
+                                  if (typeof playHapticClick === "function") playHapticClick(500, 0.04);
+                                  setPostData({ ...postData, category: cat.value, subCategory: "" });
+                                }}
+                                className={cn(
+                                  "px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition-all cursor-pointer whitespace-nowrap",
+                                  isCatSelected
+                                    ? "bg-red-500/10 border-red-500 text-red-600 dark:text-red-400"
+                                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-red-500"
+                                )}
+                              >
+                                {cat.label}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       {postData.category === "이솔공방" && (
@@ -17303,7 +17675,7 @@ const SoulCenter = ({
                         
                         <button
                           type="button"
-                          onClick={runMockStt}
+                          onClick={runRealOrMockStt}
                           disabled={isSttSimulating}
                           className={cn(
                             "px-2.5 py-1.5 rounded-lg text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer border shrink-0",
@@ -17311,11 +17683,39 @@ const SoulCenter = ({
                               ? "bg-red-500/20 border-red-500 text-red-500 animate-pulse"
                               : "bg-red-500/10 hover:bg-red-500/20 text-red-650 border-red-500/20 dark:border-red-500/40"
                           )}
-                          title="스마트폰 마이크 AI 받아쓰기 모의 체험 (구술 기사 작성)"
+                          title="실시간 AI 마이크 인식 및 정론 음성 구술"
                         >
                           <Mic size={11} className={cn("text-red-500", isSttSimulating && "animate-bounce")} />
                           <span>AI 음성구술</span>
                         </button>
+
+                        {/* Divider */}
+                        <div className="h-4 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-1"></div>
+
+                        {/* Font Size Pill Toggler (Mobile Optimization) */}
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/30 shadow-xs px-2 py-1 rounded-lg flex items-center gap-1 shrink-0 text-[10px] font-bold text-zinc-700 dark:text-zinc-300">
+                          <span className="text-[9.5px]">글자 크기:</span>
+                          <div className="flex items-center gap-0.5">
+                            {(["sm", "base", "lg", "xl"] as const).map((sz) => (
+                              <button
+                                key={sz}
+                                type="button"
+                                onClick={() => {
+                                  if (typeof playHapticClick === "function") playHapticClick(900, 0.03);
+                                  setEditorFontSize(sz);
+                                }}
+                                className={cn(
+                                  "w-5 h-5 rounded flex items-center justify-center text-[9px] uppercase cursor-pointer transition-all",
+                                  editorFontSize === sz
+                                    ? "bg-red-600 text-white font-black shadow-sm"
+                                    : "hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-350"
+                                )}
+                              >
+                                {sz}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
 
                         {/* Divider */}
                         <div className="h-4 w-[1px] bg-zinc-200 dark:bg-zinc-800 mx-1"></div>
@@ -17405,7 +17805,13 @@ const SoulCenter = ({
                         id="soul-textarea"
                         value={postData.content}
                         onChange={(e) => setPostData({ ...postData, content: e.target.value })}
-                        className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-805 rounded-2xl px-4 py-4 text-xs font-semibold text-zinc-900 dark:text-zinc-105 focus:outline-none focus:border-orange-500 transition-colors h-80 font-serif leading-relaxed"
+                        className={cn(
+                          "w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-805 rounded-2xl px-4 py-4 font-semibold text-zinc-900 dark:text-zinc-105 focus:outline-none focus:border-orange-500 transition-colors h-80 font-serif leading-relaxed",
+                          editorFontSize === "sm" ? "text-[11px]" :
+                          editorFontSize === "base" ? "text-xs" :
+                          editorFontSize === "lg" ? "text-sm" :
+                          "text-base"
+                        )}
                         placeholder="이곳에 보도 본문을 기재해주세요. (최소 10자 이상, 6하원칙 준수 권장)"
                       />
 
@@ -17631,7 +18037,13 @@ const SoulCenter = ({
                       </div>
 
                       {/* Article Content */}
-                      <div className="text-sm font-serif leading-relaxed text-zinc-800 break-words space-y-3">
+                      <div className={cn(
+                        "font-serif leading-relaxed text-zinc-800 break-words space-y-3",
+                        editorFontSize === "sm" ? "text-xs" :
+                        editorFontSize === "base" ? "text-sm" :
+                        editorFontSize === "lg" ? "text-base" :
+                        "text-lg"
+                      )}>
                         {postData.content ? (
                           renderFormattedContent(postData.content)
                         ) : (
@@ -21477,6 +21889,7 @@ function App() {
     | "soul-center"
     | "aegis-ai-lab"
     | "admin-news-center"
+    | "community"
   >("isol-post");
 
   React.useEffect(() => {
@@ -23292,6 +23705,19 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
               />
             </motion.div>
           )}
+          {currentPage === "community" && (
+            <motion.div
+              key="community"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <CitizenAgora
+                user={user}
+                onAuthClick={() => setIsAuthModalOpen(true)}
+              />
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
@@ -24352,6 +24778,24 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 <span className={cn("w-2 h-2 rounded-full", eyeProtectionMode ? "bg-amber-500 animate-pulse" : "bg-zinc-300")} />
               </button>
 
+              {/* Bookmark Storage Drawer Trigger Button */}
+              <button
+                onClick={() => {
+                  playHapticClick(800, 0.05);
+                  setIsFabMenuOpen(false);
+                  setIsBookmarkDrawerOpen(true);
+                }}
+                className="flex items-center justify-between p-2 rounded-xl text-xs font-bold border bg-red-50/70 dark:bg-red-950/20 border-red-100/50 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Bookmark size={11.5} className="fill-current text-red-500" />
+                  <span>북마크 보관함</span>
+                </div>
+                <span className="text-[9.5px] bg-red-600 text-white px-1.5 py-0.2 rounded-full font-black">
+                  {bookmarksList.length}
+                </span>
+              </button>
+
               {/* simulated pull to feed refresh trigger */}
               <button
                 onClick={() => {
@@ -24482,6 +24926,14 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
               setIsAdminView(false);
               setIsOmbudsmanModalOpen(false);
               setCurrentPage("webtoon");
+            } 
+          },
+          { id: "community", label: "소모임", icon: Users, action: () => {
+              setSelectedNews(null);
+              setSelectedWebtoon(null);
+              setIsAdminView(false);
+              setIsOmbudsmanModalOpen(false);
+              setCurrentPage("community");
             } 
           },
           { id: "soul-center", label: "시민기자", icon: Edit3, action: () => {

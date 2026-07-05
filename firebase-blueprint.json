@@ -94,6 +94,25 @@
         "chunkCount": { "type": "integer" }
       },
       "required": ["title", "content", "category", "active", "createdAt", "charCount", "chunkCount"]
+    },
+    "AgoraThread": {
+      "title": "AgoraThread",
+      "description": "User posts in the Citizen Agora community forum.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "author": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "likes": { "type": "integer" },
+        "views": { "type": "integer" },
+        "likedBy": { "type": "array", "items": { "type": "string" } },
+        "commentsCount": { "type": "integer" }
+      },
+      "required": ["title", "content", "author", "authorId", "category"]
     }
   },
   "firestore": {
@@ -120,6 +139,10 @@
     "rag_documents": {
       "schema": "RagDocument",
       "description": "Knowledge documents for RAG grounding."
+    },
+    "agora_threads": {
+      "schema": "AgoraThread",
+      "description": "Collection of Citizen Agora discussion forum threads."
     }
   }
 }
