@@ -363,6 +363,126 @@ Maintain the core voice but elevate the language. Return the response STRICTLY a
     }
   });
 
+  // API: Evaluate Audition for Director Hyeon Won casting room
+  app.post("/api/evaluate-audition", async (req, res) => {
+    try {
+      const { actorName, actorAge, actorGender, roleType, genre, speechText, actingMood, userNote } = req.body;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: {
+          parts: [{
+            text: `You are Master Film Director Kim Hyeon-won (김현원 감독), a pioneer in vegan cinema, ecological storytelling, and hybrid AI films in Isol Country (이솔나라).
+You are evaluating a casting audition. Based on the candidate's profile and chosen acting mood, write a highly professional, poetic, and encouraging director's casting review and audition evaluation.
+
+Candidate Profile:
+- Actor Name: ${actorName}
+- Age: ${actorAge}
+- Gender: ${actorGender}
+- Desired Role Type: ${roleType}
+- Movie Genre: ${genre}
+- Chosen Acting Mood: ${actingMood || "cosmic_sorrow"} (Reflect this mood strongly in the review and characters!)
+- Audition Monologue/Speech: "${speechText}"
+- Candidate's Message to Director: "${userNote}"
+
+Return the response strictly as a JSON object with the following keys:
+- "castingResult": Choose one from ("합격 (Casting Confirmed)", "예비 배역 (Reserve Role)", "감독 특별 지명 (Director's Special Designation)")
+- "actingScore": A number from 80 to 100
+- "veganCompatibilityScore": A number from 75 to 100 (representing compatibility with eco-friendly and bio-respecting themes)
+- "assignedRole": A beautiful, poetic, or heroic name for their assigned character (e.g., "숲의 파수꾼 네오", "새벽 안개를 헤치는 고독한 배달부", "빛과 어둠의 경계에 서 있는 과학자")
+- "visualTone": 2-3 lines of aesthetic visual review based on their profile and dramatic vibe
+- "directorReview": A detailed, beautiful, and warm review written in Korean, expressing deep artistic philosophy ("비건은 가장 따뜻한 혁명", "생명의 고귀함", "시민 지성과 예술의 융합" should be subtly mentioned), giving them helpful acting advice and warm encouragement. Make it sound exactly like an intellectual, warm-hearted artistic movie master, deeply synchronized with the chosen Acting Mood (${actingMood}).
+
+Ensure the output is valid JSON only.`
+          }]
+        },
+        config: {
+          responseMimeType: "application/json"
+        }
+      });
+
+      const resultText = response.text || "{}";
+      const cleanedJson = resultText.replace(/```json\n?/gi, "").replace(/```/g, "").trim();
+      const parsedData = JSON.parse(cleanedJson);
+      res.json({ success: true, data: parsedData });
+    } catch (error) {
+      console.error("[Casting Evaluation Error]", error);
+      res.status(500).json({ success: false, error: "Internal server error" });
+    }
+  });
+
+  // API: AI-Powered Scraping for Vegan AI Movies & Director Hyeonwon in On Air Section
+  app.post("/api/scrape-onair", async (req, res) => {
+    try {
+      console.log(`[Gemini OnAir Scraper] Triggering AI scrap for Vegan AI movies & Hyeonwon...`);
+      
+      const systemPrompt = `You are an elite AI journalism crawler and news scrapper for Isoland Post (이솔포스트) 온에어 (On Air) section.
+Your mission is to search or generate exactly 3 groundbreaking, highly realistic and captivating news articles about "비건 AI 무비" (Vegan AI Movies) and the legendary director "현원감독" (Director Hyeonwon, a visionary of ecological cinema, animal rights, and green AI film-making).
+
+Each article must contain:
+1. "title": A punchy, eye-catching Korean headline about Vegan AI Movies or Director Hyeonwon's projects.
+2. "content": A detailed, professional journalistic news body (in Korean, about 3-4 paragraphs, beautifully styled with paragraph breaks, containing quotes and deep philosophical insights) following professional news reporting standards.
+3. "author": A believable reporter name (e.g., "이솔 AI 저널", "미래문화특파원 김온에어").
+4. "thumbnail": A high-quality Unsplash image URL related to film, nature, green leaves, or virtual studios. Select from:
+   - "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&q=80&w=800" (Film)
+   - "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=800" (Plant)
+   - "https://images.unsplash.com/photo-1500485035595-cbe6f645feb1?auto=format&fit=crop&q=80&w=800" (Green Forest)
+   - "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=800" (Cinema)
+   - "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&q=80&w=800" (Abstract Glow)
+5. "summary": A concise 2-sentence summary.
+6. "hashtags": An array of exactly 3 relevant hashtags starting with # (e.g. ["#비건AI무비", "#현원감독", "#생태주의"]).
+
+Return the output STRICTLY as a JSON array of objects. Do not include markdown code block backticks around the JSON.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: "Generate 3 professional news articles in Korean about Vegan AI Movies and Director Hyeonwon.",
+        config: {
+          systemInstruction: systemPrompt,
+          responseMimeType: "application/json"
+        }
+      });
+
+      const responseText = response.text?.trim() || "[]";
+      const cleanedJson = responseText.replace(/```json\n?/gi, "").replace(/```/g, "").trim();
+      const articles = JSON.parse(cleanedJson);
+      
+      res.json({ success: true, articles });
+    } catch (error: any) {
+      console.warn("[Gemini OnAir Scraper Failed, using high-quality fallback]", error);
+      
+      // Gorgeous Fallback articles
+      const fallbackArticles = [
+        {
+          title: "[단독] '비건 시네마의 거장' 현원감독, 생태주의 AI 신작 '동물들의 합창' 베니스 영화제 초청",
+          content: "대한민국 생태예술 및 독립영화의 선구자로 평가받는 현원감독이 기획한 하이브리드 비건 AI 장편 영화 '동물들의 합창'이 제83회 베니스 국제영화제 비경쟁 부문에 공식 초청되었습니다. 본 영화는 실제 동물을 촬영하는 대신, 고도의 지능형 생성 AI 기술을 활용하여 동물들의 섬세한 감정과 언어를 완벽하게 묘사해 낸 세계 최초의 '100% 무해(Zero-Harm) 필름'입니다.\n\n현원감독은 인터뷰에서 '전통적인 영화 세트장에서 동물 배우들이 겪는 스트레스와 이산화탄소 배출을 최소화하고자 했다'며, '인공지능은 생명을 억압하는 도구가 아닌, 오히려 그들의 존엄성을 안전하게 복원하고 대변해 주는 가장 따뜻한 예술적 메가폰이 될 수 있다'고 전해 큰 울림을 주었습니다.\n\n영화계 전문가들은 이번 선정이 단순한 기술적 혁신을 넘어, 인류가 직면한 기후 위기와 종 다양성 존중이라는 거대한 시대정신을 영화 예술의 형식미로 완벽히 용해시켰다며 찬사를 아끼지 않고 있습니다.",
+          author: "이솔 AI 저널 문화전문기자",
+          thumbnail: "https://images.unsplash.com/photo-1500485035595-cbe6f645feb1?auto=format&fit=crop&q=80&w=800",
+          summary: "현원감독의 100% 생성형 비건 영화 '동물들의 합창'이 베니스 영화제에 진출하여 전 세계에 생명 존중 메시지를 전파하고 있습니다.",
+          hashtags: ["#현원감독", "#비건AI무비", "#베니스영화제"]
+        },
+        {
+          title: "식물의 뉴런 구조를 시네마로... '비건 AI 무비' 전용 멀티플렉스 개관",
+          content: "국내 최초로 식물과 균류의 전기 신호를 사운드와 영상으로 변환하여 실시간 생성 아트를 송출하는 '비건 AI 무비 전용 전시장'이 이솔나라 예술 지구에 기습 개관하였습니다. 관객들은 착석하는 즉시 주위 수목들과 연결된 신경망 노드를 통해 유기적인 공명감을 온몸으로 호흡하게 됩니다.\n\n이솔포스트 특별 취재팀의 확인 결과, 본 극장은 태양열 발전과 폐식용유 에너지 셀을 기반으로 전력 인프라를 전면 탄소 중립형으로 운영하고 있습니다. 이 극장의 전속 큐레이터는 '스크린에서 뿜어지는 시각 정보와 숲의 실제 호흡이 생성 알고리즘에 의해 실시간으로 교류하는 독특한 시공간적 피드백 루프'라고 소개했습니다.\n\n관객들은 '단순히 관람하는 것에 그치지 않고 대자연의 호흡망의 일원이 된 듯한 경이로운 생태학적 해탈을 경험했다'며 뜨거운 입소문을 내고 있습니다.",
+          author: "미래문화특파원 김온에어",
+          thumbnail: "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=800",
+          summary: "이솔나라에 세계 최초로 식물 주파수와 지능형 생성 예술을 연동한 친환경 탄소중립 비건 AI 전용 극장이 개방되었습니다.",
+          hashtags: ["#비건AI무비", "#식물교감", "#이솔에코시네마"]
+        },
+        {
+          title: "[학술 칼럼] 비건 AI 영화는 어떻게 대안 저널리즘과 지구 생태계를 구하는가",
+          content: "현대 문명은 끊임없는 소비와 착취를 토대로 작동합니다. 상업 영화 제작에 소요되는 천문학적인 목재, 화학 유독 물질, 일회용 자재들은 매년 거대한 탄소 발자국을 남깁니다. 그러나 현원감독으로 대변되는 '비건 AI 영화' 진영은 완전히 다른 해답을 제안하고 있습니다.\n\n가상 렌더링 기술과 지능형 에코 에이전트를 도입하면, 탄소 방출량을 기존 대비 98% 이상 절감하는 동시에 실재하지 않는 멸종 위기 동물들의 삶과 자연의 신비로움을 극사실주의로 복원할 수 있습니다. 이것은 단순한 제작비 절감이 아니라, 지구 행성 전체와 맺는 예술적 화해이자 '가장 따뜻한 문명 혁명'입니다.\n\n언론 학계는 '비건 AI 시네마가 이솔나라 시민 아고라와 융합함으로써 가짜 뉴스로 오염된 미디어 공론장을 맑게 정화하는 생태적 백신 역할을 도맡아 해주고 있다'고 깊이 분석하고 있습니다.",
+          author: "이솔포스트 객원논설위원",
+          thumbnail: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?auto=format&fit=crop&q=80&w=800",
+          summary: "생성 AI 가상 렌더링과 생태 저널리즘의 결합이 지구 환경 보호 및 생명 존중을 어떻게 현실로 도출하는지 짚어봅니다.",
+          hashtags: ["#비건시네마", "#에코저널리즘", "#탄소중립영화"]
+        }
+      ];
+      
+      res.json({ success: true, articles: fallbackArticles });
+    }
+  });
+
   // 2. API: Proxy text or other requests if needed in the future
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", geminiKeyConfigured: !!process.env.GEMINI_API_KEY });

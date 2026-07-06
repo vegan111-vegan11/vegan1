@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { toast } from "sonner";
 import { 
   Users, 
   MessageSquare, 
@@ -79,6 +80,7 @@ interface ClubPost {
   createdAt: string;
   likes: number;
   likedBy?: string[];
+  reactions?: Record<string, string[]>;
 }
 
 interface ClubMeetup {
@@ -157,7 +159,19 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
   const [clubs, setClubs] = useState<Club[]>(initialClubs);
   const [selectedClubId, setSelectedClubId] = useState<string>("smart-farm");
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"posts" | "meetups" | "info">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "meetups" | "info" | "missions">("posts");
+
+  // 3-Sec Flash Meetup states
+  const [flashTimeLeft, setFlashTimeLeft] = useState(30);
+  const [flashActive, setFlashActive] = useState(false);
+  const [flashJoinedCount, setFlashJoinedCount] = useState(1);
+  const [hasJoinedFlash, setHasJoinedFlash] = useState(false);
+
+  // Daily Challenge states
+  const [completedMissions, setCompletedMissions] = useState<string[]>(() => {
+    const saved = localStorage.getItem("completed_missions_2026");
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // State for posts inside the active club
   const [clubPosts, setClubPosts] = useState<ClubPost[]>([]);
@@ -193,6 +207,11 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
   // Search & Filter state for Clubs list
   const [clubSearchQuery, setClubSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("전체");
+  const [clubSortMode, setClubSortMode] = useState<"memberCount" | "name">("memberCount");
+
+  // Post search & sorting states
+  const [postSearchQuery, setPostSearchQuery] = useState("");
+  const [postSortMode, setPostSortMode] = useState<"latest" | "popular">("latest");
 
   // Club Management Modal & Form States
   const [isManageClubModalOpen, setIsManageClubModalOpen] = useState(false);
@@ -207,7 +226,7 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
   }, [clubs, selectedClubId]);
 
   const filteredClubs = useMemo(() => {
-    return clubs.filter(club => {
+    const list = clubs.filter(club => {
       // 1. Category Filter
       if (selectedCategory !== "전체") {
         const clubCat = club.category || "레저/스포츠";
@@ -225,7 +244,13 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
 
       return true;
     });
-  }, [clubs, selectedCategory, clubSearchQuery]);
+
+    if (clubSortMode === "memberCount") {
+      return [...list].sort((a, b) => b.memberCount - a.memberCount);
+    } else {
+      return [...list].sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    }
+  }, [clubs, selectedCategory, clubSearchQuery, clubSortMode]);
 
   // Check if current user is host of active club, or is an admin
   const isUserClubHost = useMemo(() => {
@@ -265,6 +290,42 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
     }
   };
 
+  // Flash Countdown timer logic
+  useEffect(() => {
+    let timer: any;
+    if (flashActive && flashTimeLeft > 0) {
+      timer = setInterval(() => {
+        setFlashTimeLeft(prev => prev - 1);
+        if (Math.random() > 0.7) {
+          setFlashJoinedCount(c => c + 1);
+        }
+      }, 1000);
+    } else if (flashTimeLeft === 0 && flashActive) {
+      setFlashActive(false);
+      toast.success("⚡ 3초 번개 매칭이 정식 완료되었습니다! 단톡방이 개설되었습니다.", {
+        description: "한강 공원 버스킹 현장으로 지금 바로 이동하세요!",
+        icon: "🚴"
+      });
+    }
+    return () => clearInterval(timer);
+  }, [flashActive, flashTimeLeft]);
+
+  const handleStartFlash = () => {
+    triggerHaptic(750, 0.08);
+    setFlashTimeLeft(30);
+    setFlashActive(true);
+    setFlashJoinedCount(1);
+    setHasJoinedFlash(true);
+    toast.info("⚡ 번개 긴급 모임이 호스팅되었습니다! 30초 내에 아고라 인원들이 모집됩니다.");
+  };
+
+  const handleJoinFlash = () => {
+    triggerHaptic(600, 0.05);
+    setHasJoinedFlash(true);
+    setFlashJoinedCount(prev => prev + 1);
+    toast.success("⚡ 번개 긴급 모임에 참여 신청되었습니다! 실시간 수락 완료.");
+  };
+
   // Auto-select first matching club when filter excludes the currently active one
   useEffect(() => {
     if (filteredClubs.length > 0 && !filteredClubs.some(c => c.id === selectedClubId)) {
@@ -302,7 +363,8 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
           content: data.content || "",
           createdAt: data.createdAt || new Date().toISOString(),
           likes: data.likes || 0,
-          likedBy: data.likedBy || []
+          likedBy: data.likedBy || [],
+          reactions: data.reactions || { "❤️": [], "🔥": [], "🌱": [], "💡": [] }
         });
       });
       setClubPosts(list);
@@ -525,6 +587,40 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
       });
     } catch (err) {
       // Background update fail ignored
+    }
+  };
+
+  // 6-2. Emotion Reactions (❤️, 🔥, 🌱, 💡)
+  const handleReactionPost = async (post: ClubPost, emoji: string) => {
+    if (!user) {
+      triggerHaptic(900, 0.08);
+      onAuthClick();
+      return;
+    }
+
+    triggerHaptic(700, 0.04);
+    const currentReactions = post.reactions || { "❤️": [], "🔥": [], "🌱": [], "💡": [] };
+    const usersList = currentReactions[emoji] || [];
+    const hasReacted = usersList.includes(user.uid);
+    
+    const updatedUsers = hasReacted
+      ? usersList.filter(id => id !== user.uid)
+      : [...usersList, user.uid];
+      
+    const newReactions = {
+      ...currentReactions,
+      [emoji]: updatedUsers
+    };
+
+    setClubPosts(prev => prev.map(p => p.id === post.id ? { ...p, reactions: newReactions } : p));
+
+    try {
+      const postRef = doc(db, "agora_clubs", selectedClubId, "posts", post.id);
+      await updateDoc(postRef, {
+        reactions: newReactions
+      });
+    } catch (err) {
+      // Ignored for offline robustness
     }
   };
 
@@ -873,27 +969,64 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
                   </button>
                 )}
               </div>
+
+              {/* Club list Sort toggle */}
+              <div className="flex items-center justify-between px-1 pt-1">
+                <span className="text-[9.5px] font-black text-zinc-400 uppercase tracking-wider">정렬 방식</span>
+                <div className="flex bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 p-0.5 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => { triggerHaptic(500, 0.02); setClubSortMode("memberCount"); }}
+                    className={cn(
+                      "px-2 py-1 rounded text-[9.5px] font-black transition-colors",
+                      clubSortMode === "memberCount"
+                        ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100"
+                        : "text-zinc-400 hover:text-zinc-600"
+                    )}
+                  >
+                    인원순
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { triggerHaptic(500, 0.02); setClubSortMode("name"); }}
+                    className={cn(
+                      "px-2 py-1 rounded text-[9.5px] font-black transition-colors",
+                      clubSortMode === "name"
+                        ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100"
+                        : "text-zinc-400 hover:text-zinc-600"
+                    )}
+                  >
+                    이름순
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Category Quick Filter Chips */}
             <div className="space-y-1">
-              <span className="text-[9.5px] font-black text-zinc-400 uppercase tracking-wider px-1">카테고리 분류</span>
-              <div className="flex flex-wrap gap-1 pt-1">
-                {["전체", "친환경/원예", "문화/예술", "인문학/독서", "레저/스포츠"].map((cat) => {
-                  const isCatSelected = selectedCategory === cat;
+              <span className="text-[9.5px] font-black text-zinc-400 uppercase tracking-wider px-1">🌱 카테고리 분류</span>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {[
+                  { key: "전체", label: "🔍 전체" },
+                  { key: "친환경/원예", label: "🌱 친환경/원예" },
+                  { key: "문화/예술", label: "🎸 문화/예술" },
+                  { key: "인문학/독서", label: "📚 인문학/독서" },
+                  { key: "레저/스포츠", label: "🚴 레저/스포츠" }
+                ].map((item) => {
+                  const isCatSelected = selectedCategory === item.key;
                   return (
                     <button
-                      key={cat}
+                      key={item.key}
                       type="button"
-                      onClick={() => { triggerHaptic(550, 0.02); setSelectedCategory(cat); }}
+                      onClick={() => { triggerHaptic(550, 0.02); setSelectedCategory(item.key); }}
                       className={cn(
-                        "px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer border",
+                        "px-2.5 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer border flex items-center gap-1 hover:scale-105",
                         isCatSelected
-                          ? "bg-red-500/10 border-red-500/30 text-red-655 dark:text-red-400"
+                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 shadow-sm"
                           : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200/50 dark:border-zinc-800 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-350"
                       )}
                     >
-                      {cat}
+                      {item.label}
                     </button>
                   );
                 })}
@@ -977,6 +1110,25 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
                   </span>
                 ))}
               </div>
+
+              {/* Club Vibe Temperature Indicator */}
+              <div className="pt-2 flex flex-col gap-1.5 w-full max-w-sm select-none">
+                <div className="flex items-center justify-between text-[11px] font-black text-zinc-650 dark:text-zinc-300">
+                  <span className="flex items-center gap-1">
+                    <Flame size={13} className="text-red-500 animate-pulse fill-red-500" />
+                    <span>소모임 활성 온도: <strong className="text-red-600 dark:text-red-400">{(36.5 + (activeClub.memberCount % 45) + 12.4).toFixed(1)}°C</strong></span>
+                  </span>
+                  <span className="text-[10px] bg-red-500/10 text-red-655 px-1.5 py-0.5 rounded font-black">
+                    🔥 이달의 슈퍼루키 클럽
+                  </span>
+                </div>
+                <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-orange-400 to-red-550 h-full rounded-full transition-all duration-1000"
+                    style={{ width: `${Math.min(100, Math.max(30, 36.5 + (activeClub.memberCount % 45) + 12.4))}%` }}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col items-stretch md:items-end gap-2.5 shrink-0 w-full md:w-auto">
@@ -1033,12 +1185,12 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
             </div>
           </div>
 
-          {/* Sub Tab Selection Menu (Posts Feed vs Meetups Schedule) */}
-          <div className="flex items-center gap-1 border-b border-zinc-200 dark:border-zinc-800/80 pb-2 select-none">
+          {/* Sub Tab Selection Menu (Posts Feed vs Meetups Schedule vs Missions) */}
+          <div className="flex flex-wrap items-center gap-1 border-b border-zinc-200 dark:border-zinc-800/80 pb-2 select-none">
             <button
               onClick={() => { triggerHaptic(600, 0.02); setActiveTab("posts"); }}
               className={cn(
-                "px-5 py-2.5 text-xs font-black rounded-xl transition-all relative cursor-pointer",
+                "px-4 md:px-5 py-2.5 text-xs font-black rounded-xl transition-all relative cursor-pointer",
                 activeTab === "posts"
                   ? "bg-red-500/10 text-red-600 dark:text-red-400"
                   : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
@@ -1051,7 +1203,7 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
             <button
               onClick={() => { triggerHaptic(600, 0.02); setActiveTab("meetups"); }}
               className={cn(
-                "px-5 py-2.5 text-xs font-black rounded-xl transition-all relative cursor-pointer flex items-center gap-1",
+                "px-4 md:px-5 py-2.5 text-xs font-black rounded-xl transition-all relative cursor-pointer flex items-center gap-1",
                 activeTab === "meetups"
                   ? "bg-red-500/10 text-red-600 dark:text-red-400"
                   : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
@@ -1059,6 +1211,22 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
             >
               <span>오프라인 모임 번개 ({clubMeetups.length})</span>
               {activeTab === "meetups" && <motion.div layoutId="activeAgoraTabLine" className="absolute bottom-[-10px] left-2 right-2 h-[3px] bg-red-500 rounded-full" />}
+            </button>
+
+            <button
+              onClick={() => { triggerHaptic(600, 0.02); setActiveTab("missions"); }}
+              className={cn(
+                "px-4 md:px-5 py-2.5 text-xs font-black rounded-xl transition-all relative cursor-pointer flex items-center gap-1",
+                activeTab === "missions"
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                  : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+              )}
+            >
+              <span className="flex items-center gap-1">
+                <Sparkles size={12} className="text-amber-500 animate-pulse" />
+                일일 미션 챌린지
+              </span>
+              {activeTab === "missions" && <motion.div layoutId="activeAgoraTabLine" className="absolute bottom-[-10px] left-2 right-2 h-[3px] bg-red-500 rounded-full" />}
             </button>
           </div>
 
@@ -1117,6 +1285,58 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
                   </div>
                 </div>
 
+                {/* Feed Posts Sub-Toolbar: Search & Sort */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-4 rounded-3xl shadow-sm select-none">
+                  <div className="relative flex-1">
+                    <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <input
+                      type="text"
+                      placeholder="피드 본문 또는 작성자 닉네임 검색..."
+                      value={postSearchQuery}
+                      onChange={(e) => setPostSearchQuery(e.target.value)}
+                      className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-8.5 pr-3 py-2 text-xs font-bold outline-none focus:border-red-500 text-zinc-800 dark:text-zinc-150 placeholder-zinc-400"
+                    />
+                    {postSearchQuery && (
+                      <button 
+                        onClick={() => setPostSearchQuery("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-650 text-xs font-black cursor-pointer"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">피드 정렬</span>
+                    <div className="flex bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 p-0.5 rounded-lg">
+                      <button
+                        type="button"
+                        onClick={() => { triggerHaptic(500, 0.02); setPostSortMode("latest"); }}
+                        className={cn(
+                          "px-3 py-1 rounded-md text-[10px] font-black transition-colors",
+                          postSortMode === "latest"
+                            ? "bg-red-500/10 text-red-655"
+                            : "text-zinc-400 hover:text-zinc-600"
+                        )}
+                      >
+                        최신순
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { triggerHaptic(500, 0.02); setPostSortMode("popular"); }}
+                        className={cn(
+                          "px-3 py-1 rounded-md text-[10px] font-black transition-colors",
+                          postSortMode === "popular"
+                            ? "bg-red-500/10 text-red-655"
+                            : "text-zinc-400 hover:text-zinc-600"
+                        )}
+                      >
+                        인기순
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Feed Posts List */}
                 <div className="space-y-4">
                   {isLoading ? (
@@ -1124,78 +1344,127 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
                       <RefreshCw className="animate-spin text-red-500 mx-auto mb-2" size={24} />
                       <p className="text-xs font-bold text-zinc-400">피드 게시글 수신 중...</p>
                     </div>
-                  ) : clubPosts.length === 0 ? (
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-12 rounded-[2rem] text-center space-y-2 shadow-sm">
-                      <MessageSquare className="text-zinc-300 dark:text-zinc-700 mx-auto" size={32} />
-                      <p className="text-xs font-black text-zinc-500">아직 등록된 교류 글이 없습니다.</p>
-                      <p className="text-[10px] text-zinc-400">첫 번째 이야기를 먼저 전해 분위기를 환하게 만들어보세요!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {clubPosts.map((post) => {
-                        const isLiked = user && post.likedBy?.includes(user.uid);
-                        const canDelete = user && (user.uid === post.authorId || user.email === 'f8001161@gmail.com');
+                  ) : (() => {
+                    let processed = [...clubPosts];
 
-                        return (
-                          <div 
-                            key={post.id}
-                            className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850/80 rounded-3xl p-5 md:p-6 shadow-sm space-y-4 relative group"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <img
-                                  src={post.authorAvatar}
-                                  alt={post.author}
-                                  className="w-8 h-8 rounded-full border border-zinc-200/60"
-                                  referrerPolicy="no-referrer"
-                                />
-                                <div>
-                                  <h4 className="text-xs font-black text-zinc-800 dark:text-zinc-200">@{post.author}</h4>
-                                  <p className="text-[9px] font-mono text-zinc-400 font-bold">
-                                    {new Date(post.createdAt).toLocaleDateString("ko-KR", {
-                                      month: "long",
-                                      day: "numeric",
-                                      hour: "2-digit",
-                                      minute: "2-digit"
-                                    })}
-                                  </p>
+                    // 1. Filter by Search Query
+                    if (postSearchQuery.trim()) {
+                      const q = postSearchQuery.toLowerCase();
+                      processed = processed.filter(post => 
+                        post.author.toLowerCase().includes(q) || 
+                        post.content.toLowerCase().includes(q)
+                      );
+                    }
+
+                    // 2. Sort by Mode
+                    if (postSortMode === "latest") {
+                      processed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                    } else if (postSortMode === "popular") {
+                      processed.sort((a, b) => {
+                        const scoreA = a.likes + Object.values(a.reactions || {}).reduce((sum, list) => sum + list.length, 0);
+                        const scoreB = b.likes + Object.values(b.reactions || {}).reduce((sum, list) => sum + list.length, 0);
+                        return scoreB - scoreA;
+                      });
+                    }
+
+                    if (processed.length === 0) {
+                      return (
+                        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-12 rounded-[2rem] text-center space-y-2 shadow-sm">
+                          <MessageSquare className="text-zinc-300 dark:text-zinc-700 mx-auto" size={32} />
+                          <p className="text-xs font-black text-zinc-500">조건에 부합하는 피드 게시글이 없습니다.</p>
+                          <p className="text-[10px] text-zinc-400">새로운 이야기를 먼저 작성해 보세요!</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-4">
+                        {processed.map((post) => {
+                          const isLiked = user && post.likedBy?.includes(user.uid);
+                          const canDelete = user && (user.uid === post.authorId || user.email === 'f8001161@gmail.com');
+
+                          return (
+                            <div 
+                              key={post.id}
+                              className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850/80 rounded-3xl p-5 md:p-6 shadow-sm space-y-4 relative group"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={post.authorAvatar}
+                                    alt={post.author}
+                                    className="w-8 h-8 rounded-full border border-zinc-200/60"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                  <div>
+                                    <h4 className="text-xs font-black text-zinc-800 dark:text-zinc-200">@{post.author}</h4>
+                                    <p className="text-[9px] font-mono text-zinc-400 font-bold">
+                                      {new Date(post.createdAt).toLocaleDateString("ko-KR", {
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit"
+                                      })}
+                                    </p>
+                                  </div>
                                 </div>
+
+                                {canDelete && (
+                                  <button
+                                    onClick={() => handleDeletePost(post.id, post.authorId)}
+                                    className="p-1 text-zinc-400 hover:text-red-500 cursor-pointer"
+                                    title="글 삭제"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
                               </div>
 
-                              {canDelete && (
+                              <p className="text-xs md:text-sm text-zinc-650 dark:text-zinc-350 leading-relaxed font-semibold whitespace-pre-wrap">
+                                {post.content}
+                              </p>
+
+                              <div className="flex flex-wrap items-center gap-2 border-t border-zinc-100 dark:border-zinc-800/60 pt-3 text-xs select-none">
                                 <button
-                                  onClick={() => handleDeletePost(post.id, post.authorId)}
-                                  className="p-1 text-zinc-400 hover:text-red-500 cursor-pointer"
-                                  title="글 삭제"
+                                  onClick={() => handleLikePost(post)}
+                                  className={cn(
+                                    "flex items-center gap-1 font-bold cursor-pointer transition-colors px-2.5 py-1 rounded-lg",
+                                    isLiked 
+                                      ? "bg-red-500/10 text-red-600 dark:text-red-400" 
+                                      : "text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-600"
+                                  )}
                                 >
-                                  <Trash2 size={13} />
+                                  <ThumbsUp size={12} className={isLiked ? "fill-current" : ""} />
+                                  <span className="font-mono">{post.likes}</span>
                                 </button>
-                              )}
-                            </div>
 
-                            <p className="text-xs md:text-sm text-zinc-650 dark:text-zinc-350 leading-relaxed font-semibold whitespace-pre-wrap">
-                              {post.content}
-                            </p>
-
-                            <div className="flex items-center gap-4 border-t border-zinc-100 dark:border-zinc-800/60 pt-3 text-xs select-none">
-                              <button
-                                onClick={() => handleLikePost(post)}
-                                className={cn(
-                                  "flex items-center gap-1 font-bold cursor-pointer transition-colors px-2.5 py-1 rounded-lg",
-                                  isLiked 
-                                    ? "bg-red-500/10 text-red-600 dark:text-red-400" 
-                                    : "text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-600"
-                                )}
-                              >
-                                <ThumbsUp size={12} className={isLiked ? "fill-current" : ""} />
-                                <span className="font-mono">{post.likes}</span>
-                              </button>
+                                {/* 4 Emotional Reactions */}
+                                {["❤️", "🔥", "🌱", "💡"].map((emoji) => {
+                                  const reactorList = post.reactions?.[emoji] || [];
+                                  const hasReacted = user && reactorList.includes(user.uid);
+                                  return (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => handleReactionPost(post, emoji)}
+                                      className={cn(
+                                        "flex items-center gap-1 cursor-pointer transition-all px-2.5 py-1 rounded-lg text-xs font-bold hover:scale-105",
+                                        hasReacted 
+                                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20" 
+                                          : "text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                                      )}
+                                    >
+                                      <span>{emoji}</span>
+                                      <span className="font-mono text-[10px]">{reactorList.length}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
 
               </div>
@@ -1226,6 +1495,76 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
                   </button>
                 </div>
 
+                {/* Improvement 5: 실시간 3초 번개 모임 모집 타이머 (3-Sec Flash Meetup Countdown Widget) */}
+                <div className="bg-zinc-50 dark:bg-zinc-950 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-5 relative overflow-hidden select-none">
+                  <div className="absolute top-0 right-0 p-3">
+                    <span className="bg-red-500/10 text-red-655 text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-red-550 rounded-full animate-ping" />
+                      LIVE
+                    </span>
+                  </div>
+
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 bg-red-500/10 text-red-655 rounded-2xl shrink-0">
+                      <Clock size={20} className={flashActive ? "animate-spin" : ""} />
+                    </div>
+                    <div className="space-y-1 flex-1">
+                      <h4 className="text-xs font-black text-zinc-800 dark:text-zinc-200 font-sans">⚡ 초고속 3초 소모임 번개 매칭 발전기</h4>
+                      <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed font-sans">
+                        현재 이 소모임에 온라인으로 활동 중인 회원을 실시간 소환합니다. 가볍게 만나 수다를 나누거나 즉석 치맥을 번개 제안해 보세요!
+                      </p>
+
+                      {flashActive ? (
+                        <div className="mt-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-2xl space-y-3.5">
+                          <div className="flex items-center justify-between font-sans">
+                            <span className="text-[10px] font-black text-red-500 animate-pulse">매칭 마감 {flashTimeLeft}초 전!</span>
+                            <span className="text-[10px] font-bold text-zinc-400">참여자 <strong className="text-zinc-700 dark:text-zinc-200 font-black">{flashJoinedCount}명</strong> 대기 중</span>
+                          </div>
+                          <div className="w-full bg-zinc-150 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                            <div 
+                              className="bg-red-550 h-full rounded-full transition-all duration-1000"
+                              style={{ width: `${(flashTimeLeft / 30) * 100}%` }}
+                            />
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={handleJoinFlash}
+                              disabled={hasJoinedFlash}
+                              className={cn(
+                                "flex-1 py-2 rounded-xl text-[11px] font-black cursor-pointer transition-all text-center font-sans",
+                                hasJoinedFlash
+                                  ? "bg-zinc-150 text-zinc-400 dark:bg-zinc-850 cursor-not-allowed border-zinc-200 dark:border-zinc-800"
+                                  : "bg-red-655 text-white hover:bg-red-700 hover:scale-[1.02] border-red-600"
+                              )}
+                            >
+                              {hasJoinedFlash ? "✓ 번개 줄서기 완료!" : "🙋 나도 즉석 번개 합류하기"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { triggerHaptic(900, 0.05); setFlashActive(false); }}
+                              className="px-3 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-450 rounded-xl text-[11px] font-black cursor-pointer font-sans"
+                            >
+                              취소
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            onClick={handleStartFlash}
+                            className="px-4 py-2 bg-zinc-900 hover:bg-black dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all hover:scale-[1.02] cursor-pointer font-sans border border-zinc-750 dark:border-zinc-700"
+                          >
+                            <span>🔥 지금 즉시 번개 타이머 작동시키기 (30초 한정)</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Meetup Items Grid */}
                 {clubMeetups.length === 0 ? (
                   <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 p-12 rounded-[2rem] text-center space-y-2 shadow-sm">
@@ -1243,6 +1582,23 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
                       const isCreator = user && meetup.creatorId === user.uid;
                       const canDeleteMeetup = isAdmin || isHost || isCreator;
 
+                      const ddayBadge = (() => {
+                        try {
+                          const meetupDateObj = new Date(meetup.date);
+                          if (isNaN(meetupDateObj.getTime())) return null;
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          meetupDateObj.setHours(0, 0, 0, 0);
+                          const diffTime = meetupDateObj.getTime() - today.getTime();
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                          if (diffDays === 0) return "오늘 진행";
+                          if (diffDays < 0) return `마감됨 (${Math.abs(diffDays)}일 전)`;
+                          return `D-${diffDays}`;
+                        } catch (e) {
+                          return null;
+                        }
+                      })();
+
                       return (
                         <div 
                           key={meetup.id}
@@ -1250,31 +1606,90 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
                         >
                           <div className="space-y-2.5">
                             <div className="flex items-center justify-between">
-                              <span className={cn(
-                                "text-[9px] font-black uppercase px-2 py-0.5 rounded select-none font-mono",
-                                isFull 
-                                  ? "bg-zinc-100 text-zinc-450 dark:bg-zinc-800" 
-                                  : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                              )}>
-                                {isFull ? "정원 모집 마감" : `참가 신청 중 (${meetup.attendees.length}/${meetup.capacity}명)`}
-                              </span>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <span className={cn(
+                                  "text-[9px] font-black uppercase px-2 py-0.5 rounded select-none font-mono",
+                                  isFull 
+                                    ? "bg-zinc-100 text-zinc-450 dark:bg-zinc-800" 
+                                    : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                )}>
+                                  {isFull ? "정원 모집 마감" : `참가 신청 중 (${meetup.attendees.length}/${meetup.capacity}명)`}
+                                </span>
 
-                              {canDeleteMeetup && (
+                                {ddayBadge && (
+                                  <span className={cn(
+                                    "text-[9px] font-black px-1.5 py-0.5 rounded select-none font-mono",
+                                    ddayBadge.includes("마감")
+                                      ? "bg-zinc-100 text-zinc-400 dark:bg-zinc-800"
+                                      : ddayBadge === "오늘 진행"
+                                      ? "bg-rose-500 text-white animate-pulse"
+                                      : "bg-red-500/10 text-red-600 dark:text-red-400"
+                                  )}>
+                                    {ddayBadge}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                {/* Share Button */}
                                 <button
                                   type="button"
-                                  onClick={() => handleDeleteMeetup(meetup.id, meetup.creatorId)}
-                                  className="p-1 hover:bg-red-500/10 text-zinc-450 hover:text-red-500 rounded-lg transition-colors cursor-pointer"
-                                  title="번개 취소하기"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const shareText = `🌱 [이솔 소모임 번개 초대]
+진행 모임: ${activeClub?.name || "소모임"}
+제목: ${meetup.title}
+일시: ${meetup.date} ${meetup.time}
+장소: ${meetup.location}
+소개: ${meetup.description}
+함께 소중한 취향과 생태 가치를 나눠요!`;
+                                    navigator.clipboard.writeText(shareText);
+                                    toast.success("📋 번개 초대 양식이 클립보드에 복사되었습니다! 편하게 붙여넣으세요.");
+                                  }}
+                                  className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-600 rounded-lg transition-colors cursor-pointer"
+                                  title="초대 메시지 복사"
                                 >
-                                  <Trash2 size={13} />
+                                  <Share2 size={13} />
                                 </button>
-                              )}
+
+                                {canDeleteMeetup && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteMeetup(meetup.id, meetup.creatorId)}
+                                    className="p-1 hover:bg-red-500/10 text-zinc-450 hover:text-red-500 rounded-lg transition-colors cursor-pointer"
+                                    title="번개 취소하기"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
+                              </div>
                             </div>
 
                             <h4 className="text-sm font-black text-zinc-800 dark:text-zinc-100 line-clamp-1">{meetup.title}</h4>
                             <p className="text-[11.5px] text-zinc-500 dark:text-zinc-400 line-clamp-3 leading-relaxed font-semibold">
                               {meetup.description}
                             </p>
+                          </div>
+
+                          {/* Capacity gauge bar */}
+                          <div className="space-y-1">
+                            <div className="flex justify-between items-center text-[9px] font-black text-zinc-400">
+                              <span>모집 진행률</span>
+                              <span>{Math.min(100, Math.floor((meetup.attendees.length / meetup.capacity) * 100))}%</span>
+                            </div>
+                            <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-1 rounded-full overflow-hidden">
+                              <div 
+                                className={cn(
+                                  "h-full rounded-full transition-all duration-500",
+                                  isFull 
+                                    ? "bg-zinc-400" 
+                                    : meetup.attendees.length >= meetup.capacity * 0.8 
+                                    ? "bg-amber-500 animate-pulse" 
+                                    : "bg-emerald-500"
+                                )}
+                                style={{ width: `${Math.min(100, Math.floor((meetup.attendees.length / meetup.capacity) * 100))}%` }}
+                              />
+                            </div>
                           </div>
 
                           <div className="space-y-2 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-[11px] font-bold text-zinc-500 dark:text-zinc-400 select-none">
@@ -1318,6 +1733,153 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
                   </div>
                 )}
 
+              </div>
+            )}
+
+            {/* TAB: DAILY MISSION CHALLENGES */}
+            {activeTab === "missions" && (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-amber-500 to-orange-555 text-white rounded-[2rem] p-6 shadow-md select-none">
+                  <div className="space-y-1">
+                    <span className="bg-white/20 border border-white/20 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider">DAILY MISSION ZONE</span>
+                    <h4 className="text-base font-black">소모임 일일 미션 챌린지 📸</h4>
+                    <p className="text-[11px] text-white/80 font-medium max-w-md font-sans">매일 소모임 특화 행동을 실천하고 인증샷을 남겨 보세요. 실천 시 활성 온도가 더욱 불타오릅니다!</p>
+                  </div>
+                </div>
+
+                {/* Mission checklist card */}
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm space-y-6 select-none">
+                  <div className="flex items-center justify-between font-sans">
+                    <h4 className="text-sm font-black text-zinc-800 dark:text-zinc-100 flex items-center gap-1.5">
+                      <Sparkles className="text-amber-500" size={16} />
+                      오늘의 이솔나눔 행동 수칙
+                    </h4>
+                    <span className="text-xs font-bold text-zinc-400">
+                      진행도: <strong className="text-orange-500">{
+                        (() => {
+                          const clubMissions = selectedClubId === "smart-farm" 
+                            ? ["sf-1", "sf-2", "sf-3"] 
+                            : selectedClubId === "busking" 
+                            ? ["bk-1", "bk-2", "bk-3"] 
+                            : selectedClubId === "book-salon" 
+                            ? ["bs-1", "bs-2", "bs-3"] 
+                            : ["er-1", "er-2", "er-3"];
+                          const doneCount = clubMissions.filter(m => completedMissions.includes(m)).length;
+                          return `${doneCount} / 3`;
+                        })()
+                      }</strong>
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 font-sans">
+                    {(() => {
+                      const missionsList = selectedClubId === "smart-farm" ? [
+                        { id: "sf-1", text: "수경재배 가전 물갈이 & 친환경 영양제 투여하기 💧" },
+                        { id: "sf-2", text: "오늘 수확한 허브/방울토마토 샐러드에 얹어 식사 인증 🥗" },
+                        { id: "sf-3", text: "이솔 스마트팜 IoT 센서 모니터링 스크린샷 올리기 📱" }
+                      ] : selectedClubId === "busking" ? [
+                        { id: "bk-1", text: "나의 악기 먼지 닦고 정밀 튜닝하기 🎸" },
+                        { id: "bk-2", text: "이번 주 한강 버스킹 희망 선곡 리스트 1곡 등록하기 📝" },
+                        { id: "bk-3", text: "좋아하는 길거리 아티스트 음원 스트리밍 1회 인증 🎧" }
+                      ] : selectedClubId === "book-salon" ? [
+                        { id: "bs-1", text: "오늘 읽은 인문학 도서 마음에 와닿는 1줄 손글씨 필사 ✍️" },
+                        { id: "bs-2", text: "이달의 공동 수필집 작성을 위한 브레인스토밍 아이디어 1줄 🧠" },
+                        { id: "bs-3", text: "아고라 다른 동료의 피드글에 따뜻한 응원 감상평 남기기 💬" }
+                      ] : [
+                        { id: "er-1", text: "오늘 에코 라이딩 중 길가의 플라스틱 컵 1개 줍기(플로깅) 🗑️" },
+                        { id: "er-2", text: "안전을 위한 자전거 타이어 공기압 체크 및 브레이크 점검 ⚙️" },
+                        { id: "er-3", text: "오늘 라이딩 주행 거리 스크린샷 캡처해 두기 🚴" }
+                      ];
+
+                      return missionsList.map((m) => {
+                        const isDone = completedMissions.includes(m.id);
+                        return (
+                          <div 
+                            key={m.id}
+                            onClick={() => {
+                              triggerHaptic(500, 0.03);
+                              let next: string[];
+                              if (isDone) {
+                                next = completedMissions.filter(id => id !== m.id);
+                              } else {
+                                next = [...completedMissions, m.id];
+                                toast.success("🎉 미션 완료! 챌린지 샷을 업로드하여 아고라 시민들과 공유해 보세요.", {
+                                  icon: "📸"
+                                });
+                              }
+                              setCompletedMissions(next);
+                              localStorage.setItem("completed_missions_2026", JSON.stringify(next));
+                            }}
+                            className={cn(
+                              "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer",
+                              isDone 
+                                ? "bg-orange-500/10 border-orange-500/20 text-orange-950 dark:text-orange-200" 
+                                : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-350 dark:hover:border-zinc-700"
+                            )}
+                          >
+                            <span className="text-xs font-bold leading-snug">{m.text}</span>
+                            <span className={cn(
+                              "w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0",
+                              isDone ? "bg-orange-550 border-orange-550 text-white" : "border-zinc-300 dark:border-zinc-700"
+                            )}>
+                              {isDone && <span className="text-[10px] font-black">✓</span>}
+                            </span>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+
+                  {/* Dynamic Photo Upload Simulation Widget for Gen Z appeal */}
+                  <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl space-y-4 font-sans">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <h5 className="text-xs font-black text-zinc-800 dark:text-zinc-200">📸 실시간 미션 인증 숏폼 갤러리</h5>
+                        <p className="text-[10px] text-zinc-400 font-bold">클럽 멤버들과 따끈따끈한 미션 인증 사진을 즉시 셰어링하세요.</p>
+                      </div>
+                      <span className="text-[9px] bg-amber-500/10 text-amber-600 font-black px-2 py-0.5 rounded-full">인기 급상승</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-zinc-200 dark:bg-zinc-800 aspect-square rounded-xl overflow-hidden relative group">
+                        <img src="https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?w=150&auto=format&fit=crop&q=60" alt="pic1" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/45 flex items-end p-1.5 opacity-100">
+                          <span className="text-[8.5px] text-white font-black truncate">@민수스마트🌱</span>
+                        </div>
+                      </div>
+                      <div className="bg-zinc-200 dark:bg-zinc-800 aspect-square rounded-xl overflow-hidden relative group">
+                        <img src="https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=150&auto=format&fit=crop&q=60" alt="pic2" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/45 flex items-end p-1.5 opacity-100">
+                          <span className="text-[8.5px] text-white font-black truncate">@기타맨준🎸</span>
+                        </div>
+                      </div>
+                      <div className="bg-zinc-200 dark:bg-zinc-800 aspect-square rounded-xl overflow-hidden relative group">
+                        <img src="https://images.unsplash.com/photo-1476820865390-c52aeebb9891?w=150&auto=format&fit=crop&q=60" alt="pic3" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/45 flex items-end p-1.5 opacity-100">
+                          <span className="text-[8.5px] text-white font-black truncate">@지성인📚</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          triggerHaptic(700, 0.05);
+                          toast.info("📷 기기 카메라/갤러리 연동 중...", {
+                            description: "데스크톱 브라우저 환경에서 시뮬레이션 사진이 자동 매핑됩니다."
+                          });
+                          setTimeout(() => {
+                            toast.success("🔥 인증 완료! 미션 성공으로 활성 온도가 2°C 증가했습니다.");
+                          }, 1500);
+                        }}
+                        className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-black cursor-pointer text-center transition-all shadow-sm border border-orange-600"
+                      >
+                        ⚡ 내 미션 실천 샷 등록하기 (활성 온도 부스트)
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

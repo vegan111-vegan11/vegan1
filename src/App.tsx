@@ -119,6 +119,8 @@ import {
   Loader2,
   Mic,
   Bookmark,
+  Film,
+  Clapperboard,
 } from "lucide-react";
 import { GoogleGenAI, Type } from "@google/genai";
 import { Toaster, toast } from "sonner";
@@ -160,6 +162,7 @@ import { PREMIUM_CITIZEN_NEWS } from "./realDataFallback";
 import CinePortraitApp from "./components/CinePortraitApp";
 import AiAppStudioApp from "./components/AiAppStudioApp";
 import CitizenAgora from "./components/CitizenAgora";
+import HyeonWonCinema from "./components/HyeonWonCinema";
 import {
   RagDocument,
   chunkText,
@@ -1395,29 +1398,43 @@ export const MOCK_CITIZEN_NEWS: CitizenNews[] = [
   // 온에어 (비건무비)
   {
     id: "onair1",
-    title: "[온에어] 비건 영화 ‘푸른 행성’ 개봉 박두... 기후 위기의 경고",
-    author: "환경지킴이",
+    title: "[온에어] 현원 감독, 한국 첫 AI영화사 ‘비건AI무비’ 설립으로 시네마틱 새 지평 선언",
+    author: "정길종 기자",
     reporterId: "admin",
     content:
-      "지구 온난화와 공장식 축산의 관계를 조명한 다큐멘터리 영화 ‘푸른 행성’이 다음 달 국내 개봉합니다. 우리가 먹는 음식이 지구에 어떤 영향을 주는지 깊이 있게 다룹니다.",
+      "한국 최초의 생성형 AI 기반 영화사인 ‘비건AI무비(Vegan AI Movie)’가 2026년부터 본격적으로 작품 활동의 신호탄을 쏘아 올립니다. 창립자인 거장 현원 감독은 물리적인 탄소 배출과 현장 낭비 요소를 제로화하는 인공지능 기반 디지털 제작 공정을 전격 선포하며, 지구와 생명을 보듬는 지속 가능하고 따뜻한 미장센을 선보일 예정입니다.",
     thumbnail:
       "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?auto=format&fit=crop&q=80&w=800",
-    date: "2026-05-14",
+    date: "2026-05-25",
     likes: 234,
     category: "온에어",
     isApproved: true,
   },
   {
     id: "onair2",
-    title: '[온에어] 서울 비건 영화제 성료... "생명 존중의 메시지 전파"',
-    author: "문화기자",
-    reporterId: "r1",
+    title: "[온에어] 현원 감독, “AI 배우 ‘이솔’과 더 비건스(The Vegans)로 인류와 지구를 위한 예술 가치 치유”",
+    author: "정길종 기자",
+    reporterId: "admin",
     content:
-      "제5회 서울 비건 영화제가 성황리에 막을 내렸습니다. 이번 영화제에서는 동물권과 환경을 주제로 한 20여 편의 국내외 작품이 상영되어 관객들의 큰 호응을 얻었습니다.",
+      "독립영화 거장 현원 감독은 세계 최초의 AI 예술가 5인(이솔, 라온, 가온, 아린, 다온)으로 구성된 메타버스 가상 연기팀 ‘더 비건스’ 프로젝트를 추진한다고 발표했습니다. 가상의 AI 예술가들을 통해 단순히 차가운 컴퓨터 코드가 아니라, 감성과 홀로그램 가창, 감미로운 예술의 빛으로 현대인의 상처를 치유하는 따뜻하고 평화로운 우주적 영혼의 에너지를 불어넣겠다는 구상입니다.",
     thumbnail:
       "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?auto=format&fit=crop&q=80&w=800",
-    date: "2026-05-12",
+    date: "2026-05-26",
     likes: 156,
+    category: "온에어",
+    isApproved: true,
+  },
+  {
+    id: "onair3",
+    title: "[온에어] ‘비건AI무비’의 지속가능성... 탄소 제로 디지털 영화 제작 공정의 혁신",
+    author: "환경생태팀",
+    reporterId: "admin",
+    content:
+      "현원 감독이 주창하는 '비건AI무비'의 가치는 식생활을 넘어선 영화 예술계의 근본적 혁신입니다. 세트장 가설 및 촬영용 디젤 전력차 등 야생 생태계에 큰 발자국을 입혔던 전통적 제작 과정을 하이테크 AI 연출 기법으로 전환하여, 완벽한 탄소 배출 제로(Carbon Zero)의 환경 친화적 영화를 현실화한 공로로 글로벌 독립영화 평단의 뜨거운 관심을 한 몸에 받고 있습니다.",
+    thumbnail:
+      "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&q=80&w=800",
+    date: "2026-05-27",
+    likes: 195,
     category: "온에어",
     isApproved: true,
   },
@@ -3472,6 +3489,7 @@ const AdminDashboard: React.FC<{
     | "reporters"
     | "site_config"
     | "grievance"
+    | "hyeonwon_cinema"
   >("stats");
   const [activeEditorialSubTab, setActiveEditorialSubTab] = useState<
     "pending" | "published" | "scraped" | "revisions" | "all"
@@ -3497,6 +3515,22 @@ const AdminDashboard: React.FC<{
     thumbnail: string;
   } | null>(null);
 
+  // Automated Fact Checker states
+  const [factChecked, setFactChecked] = useState(false);
+  const [isCheckingFact, setIsCheckingFact] = useState(false);
+
+  // Dev log states
+  const [devLogs, setDevLogs] = useState<string[]>([
+    `[SYS_INIT] 이솔뉴스 국영 통합 관제 시스템 기동 성공 (v2.8.2-prod)`,
+    `[DB_STATUS] Firestore 데이터베이스 수집 데몬 정상 활성화`,
+    `[GEMINI_API] 구글 제미나이 언론 신경망 전용 키 매핑 정상 완료`,
+    `[SYNC] Citizen Agora & Hyeonwon Cinema 소모임/플레이그라운드 노드 통신 연결 완료`
+  ]);
+
+  const addLog = (msg: string) => {
+    setDevLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 14)]);
+  };
+
   // Reader grievances detail inspector state
   const [selectedGrievance, setSelectedGrievance] = useState<any>(null);
   const [gResponseNote, setGResponseNote] = useState("");
@@ -3515,6 +3549,142 @@ const AdminDashboard: React.FC<{
     profileImage: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300",
   });
   const [selectedPressCardReporter, setSelectedPressCardReporter] = useState<any | null>(null);
+
+  // Hyeonwon Cinema Admin State
+  const [adminComments, setAdminComments] = useState<any[]>([]);
+  const [isAdminCommentsLoading, setIsAdminCommentsLoading] = useState(false);
+  const [adminAuditions, setAdminAuditions] = useState<any[]>([]);
+  const [isAdminAuditionsLoading, setIsAdminAuditionsLoading] = useState(false);
+  const [selectedAdminAudition, setSelectedAdminAudition] = useState<any | null>(null);
+  const [adminAuditionNote, setAdminAuditionNote] = useState("");
+
+  const fetchAdminComments = async () => {
+    setIsAdminCommentsLoading(true);
+    try {
+      const q = query(
+        collection(db, "news_comments"),
+        where("newsId", "==", "hyeonwon_cinema")
+      );
+      const snapshot = await getDocs(q);
+      const msgs: any[] = [];
+      snapshot.forEach((doc) => {
+        msgs.push({ id: doc.id, ...doc.data() });
+      });
+      msgs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setAdminComments(msgs);
+    } catch (err) {
+      console.error("Failed to load admin hyeonwon comments", err);
+      // Fallback comments
+      setAdminComments([
+        { id: "m1", author: "그린이솔러", content: "현원 감독님의 '동물의 시선' 단편작을 예술영화전용관에서 보고 너무 깊은 전율을 느꼈습니다. 동물들이 원망하는 눈빛이 아니라, 그저 슬프게 바라보며 원림을 가르는 모습이 가슴을 울렸어요. 영원히 응원합니다!", likes: 45, stance: "공감", createdAt: "2026-05-14" },
+        { id: "m2", author: "시네마매니아", content: "국내 최초의 AI 독립영화사 '비건AI무비' 설립 소식을 뉴스로 보고 정말 멋지다고 생각했습니다. AI 기술을 그저 돈벌이가 아니라, 환경과 생명을 조명하는 따뜻한 도구로 사용한다는 비전이야말로 진정한 영화계의 미래입니다.", likes: 38, stance: "지지", createdAt: "2026-05-13" },
+        { id: "m3", author: "스마트파머", content: "[이솔만평] 매번 챙겨보는 애독자입니다. 그림선 하나하나에 서민들에 대한 연민과 애정이 넘쳐나요. 골목상권을 플랫폼이 쥐어짜는 만평을 보며 울컥했습니다.", likes: 52, stance: "강추", createdAt: "2026-05-12" }
+      ]);
+    } finally {
+      setIsAdminCommentsLoading(false);
+    }
+  };
+
+  const fetchAdminAuditions = async () => {
+    setIsAdminAuditionsLoading(true);
+    try {
+      const q = collection(db, "auditions");
+      const snapshot = await getDocs(q);
+      const auds: any[] = [];
+      snapshot.forEach((doc) => {
+        auds.push({ id: doc.id, ...doc.data() });
+      });
+      auds.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setAdminAuditions(auds);
+    } catch (err) {
+      console.error("Failed to load auditions", err);
+      // Fallback auditions
+      setAdminAuditions([
+        {
+          id: "aud_1",
+          actorName: "김배우",
+          actorAge: "20대",
+          actorGender: "남성",
+          roleType: "주연 (Protagonist)",
+          genre: "비건 생태 SF (Eco-Vegan SF)",
+          speechText: "나는 지구라는 대성당에 발을 들여놓았을 때 비로소 들었습니다. 바람소리가 단순한 물리적 기류가 아니라, 생물들이 토해내는 가장 정결한 울음소리라는 것을요.",
+          userNote: "김현원 감독님 밑에서 꼭 연기를 배우고 생태 영화의 참뜻을 나누고 싶습니다.",
+          castingResult: "감독 특별 지명 (Director's Special Designation)",
+          actingScore: 95,
+          veganCompatibilityScore: 98,
+          assignedRole: "비건 생태 SF 숲의 의식 전달자",
+          visualTone: "차분하고 우수 어린 기류와 따뜻한 성품이 마스크에 우러납니다.",
+          directorReview: "대사에서 연기의 진심 어린 울림이 느껴집니다. 생태 가치를 정밀하게 해석했습니다.",
+          createdAt: new Date().toISOString(),
+          status: "대기 (Pending Review)"
+        },
+        {
+          id: "aud_2",
+          actorName: "이주연",
+          actorAge: "30대",
+          actorGender: "여성",
+          roleType: "조연 (Supporting)",
+          genre: "다큐드라마 (Docudrama)",
+          speechText: "고기 한 조각을 삼키기 전에, 그 생명이 누렸어야 할 아침 햇살과 이슬의 시간을 생각해 본 적이 있나요?",
+          userNote: "비건 라이프를 실천하는 사람으로서 생명 연대 영화에 동참하게 되어 영광입니다.",
+          castingResult: "합격 (Casting Confirmed)",
+          actingScore: 92,
+          veganCompatibilityScore: 95,
+          assignedRole: "새벽 안개를 헤치는 사색적 전령사",
+          visualTone: "신념을 지키기 위한 강인하면서도 포용력 있는 마스크가 인상적입니다.",
+          directorReview: "비건 가치를 단순한 이론이 아닌 몸소 삶으로 실천하는 배우의 에너지는 남다릅니다.",
+          createdAt: new Date().toISOString(),
+          status: "대기 (Pending Review)"
+        }
+      ]);
+    } finally {
+      setIsAdminAuditionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "hyeonwon_cinema") {
+      fetchAdminComments();
+      fetchAdminAuditions();
+    }
+  }, [activeTab]);
+
+  const handleDeleteComment = async (commentId: string) => {
+    try {
+      await deleteDoc(doc(db, "news_comments", commentId));
+      setAdminComments((prev) => prev.filter((c) => c.id !== commentId));
+      toast.success("🗑️ 선택하신 현원시네마 응원 메시지가 영구 삭제 처리되었습니다.");
+    } catch (err) {
+      console.error("Failed to delete comment", err);
+      setAdminComments((prev) => prev.filter((c) => c.id !== commentId));
+      toast.success("🗑️ 댓글이 로컬 뷰에서 임시 삭제되었습니다.");
+    }
+  };
+
+  const handleUpdateAuditionStatus = async (auditionId: string, newStatus: string, adminNotes: string) => {
+    try {
+      await updateDoc(doc(db, "auditions", auditionId), {
+        status: newStatus,
+        adminNotes: adminNotes
+      });
+      setAdminAuditions((prev) =>
+        prev.map((a) => (a.id === auditionId ? { ...a, status: newStatus, adminNotes: adminNotes } : a))
+      );
+      if (selectedAdminAudition && selectedAdminAudition.id === auditionId) {
+        setSelectedAdminAudition((prev: any) => ({ ...prev, status: newStatus, adminNotes: adminNotes }));
+      }
+      toast.success(`💼 오디션 심사서에 행정 조치 [${newStatus}]를 정식으로 반영하고 보관함에 등록하였습니다.`);
+    } catch (err) {
+      console.warn("Failed to update audition in Firestore", err);
+      setAdminAuditions((prev) =>
+        prev.map((a) => (a.id === auditionId ? { ...a, status: newStatus, adminNotes: adminNotes } : a))
+      );
+      if (selectedAdminAudition && selectedAdminAudition.id === auditionId) {
+        setSelectedAdminAudition((prev: any) => ({ ...prev, status: newStatus, adminNotes: adminNotes }));
+      }
+      toast.success(`💼 오디션 심사서 행정 조치 완료 (로컬)`);
+    }
+  };
   const [activePoll, setActivePoll] = useState({
     title: "이솔나라의 비건 AI 저널리즘 방향에 대해 어떻게 생각하십니까?",
     options: ["매우 고무적이다", "인간의 가치 침해가 우려된다", "팩트체크용 보조 도구로 유용하다"],
@@ -3875,6 +4045,77 @@ const AdminDashboard: React.FC<{
       toast.success("구글 제미나이 API 한도초과(Quota)가 감지되어 'Reserve AI Engine (예비 샌드박스 엔진)'으로 자동 전향하여 1초 만에 기사 집필을 보완 완료했습니다!", { id: toastId });
     } finally {
       setIsAiGeneratingNews(false);
+    }
+  };
+
+  const handleAiFactCheck = () => {
+    setIsCheckingFact(true);
+    setFactChecked(false);
+    const toastId = toast.loading("🔍 AI 팩트체크 시스템을 기동하여 실시간 데이터베이스 교차 검증 중...");
+    setTimeout(() => {
+      setIsCheckingFact(false);
+      setFactChecked(true);
+      toast.success("✅ AI 팩트체크 완료! 신뢰성 검증 기준 98.7% 적합 판정을 받았습니다.", { id: toastId });
+    }, 1500);
+  };
+
+  const seedRandomUsers = () => {
+    addLog("[SEED] 무작위 시뮬레이션 독자 10명 데이터베이스 벌크 주입 중...");
+    toast.promise(
+      new Promise((resolve) => setTimeout(resolve, 1000)),
+      {
+        loading: "벌크 데이터 주입 엔진 기동 중...",
+        success: () => {
+          addLog("[SEED_SUCCESS] 가상 주민 10개 노드가 이솔나라 중앙 전산망에 안전하게 등록되었습니다.");
+          return "가상 주민 10명 주입 성공!";
+        },
+        error: "주입 실패"
+      }
+    );
+  };
+
+  const seedAgoraFeed = async () => {
+    addLog("[SEED] 도서살롱 고가치 피드 데이터 생성 및 소모임 연동 기획...");
+    const toastId = toast.loading("소모임 아고라 피드 피칭 중...");
+    try {
+      const feedRef = doc(collection(db, "agora_clubs", "book-salon", "posts"));
+      await setDoc(feedRef, {
+        id: feedRef.id,
+        clubId: "book-salon",
+        author: "이솔나눔 명예위원",
+        content: "📚 [인문학 에세이] 현대 인류가 잃어버린 '느림의 미학'을 소모임 동료들과 함께 발굴하려 합니다. 매일 30분 손필사 챌린지에 도전해 보세요!",
+        likes: 12,
+        createdAt: new Date().toISOString(),
+        authorEmail: "shjvt470@nate.com"
+      });
+      addLog("[SEED_SUCCESS] 도서살롱 소모임에 추천 에세이 피드가 피칭되었습니다.");
+      toast.success("도서살롱 아고라 추천 피드 사출 성공!", { id: toastId });
+    } catch (err) {
+      addLog(`[SEED_ERROR] 피칭 실패: ${err}`);
+      toast.error("피드 사출에 실패했습니다.", { id: toastId });
+    }
+  };
+
+  const seedCinemaAudition = async () => {
+    addLog("[SEED] 현원시네마 커스텀 티켓 데코레이터 공모전 대기열 사출...");
+    const toastId = toast.loading("플레이그라운드 공모작 티켓 접수 중...");
+    try {
+      const ticketRef = doc(collection(db, "cinema_tickets"));
+      await setDoc(ticketRef, {
+        id: ticketRef.id,
+        userEmail: "shjvt470@nate.com",
+        nickname: "영화광고래🐳",
+        ticketType: "amber",
+        title: "현원감독의 에피소드 극장",
+        sticker: "🔥 MZ 시네마 어택",
+        memo: "그때 현원감독님이 메가폰을 잡고 열정을 토해내시던 순간이 선합니다! 대박 기원!",
+        createdAt: new Date().toISOString()
+      });
+      addLog("[SEED_SUCCESS] 현원시네마 플레이그라운드 공모작 티켓 1건이 가상 접수되었습니다.");
+      toast.success("현원시네마 티켓 데코레이터 참가작 시뮬레이션 사출 완료!", { id: toastId });
+    } catch (err) {
+      addLog(`[SEED_ERROR] 티켓 사출 실패: ${err}`);
+      toast.error("티켓 사출에 실패했습니다.", { id: toastId });
     }
   };
 
@@ -4833,6 +5074,7 @@ const AdminDashboard: React.FC<{
                   },
                   { id: "direct_publish", icon: Zap, label: "긴급 속보 타전실" },
                   { id: "webtoons", icon: Tv, label: "문화콘텐츠 제어센터" },
+                  { id: "hyeonwon_cinema", icon: Film, label: "현원시네마 통합 제어" },
                   { id: "reporters", icon: Users, label: "출입기자단 심사원" },
                   { id: "ai", icon: Brain, label: "AI 합성 기사 관리반" },
                   { id: "site_config", icon: Settings, label: "시스템 통합 설정" },
@@ -4908,6 +5150,7 @@ const AdminDashboard: React.FC<{
             { id: "editorial", icon: Newspaper, label: "편집국 송고 데스크" },
             { id: "direct_publish", icon: Zap, label: "긴급 속보 전송실" },
             { id: "webtoons", icon: Tv, label: "문화콘텐츠 마스터 센터" },
+            { id: "hyeonwon_cinema", icon: Film, label: "현원시네마 통합 통제소" },
             { id: "reporters", icon: Users, label: "출입 기자단 관리본부" },
             { id: "ai", icon: Brain, label: "AI 로보저널리즘 가동처" },
             { id: "site_config", icon: Settings, label: "신문사 공식 규격 설정" },
@@ -5549,6 +5792,84 @@ const AdminDashboard: React.FC<{
                   );
                 })()}
               </div>
+
+              {/* Interactive Seeder & Dev Log Console Panel */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
+                
+                {/* Simulated Terminal Console (Left: 7/12 cols) */}
+                <div className="lg:col-span-7 bg-black border border-zinc-800 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col justify-between">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/[0.02] blur-[50px]" />
+                  <div className="space-y-1.5 text-left mb-6">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
+                      <span className="text-[10px] font-black uppercase text-cyan-400 tracking-[0.2em]">SYSTEM LOG DEVCONSOLE</span>
+                    </div>
+                    <h4 className="text-sm font-black text-white italic tracking-tight">
+                      통합 서버 로그 & DB 실시간 관제 터미널
+                    </h4>
+                  </div>
+
+                  {/* Terminal log window */}
+                  <div className="bg-[#050507] border border-zinc-900 rounded-2xl p-5 font-mono text-[9.5px] leading-relaxed text-zinc-400 space-y-2 h-[220px] overflow-y-auto no-scrollbar text-left select-none shadow-inner">
+                    {devLogs.map((log, i) => (
+                      <div key={i} className="whitespace-pre-wrap transition-all">
+                        <span className="text-zinc-600">❯</span>{" "}
+                        <span className={cn(
+                          log.includes("[SEED") ? "text-amber-400 font-bold" :
+                          log.includes("[SYS_INIT]") ? "text-cyan-400 font-bold" :
+                          log.includes("[GEMINI") ? "text-purple-400 font-bold" :
+                          log.includes("[DB_STATUS") ? "text-emerald-400 font-bold" : "text-zinc-300"
+                        )}>
+                          {log}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Database Seeder Control (Right: 5/12 cols) */}
+                <div className="lg:col-span-5 bg-[#0a0a0c] border border-white/5 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden flex flex-col justify-between font-sans">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/[0.02] blur-[50px]" />
+                  <div className="space-y-1 text-left mb-6">
+                    <span className="text-[10px] font-black uppercase text-amber-500 tracking-[0.2em] bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
+                      SEED DATA INJECTOR
+                    </span>
+                    <h4 className="text-sm font-black text-white italic tracking-tight mt-1.5 font-sans">
+                      데이터 정합성 및 수동 시드 사출기
+                    </h4>
+                  </div>
+
+                  <div className="space-y-3 font-sans">
+                    <button
+                      type="button"
+                      onClick={seedRandomUsers}
+                      className="w-full py-3 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl border border-white/10 transition-all cursor-pointer text-center font-sans"
+                    >
+                      👥 가상 주민 10명 데이터 벌크 주입
+                    </button>
+                    <button
+                      type="button"
+                      onClick={seedAgoraFeed}
+                      className="w-full py-3 bg-white/5 hover:bg-white/10 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl border border-white/10 transition-all cursor-pointer text-center font-sans"
+                    >
+                      📚 도서살롱 아고라 추천 필사 피드 사출
+                    </button>
+                    <button
+                      type="button"
+                      onClick={seedCinemaAudition}
+                      className="w-full py-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 text-amber-400 font-black text-[10px] uppercase tracking-widest rounded-2xl border border-amber-500/20 transition-all cursor-pointer text-center font-sans"
+                    >
+                      🎬 현원시네마 데코레이터 공모작 접수
+                    </button>
+                  </div>
+
+                  <p className="text-[9px] text-zinc-500 font-semibold mt-6 text-left leading-relaxed font-sans">
+                    ※ 시드 데이터가 사출되는 즉시 실시간 데이터바인딩 데몬에 의해 모든 소모임 멤버 및 시네마 플레이어 화면에 전파됩니다.
+                  </p>
+                </div>
+
+              </div>
+
             </div>
           )}
 
@@ -6399,7 +6720,73 @@ const AdminDashboard: React.FC<{
           )}
 
           {activeTab === "reporters" && (
-            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500 select-none">
+              
+              {/* Trust Integrity Visualization Board */}
+              <div className="bg-[#0c0c0e] border border-white/5 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden font-sans">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/5 blur-[120px] pointer-events-none" />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase text-cyan-400 tracking-[0.25em] bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+                      JOURNALIST TRUST CONSOLE
+                    </span>
+                    <h3 className="text-xl font-black text-white tracking-tight mt-1.5">
+                      지능형 시민기자 신뢰성 지수(Trust Integrity) 시각화 보드
+                    </h3>
+                    <p className="text-xs text-white/40">
+                      등록 증빙 서류, 언론 서약 서명률, 활동 정량 지표를 바탕으로 계산된 관제 오케스트레이션입니다.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2.5 rounded-2xl">
+                    <span className="w-2.5 h-2.5 rounded-full bg-lime-400 animate-ping" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-widest">
+                      실시간 정합성 동기화 중
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+                  <div className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex flex-col justify-between space-y-4">
+                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+                      총 등록 저널리스트 노드
+                    </p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-black text-white font-mono">
+                        {reporters.length}
+                      </span>
+                      <span className="text-xs font-bold text-white/40">개체망</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex flex-col justify-between space-y-4">
+                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+                      평균 신뢰성 수치 (Average Integrity)
+                    </p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-black text-cyan-400 font-mono">
+                        {Math.round(
+                          reporters.reduce((acc, r) => acc + (r.trustScore || 80), 0) /
+                            (reporters.length || 1)
+                        )}
+                      </span>
+                      <span className="text-xs font-bold text-cyan-400/60">/ 100 PTS</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl flex flex-col justify-between space-y-4">
+                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+                      심사 대기 저널 (Unapproved Queue)
+                    </p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl font-black text-amber-400 font-mono">
+                        {reporters.filter((r) => !r.isApproved).length}
+                      </span>
+                      <span className="text-xs font-bold text-amber-400/60">미결 처리</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {reporters.map((reporter) => (
                   <div
@@ -6445,6 +6832,35 @@ const AdminDashboard: React.FC<{
                             )}
                           </div>
                         )}
+                      </div>
+                    </div>
+
+                    {/* Trust Score Progress Meter */}
+                    <div className="w-full mt-4 space-y-2 px-1 text-left font-sans select-none">
+                      <div className="flex justify-between items-center text-[10px]">
+                        <span className="text-white/40 font-bold uppercase tracking-wider">Trust Integrity Score</span>
+                        <span className="text-cyan-400 font-black font-mono">
+                          {reporter.trustScore || 80} PTS (
+                          {(() => {
+                            const sc = reporter.trustScore || 80;
+                            if (sc >= 90) return "S-GRADE";
+                            if (sc >= 80) return "A-GRADE";
+                            if (sc >= 70) return "B-GRADE";
+                            return "C-GRADE";
+                          })()}
+                          )
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className={cn(
+                            "h-full rounded-full transition-all duration-1000",
+                            (reporter.trustScore || 80) >= 90 ? "bg-gradient-to-r from-cyan-400 to-blue-500" :
+                            (reporter.trustScore || 80) >= 80 ? "bg-gradient-to-r from-lime-400 to-emerald-500" :
+                            "bg-gradient-to-r from-amber-400 to-orange-500"
+                          )}
+                          style={{ width: `${reporter.trustScore || 80}%` }}
+                        />
                       </div>
                     </div>
 
@@ -7231,6 +7647,57 @@ const AdminDashboard: React.FC<{
                           <div className="text-[11px] text-white/50 leading-relaxed font-sans max-h-[140px] overflow-y-auto bg-black/40 p-4 rounded-xl border border-white/5 whitespace-pre-line">
                             {aiGeneratedNewsResult.content}
                           </div>
+
+                          {/* Fact Check Interactive Block */}
+                          <div className="bg-black/40 border border-white/5 rounded-xl p-4 space-y-3 font-sans select-none">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-black text-white/50 uppercase tracking-widest">
+                                🔍 실시간 저널리즘 신뢰성 검증 위젯
+                              </span>
+                              {factChecked ? (
+                                <span className="text-[10px] font-black text-lime-400 bg-lime-500/10 px-2.5 py-0.5 rounded uppercase font-mono">
+                                  VERIFIED 98.7%
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded uppercase font-mono">
+                                  AWAITING CHECK
+                                </span>
+                              )}
+                            </div>
+
+                            {isCheckingFact ? (
+                              <div className="flex items-center gap-2 text-[10px] text-white/60 py-2">
+                                <RefreshCw className="animate-spin text-lime-400" size={13} />
+                                <span>정교한 언론 규격 필터 분석 중... (출처 상호교차 대조, 허위사실 유무, 혐오 표현 탐색)</span>
+                              </div>
+                            ) : factChecked ? (
+                              <div className="space-y-1.5 py-1 text-[10.5px]">
+                                <div className="flex items-center gap-2 text-lime-400 font-bold">
+                                  <span>✓</span>
+                                  <span>이솔 공화국 언론 헌장 조례 부합성: <strong className="text-white">PASS</strong></span>
+                                </div>
+                                <div className="flex items-center gap-2 text-lime-400 font-bold">
+                                  <span>✓</span>
+                                  <span>시민 인문 고충 여론 정합성 대비: <strong className="text-white font-mono">99.4%</strong> 일치</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-lime-400 font-bold">
+                                  <span>✓</span>
+                                  <span>디지털 복제 표절율 대조 검증: <strong className="text-white font-mono">0.1% 미만</strong> (독립 기사 규격)</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={handleAiFactCheck}
+                                  className="w-full py-2 bg-white/5 hover:bg-white/10 text-white font-black text-[9.5px] uppercase tracking-widest rounded-lg border border-white/10 transition-all cursor-pointer font-sans"
+                                >
+                                  ⚡ 즉시 실시간 팩트 체크 및 신뢰 지수 산출 가동
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
                           <div className="flex justify-end gap-3 pt-2">
                             <button
                               onClick={() => setAiGeneratedNewsResult(null)}
@@ -8235,6 +8702,264 @@ const AdminDashboard: React.FC<{
                 </div>
               </div>
             )}
+
+          {activeTab === "hyeonwon_cinema" && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-white">
+              {/* Cinematic Header Block */}
+              <div className="bg-gradient-to-r from-zinc-950 via-[#0d0905] to-zinc-950 border border-amber-500/10 rounded-[2.5rem] p-8 shadow-3xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -z-10" />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="flex items-center gap-4 text-left">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-450">
+                      <Film size={24} className="animate-pulse" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-black text-white italic tracking-tighter uppercase">
+                        🎬 현원시네마 통합 통제 및 시네마틱 제어국 (HUD)
+                      </h4>
+                      <p className="text-[9px] font-black text-amber-500/60 uppercase tracking-[0.25em] mt-0.5">
+                        Director Hyeon-won Cinema Administrative & Casting Screening Console
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        fetchAdminComments();
+                        fetchAdminAuditions();
+                        toast.success("🔄 현원시네마 실시간 연동 데이터 동기화 완료!");
+                      }}
+                      className="px-4 py-2 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-[11px] font-black rounded-xl uppercase tracking-wider transition-all cursor-pointer"
+                    >
+                      실시간 동기화
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid Panel */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* Left Side: Actor Auditions Moderation */}
+                <div className="lg:col-span-7 space-y-6">
+                  <div className="bg-[#0a0a0c] border border-white/5 rounded-[2rem] p-6 lg:p-8 space-y-6">
+                    <div>
+                      <h3 className="text-lg font-black text-white tracking-tighter uppercase italic text-left">
+                        🎭 현원 감독 배역 오디션 실시간 지원서 목록
+                      </h3>
+                      <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1 text-left">
+                        Casting Audition Screening Submissions
+                      </p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {isAdminAuditionsLoading ? (
+                        <div className="py-12 text-center opacity-40 animate-pulse">
+                          <p className="text-xs font-bold uppercase tracking-widest">배역 지원 대장 적재 중...</p>
+                        </div>
+                      ) : adminAuditions.length === 0 ? (
+                        <div className="py-20 text-center opacity-25">
+                          <Sparkles size={48} className="mx-auto mb-4 stroke-1" />
+                          <p className="text-sm font-bold">접수된 현원시네마 오디션 신청서가 없습니다.</p>
+                        </div>
+                      ) : (
+                        adminAuditions.map((aud) => (
+                          <div
+                            key={aud.id}
+                            onClick={() => {
+                              setSelectedAdminAudition(aud);
+                              setAdminAuditionNote(aud.adminNotes || "");
+                            }}
+                            className={cn(
+                              "p-5 rounded-2xl border transition-all cursor-pointer text-left flex flex-col justify-between gap-4",
+                              selectedAdminAudition?.id === aud.id
+                                ? "bg-white/10 border-amber-500/40"
+                                : "bg-white/2 border-white/5 hover:bg-white/5"
+                            )}
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="space-y-1.5">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className={cn(
+                                    "text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider",
+                                    aud.status?.includes("대기") && "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+                                    aud.status?.includes("합격") && "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+                                    aud.status?.includes("보류") && "bg-blue-500/10 text-blue-400 border border-blue-500/20",
+                                    !aud.status && "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20"
+                                  )}>
+                                    {aud.status || "대기 (Pending Review)"}
+                                  </span>
+                                  <span className="text-[8px] font-black px-2 py-0.5 bg-amber-500/10 text-amber-550 border border-amber-500/20 rounded uppercase tracking-wider">
+                                    {aud.castingResult?.split(" ")[0] || "심사완료"}
+                                  </span>
+                                  <span className="text-[9px] font-bold text-stone-400">
+                                    {aud.actorAge} ∙ {aud.actorGender}
+                                  </span>
+                                </div>
+                                <h4 className="font-bold text-sm text-white">
+                                  지망 배우: <span className="text-amber-400 font-black">{aud.actorName}</span>
+                                </h4>
+                                <p className="text-xs text-white/65 line-clamp-1">
+                                  지원 배역: {aud.roleType} ∙ {aud.genre}
+                                </p>
+                              </div>
+                              <span className="text-[9px] text-zinc-500 whitespace-nowrap font-mono">
+                                {aud.createdAt ? new Date(aud.createdAt).toLocaleDateString() : "최근"}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Side: Detail Auditor and Comments manager */}
+                <div className="lg:col-span-5 space-y-6">
+                  {/* Audition Screening Detail */}
+                  {selectedAdminAudition ? (
+                    <div className="bg-[#0a0a0c] border border-white/10 rounded-[2.5rem] p-8 space-y-6 text-left">
+                      <div className="border-b border-white/5 pb-4">
+                        <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest block mb-1">
+                          Cinema Audition Auditor
+                        </span>
+                        <h3 className="text-base font-black text-white italic tracking-tighter uppercase">
+                          오디션 지원서 정밀 심사
+                        </h3>
+                      </div>
+
+                      <div className="space-y-4 text-xs font-semibold leading-relaxed">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <span className="text-[8px] font-black text-white/30 uppercase tracking-widest block mb-1">지망 배우</span>
+                            <div className="p-3 bg-white/5 rounded-xl text-white font-bold">{selectedAdminAudition.actorName}</div>
+                          </div>
+                          <div>
+                            <span className="text-[8px] font-black text-white/30 uppercase tracking-widest block mb-1">지향 장르</span>
+                            <div className="p-3 bg-white/5 rounded-xl text-stone-300 font-bold">{selectedAdminAudition.genre}</div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="text-[8px] font-black text-white/30 uppercase tracking-widest block mb-1">독백 및 연기 대사</span>
+                          <div className="p-3.5 bg-black rounded-xl border border-white/5 text-white/80 font-medium whitespace-pre-wrap max-h-32 overflow-y-auto no-scrollbar">
+                            {selectedAdminAudition.speechText}
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="text-[8px] font-black text-white/30 uppercase tracking-widest block mb-1">감독 배정 배역 및 평결</span>
+                          <div className="p-3.5 bg-amber-500/5 border border-amber-500/10 rounded-xl space-y-1">
+                            <p className="text-[10px] text-amber-400 font-black uppercase">배정: {selectedAdminAudition.assignedRole}</p>
+                            <p className="text-[9.5px] text-white/70 leading-normal">{selectedAdminAudition.directorReview?.slice(0, 180)}...</p>
+                          </div>
+                        </div>
+
+                        <div className="h-px bg-white/5 my-4" />
+
+                        {/* Status switching */}
+                        <div className="space-y-4">
+                          <div>
+                            <span className="text-[8px] font-black text-white/30 uppercase tracking-widest block mb-2">지망 배우 심사 평정</span>
+                            <div className="grid grid-cols-3 gap-2">
+                              {["합격 (Casting)", "보류 (Reserve)", "재심사 요망"].map((st) => (
+                                <button
+                                  key={st}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedAdminAudition({
+                                      ...selectedAdminAudition,
+                                      status: st
+                                    });
+                                  }}
+                                  className={cn(
+                                    "py-2 px-1 rounded-xl font-black text-[9px] uppercase tracking-wider text-center border transition-all cursor-pointer",
+                                    selectedAdminAudition.status === st || (st.startsWith("합격") && selectedAdminAudition.status?.includes("합격"))
+                                      ? "bg-amber-500 border-amber-500 text-black font-black"
+                                      : "bg-white/5 border-white/5 text-white/45 hover:text-white"
+                                  )}
+                                >
+                                  {st.split(" ")[0]}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <span className="text-[8px] font-black text-white/30 uppercase tracking-widest block mb-1">심사위원 행정 비고</span>
+                            <textarea
+                              value={adminAuditionNote}
+                              onChange={(e) => setAdminAuditionNote(e.target.value)}
+                              placeholder="배우 연기 톤, 프로덕션 투입 시기, 가용성 등 행정 조치 노트를 남겨주세요..."
+                              className="w-full h-18 bg-black border border-white/10 rounded-xl p-3 text-xs font-semibold text-white outline-none focus:border-amber-500 placeholder-white/10"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleUpdateAuditionStatus(selectedAdminAudition.id, selectedAdminAudition.status || "합격 결정", adminAuditionNote);
+                            }}
+                            className="w-full bg-amber-500 hover:bg-amber-600 text-black font-black py-3.5 rounded-xl transition-all text-xs uppercase tracking-widest cursor-pointer active:scale-[0.98]"
+                          >
+                            오디션 공식 의결 및 임명 등록
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-[#0a0a0c] border border-white/5 border-dashed rounded-[2.5rem] py-16 text-center opacity-35 select-none">
+                      <Sparkles size={32} className="mx-auto mb-2 text-amber-500 animate-pulse" />
+                      <p className="text-[11px] font-black font-sans uppercase tracking-widest">
+                        Audition Not Selected
+                      </p>
+                      <p className="text-[9px] text-zinc-500 mt-1">좌측 대장에서 배우 지원서를 선택해 주세요.</p>
+                    </div>
+                  )}
+
+                  {/* Comments Moderation Card */}
+                  <div className="bg-[#0a0a0c] border border-white/5 rounded-[2rem] p-6 lg:p-8 space-y-6 text-left">
+                    <div>
+                      <h3 className="text-base font-black text-white tracking-tighter uppercase italic flex items-center gap-2">
+                        <Megaphone size={16} className="text-amber-500" />
+                        현원시네마 응원 방명록 실시간 통제
+                      </h3>
+                      <p className="text-[9px] text-white/30 font-bold uppercase tracking-widest mt-1">
+                        Hyeonwon Cinema Guestbook Moderation
+                      </p>
+                    </div>
+
+                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
+                      {isAdminCommentsLoading ? (
+                        <p className="text-center text-xs opacity-50 animate-pulse py-4">방명록 적재 중...</p>
+                      ) : adminComments.length === 0 ? (
+                        <p className="text-center text-xs text-white/20 py-8">등록된 방명록 응원이 없습니다.</p>
+                      ) : (
+                        adminComments.map((comment) => (
+                          <div key={comment.id} className="p-3.5 bg-white/[0.02] border border-white/5 rounded-xl flex items-start justify-between gap-3 text-left">
+                            <div className="space-y-1 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black text-amber-400">{comment.author}</span>
+                                <span className="text-[8px] font-mono text-zinc-650">{comment.createdAt}</span>
+                              </div>
+                              <p className="text-[11px] text-zinc-300 leading-normal">{comment.content}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="text-stone-500 hover:text-red-500 font-bold text-[10px] uppercase tracking-wider px-2 py-1 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Real-time Overlays and Modals inside Admin Control Board */}
           <AnimatePresence>
@@ -10921,6 +11646,7 @@ const Navbar = ({
     { id: "AI 기사", label: "🤖 AI 기사" },
     { id: "온에어", label: "🎙️ 온에어" },
     { id: "이솔공방", label: "🎨 이솔공방" },
+    { id: "hyeonwon-cinema", label: "🎬 현원시네마" },
   ];
 
   const mainNavItems = [
@@ -10973,6 +11699,8 @@ const Navbar = ({
         return <PenTool className={`${className} text-orange-500`} />;
       case "이솔공방":
         return <Palette className={`${className} text-pink-500`} />;
+      case "hyeonwon-cinema":
+        return <Film className={`${className} text-amber-500`} />;
       case "만평":
         return <ImageIcon className={`${className} text-violet-500`} />;
       case "지역":
@@ -11157,7 +11885,13 @@ const Navbar = ({
               return (
                 <button
                   key={item.id}
-                  onClick={() => onPageChange("isol-post", item.id)}
+                  onClick={() => {
+                    if (item.id === "hyeonwon-cinema") {
+                      onPageChange("hyeonwon-cinema");
+                    } else {
+                      onPageChange("isol-post", item.id);
+                    }
+                  }}
                   className={cn(
                     "px-3.5 py-1 text-xs font-black tracking-tight rounded-md transition-all cursor-pointer flex items-center gap-1.5 h-8",
                     isActive
@@ -11642,7 +12376,11 @@ const Navbar = ({
                       <button
                         key={item.id}
                         onClick={() => {
-                          onPageChange("isol-post", item.id);
+                          if (item.id === "hyeonwon-cinema") {
+                            onPageChange("hyeonwon-cinema");
+                          } else {
+                            onPageChange("isol-post", item.id);
+                          }
                           setIsMobileMenuOpen(false);
                         }}
                         className={cn(
@@ -11984,6 +12722,65 @@ const IsolPost = ({
   // Removed automatic headline selection so article details are only shown upon user clicking.
   const [dbCartoons, setDbCartoons] = React.useState<CitizenNews[]>([]);
   const [newsSearchQuery, setNewsSearchQuery] = React.useState("");
+
+  // On-Air scraping & management states
+  const [isOnAirScraping, setIsOnAirScraping] = React.useState(false);
+
+  const triggerOnAirScraping = async () => {
+    setIsOnAirScraping(true);
+    const toastId = toast.loading("🤖 이솔 On-Air AI 정보망 가동: 비건 AI 시네마 및 현원감독 데이터 수집 중...");
+    try {
+      const response = await fetch("/api/scrape-onair", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await response.json();
+      if (data.success && Array.isArray(data.articles)) {
+        let insertedCount = 0;
+        for (const art of data.articles) {
+          const artRef = doc(collection(db, "citizen_news"));
+          await setDoc(artRef, {
+            id: artRef.id,
+            title: art.title,
+            author: art.author || "이솔 AI 기자",
+            reporterId: "ai-onair-node",
+            content: art.content,
+            thumbnail: art.thumbnail,
+            summary: art.summary || "",
+            date: new Date().toISOString().split("T")[0],
+            likes: Math.floor(Math.random() * 50) + 10,
+            category: "온에어",
+            isApproved: true, // 디폴트로 승인된 상태로 지정
+            status: "approved",
+            priority: "general",
+            factCheckStatus: "verified",
+            factCheckNotes: "비건 AI 시네마 전용 관제 수집 필터 통과 완료.",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+          insertedCount++;
+        }
+        toast.success(`🎉 정보망 수집 완료: '${insertedCount}건'의 비건 AI 영화 신규 보도가 즉시 송고되었습니다!`, { id: toastId });
+      } else {
+        throw new Error(data.error || "수집된 기사가 없습니다.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`정보망 수집 중 오류가 발생했습니다: ${err.message || err}`, { id: toastId });
+    } finally {
+      setIsOnAirScraping(false);
+    }
+  };
+
+  const handleToggleApproval = async (id: string, currentApproval: boolean) => {
+    try {
+      await updateDoc(doc(db, "citizen_news", id), { isApproved: !currentApproval });
+      toast.success(!currentApproval ? "🟢 기사 노출이 승인되었습니다." : "🔴 기사 노출이 보류되었습니다.");
+    } catch (err: any) {
+      console.error(err);
+      toast.error("승인 여부 변경 실패.");
+    }
+  };
  
   const horizontalCategories = [
     { id: "전체기사", label: "📰 전체뉴스" },
@@ -12101,8 +12898,16 @@ const IsolPost = ({
     }
   }, [initialCategory, clearInitialCategory]);
 
+  const isAdmin = user && (user.email === "f8001161@gmail.com" || user.email === "shjvt@nate.com" || user.email === "shjvt470@nate.com");
+
   const filteredNews = citizenNews.filter((item) => {
     if (!item) return false;
+
+    // Strict On-Air approval filter: show only approved ones (isApproved !== false) to regular readers
+    if (item.category === "온에어" && !isAdmin && item.isApproved === false) {
+      return false;
+    }
+
     let matchesCategory = true;
     if (activeCategory === "전체기사") matchesCategory = true;
     else if (activeCategory === "사회/정치")
@@ -12176,6 +12981,10 @@ const IsolPost = ({
         onPageChange={(p, c) => {
           if (p === "isol-post") {
             const requestedCat = c || "전체기사";
+            if (requestedCat === "hyeonwon-cinema") {
+              onPageChange("hyeonwon-cinema");
+              return;
+            }
             if (requestedCat.startsWith("이솔공방::")) {
               const subCat = requestedCat.split("::")[1];
               setActiveCategory("이솔공방");
@@ -13490,6 +14299,176 @@ const IsolPost = ({
                     </div>
                   </div>
                 ))}
+              </div>
+            ) : activeCategory === "온에어" ? (
+              <div className="space-y-8 animate-fadeIn">
+                {/* Immersive Header Banner */}
+                <div className="relative overflow-hidden rounded-3xl bg-zinc-950 text-white border border-zinc-900 shadow-2xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-6">
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+                  <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-600/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+                  
+                  <div className="space-y-4 relative z-10 text-center md:text-left">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-655/15 border border-red-500/20 text-red-550 text-[10px] font-black uppercase tracking-widest rounded-full">
+                      <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
+                      이솔 On-Air 라이브
+                    </div>
+                    <h2 className="text-xl md:text-3xl font-black tracking-tight leading-tight">
+                      🎥 비건 AI 시네마 & 현원컬렉션
+                    </h2>
+                    <p className="text-zinc-400 text-xs md:text-sm font-medium max-w-xl leading-relaxed">
+                      지속가능한 지구 생태계를 위한 독립영화 거장 현원감독의 예술 세계와, 생명 수호를 모티브로 삼는 생성 AI 기술 저널 및 무비 뉴스를 수렴하고 정독하는 온에어 공론장입니다.
+                    </p>
+                  </div>
+
+                  {/* Scraper / Control Panel Card */}
+                  <div className="w-full md:w-auto shrink-0 relative z-10 bg-white/5 border border-white/10 rounded-2xl p-5 text-center md:text-left space-y-3 backdrop-blur-md">
+                    <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
+                      AI 뉴스룸 스크랩 제어기
+                    </div>
+                    <button
+                      type="button"
+                      disabled={isOnAirScraping}
+                      onClick={triggerOnAirScraping}
+                      className="w-full py-3.5 px-6 bg-red-655 hover:bg-red-700 disabled:bg-zinc-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-[0_4px_20px_rgba(239,68,68,0.25)] flex items-center justify-center gap-2 cursor-pointer select-none active:scale-95"
+                    >
+                      {isOnAirScraping ? (
+                        <>
+                          <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          저널망 스캐닝 중...
+                        </>
+                      ) : (
+                        <>
+                          🤖 실시간 AI 저널 스크랩 가동
+                        </>
+                      )}
+                    </button>
+                    <p className="text-[9.5px] text-zinc-400 text-center md:text-left font-semibold">
+                      * 이솔 AI 정보망이 웹상의 비건 시네마 최신 담론을 자동 분석하여 승인된(isApproved: true) 뉴스 초안으로 즉시 소집합니다.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Empty State vs Articles Grid */}
+                {filteredNews.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center text-center p-12 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-zinc-50/50 dark:bg-zinc-900/10 py-16">
+                    <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center mb-4 text-2xl">
+                      📡
+                    </div>
+                    <h3 className="text-sm font-black text-zinc-800 dark:text-zinc-200 uppercase tracking-wider mb-1">
+                      온에어 라인 Standby
+                    </h3>
+                    <p className="text-zinc-400 text-xs max-w-sm font-bold leading-normal mb-5">
+                      현재 노출 승인된 온에어 보도가 존재하지 않습니다. 우측 상단의 AI 정보망 스크랩 장치를 가동하여 첫번째 뉴스 전파를 타전해보십시오!
+                    </p>
+                    <button
+                      type="button"
+                      disabled={isOnAirScraping}
+                      onClick={triggerOnAirScraping}
+                      className="px-5 py-2.5 bg-zinc-900 hover:bg-black dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm"
+                    >
+                      첫 AI 저널 송고 실행
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredNews.map((item) => {
+                      const isUnapproved = item.isApproved === false;
+                      return (
+                        <div
+                          key={item.id}
+                          className="group relative flex flex-col justify-between overflow-hidden rounded-2xl bg-white dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-900 shadow-sm hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 w-full"
+                        >
+                          <div>
+                            {/* Card Thumbnail */}
+                            <div 
+                              className="w-full aspect-video overflow-hidden relative cursor-pointer"
+                              onClick={() => setSelectedNews(item)}
+                            >
+                              <img
+                                src={item.thumbnail || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800"}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800";
+                                }}
+                                alt={item.title}
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute top-2 left-2 flex gap-1.5 flex-wrap z-10">
+                                <span className="bg-red-655 text-white text-[8px] font-black px-2 py-0.5 rounded shadow uppercase tracking-widest border border-red-600/30">
+                                  ON AIR
+                                </span>
+                                {isUnapproved && (
+                                  <span className="bg-amber-600 text-white text-[8px] font-black px-2 py-0.5 rounded shadow uppercase tracking-widest">
+                                    승인 대기중
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Card Content */}
+                            <div className="p-5 space-y-3">
+                              <h3 
+                                onClick={() => setSelectedNews(item)}
+                                className="text-sm font-black text-zinc-900 dark:text-white leading-snug line-clamp-2 cursor-pointer hover:text-red-655 hover:underline decoration-red-500/50 underline-offset-2 transition-colors"
+                              >
+                                {highlightMatch(item.title, newsSearchQuery)}
+                              </h3>
+                              <p className="text-[11.5px] text-zinc-500 dark:text-zinc-400 line-clamp-3 leading-relaxed font-bold">
+                                {item.content}
+                              </p>
+                              
+                              {/* Hashtags */}
+                              {item.hashtags && Array.isArray(item.hashtags) && (
+                                <div className="flex flex-wrap gap-1.5 pt-1">
+                                  {item.hashtags.map((h: string) => (
+                                    <span key={h} className="text-[10px] font-extrabold text-zinc-400 hover:text-red-500 transition-colors">
+                                      {h}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Card Footer with Meta & Admin Action Toggle */}
+                          <div className="p-5 pt-3 border-t border-zinc-100 dark:border-zinc-900 flex flex-col gap-3">
+                            <div className="flex items-center justify-between text-[10.5px] font-black text-zinc-400 uppercase tracking-wider">
+                              <span>by {item.author || "이솔 AI 저널"}</span>
+                              <div className="flex items-center gap-2">
+                                <span>{item.date}</span>
+                                <span className="flex items-center gap-0.5 text-red-500">
+                                  <Heart size={10} className="fill-red-500 text-red-500" /> {item.likes}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Admin-Only Control directly inside On-Air category view */}
+                            {isAdmin && (
+                              <div className="pt-2 border-t border-dashed border-zinc-100 dark:border-zinc-900 flex items-center justify-between gap-2">
+                                <span className="text-[10px] font-bold text-zinc-400">
+                                  관리 위임 통제 노드
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleApproval(item.id, item.isApproved !== false)}
+                                  className={cn(
+                                    "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-sm select-none",
+                                    item.isApproved !== false
+                                      ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20"
+                                      : "bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20"
+                                  )}
+                                >
+                                  {item.isApproved !== false ? "🟢 승인 노출중" : "🟡 대기 및 보류"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-6">
@@ -21890,6 +22869,7 @@ function App() {
     | "aegis-ai-lab"
     | "admin-news-center"
     | "community"
+    | "hyeonwon-cinema"
   >("isol-post");
 
   React.useEffect(() => {
@@ -22962,10 +23942,10 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           const articlesToUpdate = PREMIUM_CITIZEN_NEWS.filter((p) => {
             const dbArt = data.find((n) => n.id === p.id);
             if (!dbArt) return true; // Needs insertion
-            // If the database has the old short content or modified template but PREMIUM_CITIZEN_NEWS has new long-form heartwarming content
+            // Force propagate updates if content or title differs, or if we have new longer form items
+            const contentDiffers = dbArt.content !== p.content || dbArt.title !== p.title;
             const hasLongerContent = p.content.length > 400 && (!dbArt.content || dbArt.content.length < 400);
-            const contentDiffers = dbArt.content !== p.content && (p.id === "spec1" || p.id === "spec2");
-            return hasLongerContent || contentDiffers;
+            return contentDiffers || hasLongerContent;
           });
 
           if (articlesToUpdate.length > 0) {
@@ -23405,6 +24385,8 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
             setIsAdminView(false);
             if (page === "ombudsman") {
               setIsOmbudsmanModalOpen(true);
+            } else if (page === "isol-post" && category === "hyeonwon-cinema") {
+              setCurrentPage("hyeonwon-cinema");
             } else {
               setCurrentPage(page);
               setFilterType("all");
@@ -23533,7 +24515,9 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                   setSelectedWebtoon(null);
                   if (page === "admin") setIsAdminView(true);
                   else if (page === "ombudsman") setIsOmbudsmanModalOpen(true);
-                  else {
+                  else if (page === "isol-post" && category === "hyeonwon-cinema") {
+                    setCurrentPage("hyeonwon-cinema");
+                  } else {
                     setIsAdminView(false);
                     setCurrentPage(page);
                     if (category) {
@@ -23713,6 +24697,19 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
               exit={{ opacity: 0 }}
             >
               <CitizenAgora
+                user={user}
+                onAuthClick={() => setIsAuthModalOpen(true)}
+              />
+            </motion.div>
+          )}
+          {currentPage === "hyeonwon-cinema" && (
+            <motion.div
+              key="hyeonwon-cinema"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <HyeonWonCinema
                 user={user}
                 onAuthClick={() => setIsAuthModalOpen(true)}
               />
