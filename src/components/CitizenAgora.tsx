@@ -31,7 +31,10 @@ import {
   ShieldAlert,
   UserMinus,
   Edit,
-  Sliders
+  Sliders,
+  Copy,
+  Check,
+  ExternalLink
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -44,7 +47,9 @@ import {
   db, 
   collection, 
   addDoc, 
+  getDoc,
   getDocs, 
+  setDoc,
   updateDoc, 
   doc, 
   query, 
@@ -52,7 +57,8 @@ import {
   onSnapshot, 
   deleteDoc,
   handleFirestoreError,
-  OperationType 
+  OperationType,
+  checkIsAdmin
 } from "../firebase";
 
 // TYPES FOR THE MEETUP/CLUB SYSTEM
@@ -159,7 +165,23 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
   const [clubs, setClubs] = useState<Club[]>(initialClubs);
   const [selectedClubId, setSelectedClubId] = useState<string>("smart-farm");
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"posts" | "meetups" | "info" | "missions">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "chat" | "meetups" | "missions">("posts");
+
+  // Real-time Chat state
+  interface ClubChat {
+    id: string;
+    clubId: string;
+    author: string;
+    authorId: string;
+    authorAvatar: string;
+    content: string;
+    createdAt: string;
+    userRank?: string;
+  }
+  const [clubChats, setClubChats] = useState<ClubChat[]>([]);
+  const [chatMessageInput, setChatMessageInput] = useState("");
+  const [isSubmittingChat, setIsSubmittingChat] = useState(false);
+  const [copiedMeetupId, setCopiedMeetupId] = useState<string | null>(null);
 
   // 3-Sec Flash Meetup states
   const [flashTimeLeft, setFlashTimeLeft] = useState(30);
@@ -172,6 +194,15 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
     const saved = localStorage.getItem("completed_missions_2026");
     return saved ? JSON.parse(saved) : [];
   });
+
+  // User rank/badge based on completed missions count
+  const userRank = useMemo(() => {
+    const count = completedMissions.length;
+    if (count >= 10) return "이솔 영웅 🏆";
+    if (count >= 6) return "아고라 리더 🔥";
+    if (count >= 3) return "에코 액티비스트 🏃";
+    return "새싹 시민 🌱";
+  }, [completedMissions]);
 
   // State for posts inside the active club
   const [clubPosts, setClubPosts] = useState<ClubPost[]>([]);
@@ -255,7 +286,7 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
   // Check if current user is host of active club, or is an admin
   const isUserClubHost = useMemo(() => {
     if (!user) return false;
-    const isAdmin = user.email === "f8001161@gmail.com" || user.email === "shjvt@nate.com";
+    const isAdmin = checkIsAdmin(user.email);
     return activeClub.hostId === user.uid || isAdmin || (!activeClub.hostId && isAdmin);
   }, [activeClub, user]);
 
@@ -333,6 +364,64 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
     }
   }, [filteredClubs, selectedClubId]);
 
+  // Synchronize completed missions and joined clubs with Firestore when user logs in
+  useEffect(() => {
+    if (!user) return;
+    
+    const syncProfile = async () => {
+      try {
+        const userProfileRef = doc(db, "agora_user_profiles", user.uid);
+        const docSnap = await getDoc(userProfileRef);
+        
+        if (docSnap.exists()) {
+          const serverData = docSnap.data();
+          
+          // Merge local and server completed missions
+          const mergedMissions = Array.from(new Set([
+            ...completedMissions,
+            ...(serverData.completedMissions || [])
+          ]));
+          
+          // Merge local and server joined clubs
+          const mergedClubs = Array.from(new Set([
+            ...joinedClubIds,
+            ...(serverData.joinedClubIds || [])
+          ]));
+          
+          setCompletedMissions(mergedMissions);
+          setJoinedClubIds(mergedClubs);
+          
+          localStorage.setItem("completed_missions_2026", JSON.stringify(mergedMissions));
+          localStorage.setItem("user_joined_clubs_2026", JSON.stringify(mergedClubs));
+          
+          // Save merged data back to server
+          await setDoc(userProfileRef, {
+            userId: user.uid,
+            email: user.email || "",
+            displayName: user.displayName || "시민",
+            completedMissions: mergedMissions,
+            joinedClubIds: mergedClubs,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+        } else {
+          // If no server data, upload local data to server
+          await setDoc(userProfileRef, {
+            userId: user.uid,
+            email: user.email || "",
+            displayName: user.displayName || "시민",
+            completedMissions,
+            joinedClubIds,
+            updatedAt: new Date().toISOString()
+          });
+        }
+      } catch (err) {
+        console.warn("Failed to synchronize user profile with Firestore:", err);
+      }
+    };
+    
+    syncProfile();
+  }, [user]);
+
   // 1. Load Custom Clubs from localStorage on start
   useEffect(() => {
     const savedClubs = localStorage.getItem("user_created_clubs_2026");
@@ -341,6 +430,84 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
       setClubs([...initialClubs, ...parsed]);
     }
   }, []);
+
+  // 1-B. Fetch Club Chats from Firestore
+  useEffect(() => {
+    if (!selectedClubId) return;
+
+    const chatsCol = collection(db, "agora_clubs", selectedClubId, "chats");
+    const q = query(chatsCol, orderBy("createdAt", "asc"));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const list: ClubChat[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        list.push({
+          id: docSnap.id,
+          clubId: selectedClubId,
+          author: data.author || "익명 회원",
+          authorId: data.authorId || "",
+          authorAvatar: data.authorAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${docSnap.id}`,
+          content: data.content || "",
+          createdAt: data.createdAt || new Date().toISOString(),
+          userRank: data.userRank || "새싹 시민 🌱"
+        });
+      });
+      setClubChats(list);
+    }, (error) => {
+      console.warn("Firestore chats sync failed, using mock chats for:", selectedClubId);
+      setClubChats([
+        {
+          id: "mock-chat-1",
+          clubId: selectedClubId,
+          author: "이솔가드너",
+          authorId: "gardener-1",
+          authorAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=gardener",
+          content: "안녕하세요! 실시간 소모임 채팅방이 활성화되었습니다. 반가워요! 🙌",
+          createdAt: new Date(Date.now() - 300000).toISOString(),
+          userRank: "아고라 리더 🔥"
+        }
+      ]);
+    });
+
+    return () => unsubscribe();
+  }, [selectedClubId]);
+
+  const handleCreateChat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) {
+      triggerHaptic(900, 0.08);
+      onAuthClick();
+      return;
+    }
+    if (!chatMessageInput.trim()) return;
+
+    setIsSubmittingChat(true);
+    triggerHaptic(650, 0.04);
+
+    const chatPayload = {
+      clubId: selectedClubId,
+      author: user.displayName || "익명 회원",
+      authorId: user.uid,
+      authorAvatar: user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.uid}`,
+      content: chatMessageInput.trim(),
+      createdAt: new Date().toISOString(),
+      userRank: userRank
+    };
+
+    try {
+      const chatsCol = collection(db, "agora_clubs", selectedClubId, "chats");
+      await addDoc(chatsCol, chatPayload);
+      setChatMessageInput("");
+    } catch (err) {
+      handleFirestoreError(err, OperationType.CREATE, `agora_clubs/${selectedClubId}/chats`);
+      const tempChat: ClubChat = { id: "temp-chat-" + Date.now(), ...chatPayload };
+      setClubChats(prev => [...prev, tempChat]);
+      setChatMessageInput("");
+    } finally {
+      setIsSubmittingChat(false);
+    }
+  };
 
   // 2. Fetch Club Posts from Firestore with local storage backup
   useEffect(() => {
@@ -513,6 +680,12 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
 
     setJoinedClubIds(updated);
     localStorage.setItem("user_joined_clubs_2026", JSON.stringify(updated));
+    if (user) {
+      setDoc(doc(db, "agora_user_profiles", user.uid), {
+        joinedClubIds: updated,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }).catch(() => {});
+    }
 
     // Update club member count locally
     setClubs(prev => prev.map(c => {
@@ -626,7 +799,7 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
 
   // 7. Delete Post
   const handleDeletePost = async (postId: string, authorId: string) => {
-    const isAdmin = user?.email === 'f8001161@gmail.com' || user?.email === 'shjvt@nate.com';
+    const isAdmin = checkIsAdmin(user?.email);
     if (!isAdmin && user?.uid !== authorId) return;
 
     if (!window.confirm("정말로 피드 게시글을 삭제하시겠습니까?")) return;
@@ -735,7 +908,7 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
 
   // 9b. Delete Meetup Event (Creator or Club Host or Admin)
   const handleDeleteMeetup = async (meetupId: string, creatorId?: string) => {
-    const isAdmin = user?.email === 'f8001161@gmail.com' || user?.email === 'shjvt@nate.com';
+    const isAdmin = checkIsAdmin(user?.email);
     const isHost = isUserClubHost;
     const isCreator = user && creatorId === user.uid;
 
@@ -798,6 +971,12 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
     const updatedJoined = [...joinedClubIds, slug];
     setJoinedClubIds(updatedJoined);
     localStorage.setItem("user_joined_clubs_2026", JSON.stringify(updatedJoined));
+    if (user) {
+      setDoc(doc(db, "agora_user_profiles", user.uid), {
+        joinedClubIds: updatedJoined,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }).catch(() => {});
+    }
 
     // Reset Form
     setNewClubName("");
@@ -861,6 +1040,12 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
     const updatedJoined = joinedClubIds.filter(id => id !== activeClub.id);
     setJoinedClubIds(updatedJoined);
     localStorage.setItem("user_joined_clubs_2026", JSON.stringify(updatedJoined));
+    if (user) {
+      setDoc(doc(db, "agora_user_profiles", user.uid), {
+        joinedClubIds: updatedJoined,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }).catch(() => {});
+    }
 
     setIsManageClubModalOpen(false);
     // Auto select first club
@@ -1185,14 +1370,14 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
             </div>
           </div>
 
-          {/* Sub Tab Selection Menu (Posts Feed vs Meetups Schedule vs Missions) */}
+          {/* Sub Tab Selection Menu (Posts Feed vs Chatroom vs Meetups Schedule vs Missions) */}
           <div className="flex flex-wrap items-center gap-1 border-b border-zinc-200 dark:border-zinc-800/80 pb-2 select-none">
             <button
               onClick={() => { triggerHaptic(600, 0.02); setActiveTab("posts"); }}
               className={cn(
-                "px-4 md:px-5 py-2.5 text-xs font-black rounded-xl transition-all relative cursor-pointer",
+                "px-4 md:px-5 py-3.5 text-xs font-black rounded-xl transition-all relative cursor-pointer active:scale-95 duration-150 tracking-tight",
                 activeTab === "posts"
-                  ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400 font-black"
                   : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
               )}
             >
@@ -1201,11 +1386,24 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
             </button>
 
             <button
+              onClick={() => { triggerHaptic(600, 0.02); setActiveTab("chat"); }}
+              className={cn(
+                "px-4 md:px-5 py-3.5 text-xs font-black rounded-xl transition-all relative cursor-pointer flex items-center gap-1 active:scale-95 duration-150 tracking-tight",
+                activeTab === "chat"
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400 font-black"
+                  : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+              )}
+            >
+              <span>실시간 채팅방 ({clubChats.length})</span>
+              {activeTab === "chat" && <motion.div layoutId="activeAgoraTabLine" className="absolute bottom-[-10px] left-2 right-2 h-[3px] bg-red-500 rounded-full" />}
+            </button>
+
+            <button
               onClick={() => { triggerHaptic(600, 0.02); setActiveTab("meetups"); }}
               className={cn(
-                "px-4 md:px-5 py-2.5 text-xs font-black rounded-xl transition-all relative cursor-pointer flex items-center gap-1",
+                "px-4 md:px-5 py-3.5 text-xs font-black rounded-xl transition-all relative cursor-pointer flex items-center gap-1 active:scale-95 duration-150 tracking-tight",
                 activeTab === "meetups"
-                  ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400 font-black"
                   : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
               )}
             >
@@ -1216,9 +1414,9 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
             <button
               onClick={() => { triggerHaptic(600, 0.02); setActiveTab("missions"); }}
               className={cn(
-                "px-4 md:px-5 py-2.5 text-xs font-black rounded-xl transition-all relative cursor-pointer flex items-center gap-1",
+                "px-4 md:px-5 py-3.5 text-xs font-black rounded-xl transition-all relative cursor-pointer flex items-center gap-1 active:scale-95 duration-150 tracking-tight",
                 activeTab === "missions"
-                  ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400 font-black"
                   : "text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
               )}
             >
@@ -1470,6 +1668,110 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
               </div>
             )}
 
+            {/* TAB: CHAT / CHATROOM SESSIONS */}
+            {activeTab === "chat" && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-250/60 dark:border-zinc-850 rounded-3xl p-4 md:p-6 shadow-sm flex flex-col h-[500px]">
+                  <div className="border-b border-zinc-100 dark:border-zinc-800 pb-3 mb-4 flex items-center justify-between">
+                    <div className="text-left">
+                      <h4 className="text-sm font-black text-zinc-800 dark:text-zinc-150 flex items-center gap-1.5">
+                        <MessageSquare size={16} className="text-red-550 animate-pulse" />
+                        실시간 소모임 단톡방
+                      </h4>
+                      <p className="text-[10px] text-zinc-400 font-bold">클럽 멤버들과 따뜻한 이야기를 실시간으로 가볍게 나누어보세요.</p>
+                    </div>
+                    <span className="text-[9.5px] bg-red-500/10 text-red-600 font-black px-2.5 py-1 rounded-full flex items-center gap-1.5 tracking-wider">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                      </span>
+                      LIVE
+                    </span>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-1 mb-4 no-scrollbar">
+                    {clubChats.length === 0 ? (
+                      <div className="h-full flex flex-col items-center justify-center text-center opacity-45 select-none py-12">
+                        <MessageSquare size={36} className="text-zinc-400 mb-2 stroke-1" />
+                        <p className="text-xs font-bold text-zinc-500">첫 번째 실시간 메시지를 작성해 보세요!</p>
+                      </div>
+                    ) : (
+                      clubChats.map((chat) => {
+                        const isMe = chat.authorId === user?.uid;
+                        return (
+                          <div
+                            key={chat.id}
+                            className={cn(
+                              "flex gap-3 max-w-[85%] animate-in fade-in slide-in-from-bottom-2 duration-300",
+                              isMe ? "ml-auto flex-row-reverse text-right" : "mr-auto text-left"
+                            )}
+                          >
+                            <img
+                              src={chat.authorAvatar}
+                              alt="avatar"
+                              className="w-8 h-8 rounded-full object-cover shrink-0 border border-zinc-200"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5 text-[10.5px] font-bold flex-wrap">
+                                <span className="text-zinc-850 dark:text-zinc-150">{chat.author}</span>
+                                <span className="bg-red-500/10 text-red-600 dark:text-red-400 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider scale-90">
+                                  {chat.userRank || "새싹 시민 🌱"}
+                                </span>
+                                <span className="text-[9px] text-zinc-400 font-mono">
+                                  {new Date(chat.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                              <div
+                                className={cn(
+                                  "p-3 rounded-2xl text-xs font-semibold leading-relaxed break-all shadow-sm border",
+                                  isMe
+                                    ? "bg-red-655 border-red-500 text-white rounded-tr-none"
+                                    : "bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-150 rounded-tl-none"
+                                )}
+                              >
+                                {chat.content}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <form onSubmit={handleCreateChat} className="flex gap-2 border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                    <input
+                      type="text"
+                      placeholder={
+                        joinedClubIds.includes(activeClub.id)
+                          ? "실시간 대화에 참여하세요..."
+                          : "대화에 참여하려면 먼저 소모임에 가입해주세요!"
+                      }
+                      disabled={!joinedClubIds.includes(activeClub.id) || isSubmittingChat}
+                      value={chatMessageInput}
+                      onChange={(e) => setChatMessageInput(e.target.value)}
+                      className="flex-1 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-xs font-bold outline-none focus:border-red-500 text-zinc-800 dark:text-zinc-150 placeholder-zinc-400 disabled:opacity-60"
+                    />
+                    <button
+                      type="submit"
+                      disabled={
+                        !chatMessageInput.trim() ||
+                        !joinedClubIds.includes(activeClub.id) ||
+                        isSubmittingChat
+                      }
+                      className="px-4.5 bg-red-655 hover:bg-red-700 text-white font-black rounded-xl transition-all cursor-pointer flex items-center justify-center shrink-0 disabled:opacity-50"
+                    >
+                      {isSubmittingChat ? (
+                        <RefreshCw className="animate-spin" size={14} />
+                      ) : (
+                        <Send size={14} />
+                      )}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            )}
+
             {/* TAB: MEETUPS / OFFLINE SESSIONS */}
             {activeTab === "meetups" && (
               <div className="space-y-6">
@@ -1535,7 +1837,7 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
                               className={cn(
                                 "flex-1 py-2 rounded-xl text-[11px] font-black cursor-pointer transition-all text-center font-sans",
                                 hasJoinedFlash
-                                  ? "bg-zinc-150 text-zinc-400 dark:bg-zinc-850 cursor-not-allowed border-zinc-200 dark:border-zinc-800"
+                                  ? "bg-zinc-150 text-zinc-450 dark:bg-zinc-850 cursor-not-allowed border-zinc-200 dark:border-zinc-800"
                                   : "bg-red-655 text-white hover:bg-red-700 hover:scale-[1.02] border-red-600"
                               )}
                             >
@@ -1577,7 +1879,7 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
                     {clubMeetups.map((meetup) => {
                       const isAttending = user && meetup.attendees.includes(user.uid);
                       const isFull = meetup.attendees.length >= meetup.capacity;
-                      const isAdmin = user?.email === 'f8001161@gmail.com' || user?.email === 'shjvt@nate.com';
+                      const isAdmin = checkIsAdmin(user?.email);
                       const isHost = isUserClubHost;
                       const isCreator = user && meetup.creatorId === user.uid;
                       const canDeleteMeetup = isAdmin || isHost || isCreator;
@@ -1701,9 +2003,50 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
                               <Clock size={13} className="text-red-500" />
                               <span>{meetup.time}</span>
                             </div>
-                            <div className="flex items-center gap-1.5">
-                              <MapPin size={13} className="text-red-500 animate-bounce" />
-                              <span className="truncate">{meetup.location}</span>
+                            <div className="flex items-center justify-between gap-1.5">
+                              <div className="flex items-center gap-1.5 truncate">
+                                <MapPin size={13} className="text-red-500 animate-bounce shrink-0" />
+                                <span className="truncate" title={meetup.location}>{meetup.location}</span>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    triggerHaptic(400, 0.02);
+                                    navigator.clipboard.writeText(meetup.location);
+                                    setCopiedMeetupId(meetup.id);
+                                    setTimeout(() => setCopiedMeetupId(null), 2000);
+                                    toast.success("📍 모임 장소가 클립보드에 복사되었습니다!");
+                                  }}
+                                  className={cn(
+                                    "p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded transition-all cursor-pointer flex items-center justify-center active:scale-95 duration-150",
+                                    copiedMeetupId === meetup.id
+                                      ? "text-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/20"
+                                      : "text-zinc-400 hover:text-red-500"
+                                  )}
+                                  title="장소 주소 복사"
+                                >
+                                  {copiedMeetupId === meetup.id ? (
+                                    <Check size={11} className="stroke-[3.5]" />
+                                  ) : (
+                                    <Copy size={11} />
+                                  )}
+                                </button>
+                                <a
+                                  href={`https://map.kakao.com/?q=${encodeURIComponent(meetup.location)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    triggerHaptic(400, 0.02);
+                                  }}
+                                  className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-red-500 rounded transition-colors cursor-pointer flex items-center"
+                                  title="카카오맵에서 장소 확인"
+                                >
+                                  <ExternalLink size={11} />
+                                </a>
+                              </div>
                             </div>
 
                             {meetup.attendeeNames && meetup.attendeeNames.length > 0 && (
@@ -1809,6 +2152,12 @@ export default function CitizenAgora({ user, onAuthClick }: CitizenAgoraProps) {
                               }
                               setCompletedMissions(next);
                               localStorage.setItem("completed_missions_2026", JSON.stringify(next));
+                              if (user) {
+                                setDoc(doc(db, "agora_user_profiles", user.uid), {
+                                  completedMissions: next,
+                                  updatedAt: new Date().toISOString()
+                                }, { merge: true }).catch(() => {});
+                              }
                             }}
                             className={cn(
                               "flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer",

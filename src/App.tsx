@@ -127,7 +127,7 @@ import { Toaster, toast } from "sonner";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 // Firebase imports from centralized config
-import { auth, db } from "./firebase";
+import { auth, db, checkIsAdmin, ADMIN_EMAILS } from "./firebase";
 import {
   onAuthStateChanged,
   signInWithPopup,
@@ -3454,6 +3454,18 @@ const AdminDashboard: React.FC<{
   siteSettings: any;
   grievances?: GrievanceClaim[];
   onUpdateGrievanceStatus?: (id: string, newStatus: string, note: string) => void;
+  // RAG states & callbacks
+  ragDocuments: any[];
+  setRagDocuments: React.Dispatch<React.SetStateAction<any[]>>;
+  ragChunkSize: number;
+  setRagChunkSize: React.Dispatch<React.SetStateAction<number>>;
+  ragChunkOverlap: number;
+  setRagChunkOverlap: React.Dispatch<React.SetStateAction<number>>;
+  ragSimilarityThreshold: number;
+  setRagSimilarityThreshold: React.Dispatch<React.SetStateAction<number>>;
+  ragTopK: number;
+  setRagTopK: React.Dispatch<React.SetStateAction<number>>;
+  isLoading?: boolean;
 }> = ({
   webtoons,
   news,
@@ -3476,6 +3488,17 @@ const AdminDashboard: React.FC<{
   siteSettings,
   grievances = [],
   onUpdateGrievanceStatus,
+  ragDocuments,
+  setRagDocuments,
+  ragChunkSize,
+  setRagChunkSize,
+  ragChunkOverlap,
+  setRagChunkOverlap,
+  ragSimilarityThreshold,
+  setRagSimilarityThreshold,
+  ragTopK,
+  setRagTopK,
+  isLoading = false,
 }) => {
   // 1. All State declarations at the top to avoid hoisting issues
   const [activeTab, setActiveTab] = useState<
@@ -3490,10 +3513,14 @@ const AdminDashboard: React.FC<{
     | "site_config"
     | "grievance"
     | "hyeonwon_cinema"
+    | "aegis-ai-lab"
+    | "manual"
   >("stats");
   const [activeEditorialSubTab, setActiveEditorialSubTab] = useState<
     "pending" | "published" | "scraped" | "revisions" | "all"
   >("pending");
+
+  const [adminManualTab, setAdminManualTab] = useState<"intro" | "mobile_guide" | "menu_guide" | "admin_guide" | "faq">("intro");
 
   // Real AI Scraping Discovery via Gemini + Google Search Grounding
   const [aiScrapeKeyword, setAiScrapeKeyword] = useState("비건 메타버스");
@@ -5077,6 +5104,8 @@ const AdminDashboard: React.FC<{
                   { id: "hyeonwon_cinema", icon: Film, label: "현원시네마 통합 제어" },
                   { id: "reporters", icon: Users, label: "출입기자단 심사원" },
                   { id: "ai", icon: Brain, label: "AI 합성 기사 관리반" },
+                  { id: "aegis-ai-lab", icon: Brain, label: "AI랩 (RAG)" },
+                  { id: "manual", icon: BookOpen, label: "이솔 사용설명서" },
                   { id: "site_config", icon: Settings, label: "시스템 통합 설정" },
                   {
                     id: "compliance",
@@ -5153,6 +5182,8 @@ const AdminDashboard: React.FC<{
             { id: "hyeonwon_cinema", icon: Film, label: "현원시네마 통합 통제소" },
             { id: "reporters", icon: Users, label: "출입 기자단 관리본부" },
             { id: "ai", icon: Brain, label: "AI 로보저널리즘 가동처" },
+            { id: "aegis-ai-lab", icon: Brain, label: "AI랩 (RAG)" },
+            { id: "manual", icon: BookOpen, label: "이솔 사용설명서" },
             { id: "site_config", icon: Settings, label: "신문사 공식 규격 설정" },
             { id: "compliance", icon: ShieldCheck, label: "언론 정간물 심의위원회" },
             { id: "grievance", icon: Scale, label: "독자 권익 및 고충정정 센터" },
@@ -5238,6 +5269,8 @@ const AdminDashboard: React.FC<{
             { id: "webtoons", icon: Tv, label: "문화" },
             { id: "reporters", icon: Users, label: "기자단" },
             { id: "ai", icon: Brain, label: "AI로버" },
+            { id: "aegis-ai-lab", icon: Brain, label: "AI랩" },
+            { id: "manual", icon: BookOpen, label: "설명서" },
             { id: "site_config", icon: Settings, label: "시스템" },
             { id: "compliance", icon: ShieldCheck, label: "강령" },
             { id: "grievance", icon: Scale, label: "고충처리" },
@@ -8961,6 +8994,289 @@ const AdminDashboard: React.FC<{
             </div>
           )}
 
+          {activeTab === "aegis-ai-lab" && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 text-white">
+              <AegisAILab
+                news={news}
+                isLoading={isLoading}
+                ragDocuments={ragDocuments}
+                setRagDocuments={setRagDocuments}
+                ragChunkSize={ragChunkSize}
+                setRagChunkSize={setRagChunkSize}
+                ragChunkOverlap={ragChunkOverlap}
+                setRagChunkOverlap={setRagChunkOverlap}
+                ragSimilarityThreshold={ragSimilarityThreshold}
+                setRagSimilarityThreshold={setRagSimilarityThreshold}
+                ragTopK={ragTopK}
+                setRagTopK={setRagTopK}
+                onSeedRag={() => {
+                  const seedDocs = async () => {
+                    const seeded = await seedSampleRagDocumentsInDB(ragChunkSize, ragChunkOverlap);
+                    setRagDocuments(seeded);
+                    localStorage.setItem("isol_rag_documents_v1", JSON.stringify(seeded));
+                  };
+                  seedDocs();
+                }}
+              />
+            </div>
+          )}
+
+          {activeTab === "manual" && (
+            <div className="max-w-5xl mx-auto bg-white dark:bg-[#0c0c0f] border border-zinc-200 dark:border-white/10 rounded-[2.5rem] shadow-3xl overflow-hidden text-zinc-800 dark:text-zinc-100 font-sans animate-in fade-in slide-in-from-bottom-4 duration-500 flex flex-col h-[700px] text-left">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-red-655 to-red-800 text-white p-8 shrink-0 flex justify-between items-center shadow-lg">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">📘</span>
+                  <div>
+                    <h3 className="text-lg font-black uppercase tracking-tight text-left text-white">
+                      이솔 정론대보도 연합 통합 사용설명서
+                    </h3>
+                    <p className="text-xs text-white/75 font-semibold text-left">Isol Portal Central Handbook & Interface Manual</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sub Navigation Tabs */}
+              <div className="bg-zinc-50 dark:bg-zinc-905 border-b border-zinc-200 dark:border-white/5 p-3 flex gap-1.5 scrollbar-none overflow-x-auto shrink-0 select-none">
+                {[
+                  { id: "intro", label: "🏠 가이드 소개", icon: Globe },
+                  { id: "mobile_guide", label: "📱 모바일 터치 마스터", icon: Smartphone },
+                  { id: "menu_guide", label: "📰 독자 활용법 (Reading)", icon: Newspaper },
+                  { id: "admin_guide", label: "📝 시민기자 집필법 (Writing)", icon: Edit3 },
+                  { id: "faq", label: "⚙️ 백엔드/관리 가이드", icon: Scale },
+                ].map((tab) => {
+                  const isActive = adminManualTab === tab.id;
+                  const TabIcon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => {
+                        playHapticClick(400, 0.03);
+                        setAdminManualTab(tab.id as any);
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 px-4 py-3 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap",
+                        isActive
+                          ? "bg-red-655 text-white shadow-md shadow-red-600/10"
+                          : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-850 hover:text-zinc-800"
+                      )}
+                    >
+                      <TabIcon size={13} />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Handbook Scrollable Content Core */}
+              <div className="flex-1 overflow-y-auto p-8 space-y-6 text-zinc-600 dark:text-zinc-300">
+
+                {/* 모바일 꿀팁 & 서명 제스처 가이드 탭 */}
+                {adminManualTab === "mobile_guide" && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="space-y-5 text-xs"
+                  >
+                    <div className="border-l-4 border-red-550 pl-4 py-1 text-left">
+                      <h4 className="text-xs font-black text-zinc-800 dark:text-zinc-200">
+                        모바일 터치 마스터 가이드 📱 (Smart Mobile Controls)
+                      </h4>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-150 dark:border-white/5 rounded-2xl space-y-2">
+                        <h5 className="font-extrabold text-zinc-800 dark:text-zinc-100 flex items-center gap-1.5">
+                          ✍️ 서명 서판 드로잉 제어
+                        </h5>
+                        <p className="leading-relaxed text-[11px] text-zinc-500">
+                          모바일 폰에서 서판을 문지를 때 스크롤이 흔들리거나 화면이 밀려나지 않도록 <b>Touch-None 특수 잠금막</b>을 구현했습니다. 손가락 끝으로 서판 안을 편안히 쓸어서 정형화된 서명을 작성해 보십시오.
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-150 dark:border-white/5 rounded-2xl space-y-2">
+                        <h5 className="font-extrabold text-zinc-800 dark:text-zinc-100 flex items-center gap-1.5">
+                          🎙️ 원터치 AI 음성 구술 (STT)
+                        </h5>
+                        <p className="leading-relaxed text-[11px] text-zinc-500">
+                          글쓰기가 어려운 지하철이나 버스 안이라면, 집필실 내 기사 작성 창에서 <b>[AI 음성구술]</b> 단추를 가볍게 터치해 구술 음성 녹음 시뮬레이션을 가동해 보세요. AI가 구어를 세련된 정론 6하원칙 보도문으로 즉각 완성해 드립니다.
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-150 dark:border-white/5 rounded-2xl space-y-2">
+                        <h5 className="font-extrabold text-zinc-800 dark:text-zinc-100 flex items-center gap-1.5">
+                          🖤 OLED 칠흑 암막 모드 스킨
+                        </h5>
+                        <p className="leading-relaxed text-[11px] text-zinc-500">
+                          야간 기사 탐독 시 모바일 배터리를 대폭 보존하고 안구 피로도를 제로로 수렴시키기 위해 기사 상세 창 우측 상단의 <b>B 스킨(Pure Black, #000000)</b>를 마련했습니다. 원터치 햅틱 진동과 함께 안심 독서를 만끽해 보세요.
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-150 dark:border-white/5 rounded-2xl space-y-2">
+                        <h5 className="font-extrabold text-zinc-800 dark:text-zinc-100 flex items-center gap-1.5">
+                          ⚡ 모바일 최적 하단바 & 퀵 액션
+                        </h5>
+                        <p className="leading-relaxed text-[11px] text-zinc-500">
+                          양손 제어가 어려운 모바일 기기를 고려하여, 한 손 엄지만으로 모든 탭 워프가 가능한 <b>Sticky Bottom Navigation</b>과 글자 크기 가나다를 실시간 피드백하는 <b>FAB 퀵 액션 드로어</b>가 상시 가동 중입니다.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+                
+                {/* 1. INTRO / WELCOME TAB */}
+                {adminManualTab === "intro" && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="space-y-5"
+                  >
+                    <div className="p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 space-y-2 text-left">
+                      <h4 className="text-sm font-black text-red-655 dark:text-red-400">
+                        환영합니다! 이솔나라 최고 정평 연합뉴스 포털 보도망입니다. 🌐
+                      </h4>
+                      <p className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-300">
+                        본 설명서는 이솔뉴스 포털의 수많은 고기능 장치(AI 윤문, OnAir 정합 오디오 재생, 6하원칙 신뢰도 분석기, 만평/웹툰 공방, 투표식 토론 시스템)를 한 눈에 파악하도록 만들어졌습니다. 아래 분야별 탭을 정주행하시고, 혹여 헤매시게 될 경우 우측 상단 혹은 하단의 <b>'카톡 AI 비서'</b>에 명령을 전송하여 마스터해 보십시오.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                      <div className="p-4 border border-zinc-100 dark:border-white/5 rounded-xl space-y-1.5">
+                        <span className="text-lg">🛎️</span>
+                        <h5 className="text-xs font-black text-zinc-800 dark:text-zinc-200">초간단 챗봇 내비게이션</h5>
+                        <p className="text-[11px] text-zinc-500 leading-relaxed">
+                          포털 구조가 생소하신가요? 카톡 버튼 클릭 후 '기사 쓰고 싶어', '라디오 어디있어?', '만평보고 싶어'라고 한마디만 하십시오. AI가 알아서 알맞은 메뉴로 순간 이동시켜 줍니다.
+                        </p>
+                      </div>
+
+                      <div className="p-4 border border-zinc-100 dark:border-white/5 rounded-xl space-y-1.5">
+                        <span className="text-lg">🌿</span>
+                        <h5 className="text-xs font-black text-zinc-800 dark:text-zinc-200">눈 및 감각 보호 기어</h5>
+                        <p className="text-[11px] text-zinc-500 leading-relaxed">
+                          설정창(FAB)을 열어 야간 시력보호 필터를 키고 서체 벌크를 4단계로 키워보세요. 시민들이 직접 다방향 편의성을 기획해 안전하고 편안한 열독을 보증합니다.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* 2. READER GUIDE TAB */}
+                {adminManualTab === "menu_guide" && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="space-y-6 text-xs text-left"
+                  >
+                    <div className="border-l-4 border-red-550 pl-4 py-1">
+                      <h4 className="text-xs font-black text-zinc-800 dark:text-zinc-200">
+                        독자 사용법: 참된 정론 문화를 누리고 제재하는 과정
+                      </h4>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-5 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 font-bold text-zinc-800 dark:text-zinc-200 text-[10px]">1</div>
+                        <div>
+                          <p className="font-extrabold text-zinc-800 dark:text-zinc-100">분야별 뉴스 & 공방 열람</p>
+                          <p className="mt-1 leading-relaxed">
+                            메인 대쉬보드를 통해 사회정치, 온에어, 그리고 가짜 뉴스를 상시 파쇄하는 <b>팩트체크 기사</b>를 탐독하세요. 시민 기사 하단의 분홍색 북마크 리본을 누르고 우측 '책갈피합'을 열어 즐겨보는 전용 드로워가 탑재되어 있습니다.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="w-5 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 font-bold text-zinc-800 dark:text-zinc-200 text-[10px]">2</div>
+                        <div>
+                          <p className="font-extrabold text-zinc-800 dark:text-zinc-100">이솔 온에어(OnAir) 오디오 시스템</p>
+                          <p className="mt-1 leading-relaxed">
+                            실시간 속보 팟캐스트 방송을 상시 낭독 방송(TTS) 형태로 재생 가능합니다. 개별 기사 하단에서 아나운서 재생 템포(0.7x ~ 1.5x)를 직접 제어해 편성에 녹아들 수 있습니다.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <div className="w-5 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 font-bold text-zinc-800 dark:text-zinc-200 text-[10px]">3</div>
+                        <div>
+                          <p className="font-extrabold text-zinc-800 dark:text-zinc-100">5W1H AI 신뢰도 육하원칙 진단 & 사법 참여</p>
+                          <p className="mt-1 leading-relaxed">
+                            독자로서 기론의 신뢰성에 투표 지수를 반영하세요. AI 맞춤 육하원칙 분석(누가, 언제, 무엇을...)을 즉시 읽고, 마음에 안 드는 기사나 가짜 기사는 <b>'옴부즈만 청원실'</b>을 열어 청원/신고서를 즉각 제소하세요.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* 3. REPORTER GUIDE TAB */}
+                {adminManualTab === "admin_guide" && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="space-y-6 text-xs text-left"
+                  >
+                    <div className="border-l-4 border-amber-500 pl-4 py-1">
+                      <h4 className="text-xs font-black text-zinc-800 dark:text-zinc-200">
+                        시민기자 집필 가이드: SoulCenter 기자실 사용 지침서
+                      </h4>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="p-4 bg-yellow-50 dark:bg-yellow-950/10 border border-yellow-200/50 dark:border-yellow-700/20 rounded-xl space-y-2">
+                        <p className="font-black text-yellow-800 dark:text-yellow-400">🔥 시민 기자가 갖는 3대 하이테크 핀셋</p>
+                        <p className="leading-relaxed text-zinc-700 dark:text-zinc-300">
+                          <b>① 임시 자동 저장(Auto-Save):</b> 집필실 내 기사 작성 중 갑자기 탭을 꺼도, 로컬 저장 체계가 상시 내용을 세이브하여 언제든 불러올 수 있게 지원합니다.<br/>
+                          <b>② AI 맞춤 윤문 / 교정 비서:</b> 한결 세련된 오탈자 감수 및 정형화된 정론 논설 보도문 풍으로 고해상도 변환하는 인쇄 필지 보정이 장착되어 있습니다.<br/>
+                          <b>③ 전천후 전문 기사 분류:</b> 작성한 기사는 정규 국영 기자 및 전문 필진 등급을 신청하시면, 즉시 검증국 심사를 통과해 메인 bento-grid 상단에 노출을 도모할 수 있습니다.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <p className="font-extrabold text-zinc-800 dark:text-zinc-250">✏️ 집필 및 투고 3단계 요령</p>
+                        <ul className="list-disc pl-5 space-y-1.5 leading-relaxed">
+                          <li>우측 상단 <b>[기사제보]</b> 단추를 누르고 기사 제목, 소속 및 매거진 분야(사회, 정치, 경제 등)를 기재하세요.</li>
+                          <li>작성 후 중간의 <b>[AI 교정/윤문 비서 작동]</b>을 누르시면, 문장 사이 비문이나 국어규범 어긋남을 가차 없이 진단해 비교 표출해 줍니다.</li>
+                          <li>최종 <b>[시민 기사 투고하기]</b>를 송신하는 동시에 파이어스토어 저장 연계가 완료됩니다.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* 4. BACKEND / ADMIN GUIDE TAB */}
+                {adminManualTab === "faq" && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="space-y-5 text-xs text-left"
+                  >
+                    <div className="border-l-4 border-purple-500 pl-4 py-1">
+                      <h4 className="text-xs font-black text-zinc-800 dark:text-zinc-200">
+                        백엔드 설계 & 데스크 요원 관리 통제 가이드
+                      </h4>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-xl">
+                        <p className="font-extrabold text-zinc-800 dark:text-zinc-200 mb-2">📊 백엔드 및 실시간 연합 구조</p>
+                        <p className="leading-relaxed">
+                          본 시뮬레이터 시스템은 <b>Google Firebase & Live Access Storage Engine</b>을 중심축 삼아 대량의 뉴스 인덱스를 연계 보관합니다. 메인화면 최하단 우측 빠른 설정(FAB) 내 <b>[실시간 피드 동기화]</b>를 활성화하면 가상 소울센터와 국방/시민 연맹 간의 실시간 브로드캐스팅 포맷 검증이 실행됩니다.
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-white/5 rounded-xl">
+                        <p className="font-extrabold text-zinc-800 dark:text-zinc-200 mb-2">⚖️ 데스크 제어 & 윤리 옴부즈만</p>
+                        <p className="leading-relaxed">
+                          관리자급 이상의 기획자는 <b>"데스크"</b> 메뉴에 도달하여 승인 대기 중 소속 기사들을 확인하고 반려 혹 영구 출판권을 발부할 수 있습니다. 옴부즈만 청원 명부를 대조하여 타당성을 훼손하는 불온 기사를 필터링할 수 있는 권능이 동시 통합 지원됩니다.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+              </div>
+            </div>
+          )}
+
           {/* Real-time Overlays and Modals inside Admin Control Board */}
           <AnimatePresence>
             {/* 1. Preview Modal */}
@@ -11601,6 +11917,20 @@ const Navbar = ({
 
   const [localSearchQuery, setLocalSearchQuery] = React.useState("");
 
+  const [windowScrollProgress, setWindowScrollProgress] = React.useState(0);
+  React.useEffect(() => {
+    const handleWindowScroll = () => {
+      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalScroll > 0) {
+        setWindowScrollProgress((window.scrollY / totalScroll) * 100);
+      } else {
+        setWindowScrollProgress(0);
+      }
+    };
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleWindowScroll);
+  }, []);
+
   const searchQuery = parentSearchQuery !== undefined ? parentSearchQuery : localSearchQuery;
   
   const topScrollRef = React.useRef<HTMLDivElement>(null);
@@ -11680,6 +12010,10 @@ const Navbar = ({
         return <Bot className={`${className} text-indigo-500`} />;
       case "온에어":
         return <Radio className={`${className} text-purple-500`} />;
+      case "aegis-ai-lab":
+        return <Brain className={`${className} text-purple-500`} />;
+      case "manual":
+        return <BookOpen className={`${className} text-rose-500`} />;
       
       // mainNavItems specific
       case "전체기사":
@@ -11715,12 +12049,17 @@ const Navbar = ({
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-[60] bg-white border-b border-gray-100 flex flex-col shadow-sm select-none">
+    <nav className="fixed top-0 left-0 right-0 z-[60] bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md border-b border-gray-100/50 dark:border-zinc-800/30 flex flex-col shadow-sm transition-colors duration-500 select-none">
+      {/* 🌟 보완 1: 실시간 글로벌 스크롤 진척도 레이저 인디케이터 (Global Scroll Laser Indicator) */}
+      <div 
+        className="fixed top-0 left-0 h-[3.5px] bg-gradient-to-r from-red-500 via-rose-500 to-amber-500 z-[100] transition-all duration-75 shadow-[0_0_10px_#ef4444] pointer-events-none"
+        style={{ width: `${windowScrollProgress}%` }}
+      />
       {/* 
         Mobile Top bar (lg:hidden):
         Highly professional header with Hamburger Menu + Logo + Action Icons
       */}
-      <div className="lg:hidden flex items-center justify-between px-4 py-2 text-zinc-900 border-b border-zinc-100 bg-white">
+      <div className="lg:hidden flex items-center justify-between px-4 py-2 text-zinc-900 dark:text-zinc-100 border-b border-zinc-100/50 dark:border-zinc-800/30 bg-white/75 dark:bg-zinc-950/75 backdrop-blur-md transition-colors duration-500">
         {/* Left: Hamburger menu trigger */}
         <button
           onClick={() => setIsMobileMenuOpen(true)}
@@ -11744,59 +12083,59 @@ const Navbar = ({
         </div>
 
         {/* Right side Actions: Compact Icons */}
-        <div className="flex items-center gap-1">
-          {/* Quick Manual button */}
+        <div className="flex items-center gap-1.5 font-sans">
+          {/* Admin access (데스크) */}
           <button
-            onClick={onManualClick}
-            className="p-1.5 text-zinc-700 hover:text-red-650 transition-colors cursor-pointer"
-            title="사용설명서"
+            onClick={onAdminClick}
+            className="p-1.5 text-zinc-700 hover:text-indigo-600 dark:text-zinc-300 dark:hover:text-indigo-400 transition-colors cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900"
+            title="관리자 데스크"
           >
-            <BookOpen size={17} className="text-red-500" />
+            <LayoutDashboard size={16} className="text-indigo-500" />
+          </button>
+
+          {/* Quick Community button (이솔 소모임) */}
+          <button
+            onClick={() => onPageChange("community")}
+            className="p-1.5 text-zinc-700 hover:text-emerald-600 dark:text-zinc-300 dark:hover:text-emerald-400 transition-colors cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900"
+            title="이솔 소모임"
+          >
+            <Users size={16} className="text-emerald-500" />
           </button>
 
           {/* Quick Kakao Chat button */}
           <button
             onClick={onKakaoClick}
-            className="p-1 px-1.5 bg-[#FEE500] hover:bg-[#FEE500]/90 text-[#191919] font-black rounded text-[10px] flex items-center gap-0.5"
+            className="p-1.5 text-zinc-700 hover:text-amber-600 dark:text-zinc-300 dark:hover:text-amber-400 transition-colors cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900"
             title="카카오톡 챗봇 비서"
           >
-            카톡
+            <Bot size={16} className="text-amber-500" />
           </button>
 
           {/* Quick Write/Report Icon */}
           <button
             onClick={onWriteClick}
-            className="p-1.5 text-zinc-700 hover:text-red-650 transition-colors cursor-pointer relative"
+            className="p-1.5 text-zinc-700 hover:text-red-655 dark:text-zinc-300 dark:hover:text-red-400 transition-colors cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 relative"
             title="기사 제보하기"
           >
-            <Edit2 size={17} />
-          </button>
-          
-          {/* Admin access */}
-          <button
-            onClick={onAdminClick}
-            className="p-1.5 text-zinc-700 hover:text-amber-500 transition-colors cursor-pointer"
-            title="관리자 데스크"
-          >
-            <ShieldAlert size={17} />
+            <Edit2 size={16} className="text-red-500" />
           </button>
 
           {/* Auth (Login/Logout Check) */}
           {user ? (
             <button
               onClick={onLogout}
-              className="p-1.5 text-zinc-500 hover:text-red-650 transition-colors cursor-pointer"
+              className="p-1.5 text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 transition-colors cursor-pointer rounded-full hover:bg-rose-50 dark:hover:bg-rose-950/20"
               title="로그아웃"
             >
-              <LogOut size={17} />
+              <LogOut size={16} className="text-zinc-500 dark:text-zinc-400 hover:text-rose-500" />
             </button>
           ) : (
             <button
               onClick={onAuthClick}
-              className="p-1.5 text-zinc-700 hover:text-red-650 transition-colors cursor-pointer"
+              className="p-1.5 text-zinc-700 hover:text-red-655 dark:text-zinc-300 dark:hover:text-red-400 transition-colors cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900"
               title="로그인"
             >
-              <User size={17} />
+              <User size={16} className="text-zinc-650 dark:text-zinc-300" />
             </button>
           )}
         </div>
@@ -11807,19 +12146,27 @@ const Navbar = ({
         Small grey text links right above the category pills for sub-channels
       */}
       {!isWorkshopActive && (
-        <div className="lg:hidden bg-zinc-100/70 border-b border-zinc-200 py-1.5 overflow-x-auto no-scrollbar scroll-smooth flex items-center gap-4 whitespace-nowrap px-4 h-8 select-none">
-          <span className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block shrink-0 italic mr-0.5">채널데스크:</span>
+        <div className="lg:hidden bg-zinc-100/60 dark:bg-zinc-900/60 border-b border-zinc-200/50 dark:border-zinc-800/30 py-1.5 overflow-x-auto scrollbar-none scroll-smooth flex items-center gap-4 whitespace-nowrap px-4 h-8 select-none touch-pan-x" style={{ WebkitOverflowScrolling: "touch" }}>
+          <span className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block shrink-0 italic mr-0.5">채널데스크:</span>
           {topNavItems.map((item) => {
             const isActive = currentPage === item.id || (item.id === "이솔공방" && currentPage.startsWith("이솔공방"));
             return (
               <button
                 key={item.id}
-                onClick={() => onPageChange("isol-post", item.id)}
+                onClick={() => {
+                  if (item.id === "manual") {
+                    onManualClick();
+                  } else if (item.id === "aegis-ai-lab") {
+                    onPageChange("aegis-ai-lab");
+                  } else {
+                    onPageChange("isol-post", item.id);
+                  }
+                }}
                 className={cn(
-                  "text-[9px] font-black tracking-tight transition-all shrink-0 cursor-pointer",
+                  "text-[9.5px] font-black tracking-wider transition-all duration-200 shrink-0 cursor-pointer active:scale-95 py-0.5 px-1 rounded",
                   isActive
-                    ? "text-zinc-650 dark:text-zinc-300 underline underline-offset-2 scale-102 font-black"
-                    : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-650 dark:hover:text-zinc-300"
+                    ? "text-red-655 dark:text-red-400 font-black underline underline-offset-2"
+                    : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                 )}
               >
                 {item.label}
@@ -11834,8 +12181,8 @@ const Navbar = ({
         Always visible under Channel Desk with icons. Scrollable horizontally.
       */}
       {!isWorkshopActive && (
-        <div className="lg:hidden bg-white border-b border-zinc-200 py-2 overflow-x-auto no-scrollbar scroll-smooth flex items-center gap-3.5 whitespace-nowrap px-4 select-none">
-          <span className="text-[9px] font-black text-red-500 uppercase tracking-wider block shrink-0 italic mr-0.5">전체메뉴:</span>
+        <div className="lg:hidden bg-white/75 dark:bg-zinc-950/75 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-800/30 py-2.5 overflow-x-auto scrollbar-none scroll-smooth flex items-center gap-3.5 whitespace-nowrap px-4 select-none touch-pan-x" style={{ WebkitOverflowScrolling: "touch" }}>
+          <span className="text-[9px] font-black text-red-500 uppercase tracking-widest block shrink-0 italic mr-0.5">전체메뉴:</span>
           {mainNavItems.map((item) => {
             const isActive = currentPage === item.id || (item.id === "전체기사" && currentPage === "home");
             return (
@@ -11843,13 +12190,13 @@ const Navbar = ({
                 key={item.id}
                 onClick={() => onPageChange("isol-post", item.id)}
                 className={cn(
-                  "text-[10px] font-extrabold tracking-tight transition-all shrink-0 cursor-pointer flex items-center gap-1.5 px-2.5 py-1 rounded-full border",
+                  "text-[11px] font-black tracking-tight transition-all shrink-0 cursor-pointer flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border active:scale-95 duration-150 shadow-sm",
                   isActive
-                    ? "bg-red-655 border-red-200 text-white font-black shadow-inner"
-                    : "bg-zinc-100 text-zinc-800 border-zinc-200/50 hover:bg-zinc-200 hover:text-black"
+                    ? "bg-red-655 border-red-500 text-white font-black shadow-[0_2px_10px_rgba(239,68,68,0.25)]"
+                    : "bg-zinc-50 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200/50 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 )}
               >
-                {renderIcon(item.id, "w-3 h-3 shrink-0")}
+                {renderIcon(item.id, "w-3.5 h-3.5 shrink-0")}
                 <span>{item.label}</span>
               </button>
             );
@@ -11861,7 +12208,7 @@ const Navbar = ({
         Desktop Top Bar (Row 1): 
         Logo + Portal Navigation + Search + Premium Utilities
       */}
-      <div className="hidden lg:flex max-w-7xl mx-auto w-full px-4 md:px-8 py-1.5 items-center justify-between gap-4 border-b border-gray-100 bg-white">
+      <div className="hidden lg:flex max-w-7xl mx-auto w-full px-4 md:px-8 py-1.5 items-center justify-between gap-4 border-b border-gray-100/50 dark:border-zinc-800/30 bg-transparent transition-colors duration-500">
         {/* Left: Compact Brand Logo & Page Tabs */}
         <div className="flex items-center gap-5 shrink-0">
           <div
@@ -11888,6 +12235,10 @@ const Navbar = ({
                   onClick={() => {
                     if (item.id === "hyeonwon-cinema") {
                       onPageChange("hyeonwon-cinema");
+                    } else if (item.id === "manual") {
+                      onManualClick();
+                    } else if (item.id === "aegis-ai-lab") {
+                      onPageChange("aegis-ai-lab");
                     } else {
                       onPageChange("isol-post", item.id);
                     }
@@ -11931,94 +12282,76 @@ const Navbar = ({
           
           <button
             onClick={onAdminClick}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-905 dark:hover:bg-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-md text-xs font-bold transition-all cursor-pointer h-8 relative"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-200/80 dark:border-zinc-800 rounded-full text-xs font-black tracking-tight transition-all duration-300 hover:shadow-sm active:scale-95 cursor-pointer h-8 relative font-sans"
             title="관리자 뉴스 데스크 제어실로 이동합니다"
           >
-            <ShieldAlert size={13} />
-            <span>데스크</span>
+            <LayoutDashboard size={13} className="text-indigo-500 dark:text-indigo-400" />
+            <span className="text-slate-800 dark:text-zinc-100">데스크</span>
             {pendingCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-red-650 text-white text-[8.5px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center animate-pulse shadow-sm border border-white dark:border-zinc-900">
+              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[8.5px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center animate-bounce shadow-md">
                 {pendingCount}
               </span>
             )}
           </button>
 
           <button
-            onClick={onManualClick}
-            className="flex items-center gap-1 px-3 py-1.5 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 rounded-md text-xs font-black transition-all cursor-pointer h-8"
-            title="포털 전체 기능 사용법을 쉽게 짚어주는 사용설명서를 소환합니다"
-          >
-            <BookOpen size={13} className="text-red-500" />
-            <span>이솔 사용설명서</span>
-          </button>
-
-          <button
-            onClick={() => onPageChange("aegis-ai-lab")}
-            className={cn(
-              "flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-black transition-all cursor-pointer h-8 border",
-              currentPage === "aegis-ai-lab"
-                ? "bg-purple-650 border-purple-600 text-white shadow-sm"
-                : "bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100"
-            )}
-            title="이지스 AI 연구실 및 RAG 지식베이스 제어 콘솔로 이동합니다"
-          >
-            <Brain size={13} className={currentPage === "aegis-ai-lab" ? "text-white animate-pulse" : "text-purple-500"} />
-            <span>AI 랩 (RAG)</span>
-          </button>
-
-          <button
             onClick={() => onPageChange("community")}
             className={cn(
-              "flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-black transition-all cursor-pointer h-8 border",
+              "flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-black tracking-tight transition-all duration-300 hover:shadow-sm active:scale-95 cursor-pointer h-8 border font-sans",
               currentPage === "community"
                 ? "bg-red-655 border-red-600 text-white shadow-sm"
-                : "bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100"
+                : "bg-emerald-50/60 dark:bg-emerald-950/10 border-emerald-200/60 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400 hover:bg-emerald-50"
             )}
             title="시민들이 자율적으로 소통하고 스마트팜, 버스킹 등 소모임을 교류하는 소모임 광장으로 이동합니다"
           >
-            <Users size={13} className={currentPage === "community" ? "text-white" : "text-red-500"} />
-            <span>이솔 소모임 (클럽)</span>
+            <Users size={13} className={currentPage === "community" ? "text-white" : "text-emerald-500 dark:text-emerald-400"} />
+            <span className={currentPage === "community" ? "text-white" : "text-emerald-800 dark:text-emerald-300"}>이솔 소모임</span>
           </button>
 
           <button
             onClick={onKakaoClick}
-            className="flex items-center gap-1 px-3 py-1.5 bg-[#FEE500] hover:bg-[#FEE500]/90 text-[#191919] rounded-md text-xs font-black transition-all cursor-pointer h-8 shadow-sm"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 dark:from-amber-950/20 dark:to-amber-900/10 text-amber-900 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/30 rounded-full text-xs font-black tracking-tight transition-all duration-300 hover:shadow-sm active:scale-95 cursor-pointer h-8 relative font-sans"
             title="복잡한 메뉴 대신 카톡 챗봇에게 한마디 전하여 direct 처리합니다"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-red-505 animate-pulse mr-0.5" />
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse absolute top-0.5 right-1" />
+            <Bot size={13} className="text-amber-600 dark:text-amber-400 animate-pulse" />
             <span>카톡 AI 비서</span>
           </button>
 
           {onProfessionalRegClick && (
             <button
               onClick={onProfessionalRegClick}
-              className="flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-zinc-950 rounded-md text-xs font-black transition-all cursor-pointer h-8 shadow-sm"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-50/50 dark:bg-blue-950/10 hover:bg-blue-50 dark:hover:bg-blue-950/20 text-blue-800 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/30 rounded-full text-xs font-black tracking-tight transition-all duration-300 hover:shadow-sm active:scale-95 cursor-pointer h-8 font-sans"
               title="검증된 전문 필진으로 등록하는 절차를 진행합니다"
             >
-              <Users size={13} />
-              전문필진 신청
+              <UserCheck size={13} className="text-blue-600 dark:text-blue-400" />
+              <span className="text-blue-850 dark:text-blue-300">전문필진 신청</span>
             </button>
           )}
 
           {user ? (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-zinc-505 font-sans border-r border-zinc-200 pr-2 max-w-[80px] truncate">
-                {user.displayName || "기자"}
-              </span>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full h-8 max-w-[130px]">
+                <User size={13} className="text-zinc-500 shrink-0" />
+                <span className="text-xs font-black text-zinc-700 dark:text-zinc-300 font-sans truncate">
+                  {user.displayName || "기자"}
+                </span>
+              </div>
               <button
                 onClick={onLogout}
-                className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 rounded-md text-xs font-bold text-zinc-650 dark:text-zinc-400 cursor-pointer h-8"
+                className="px-3.5 py-1.5 bg-zinc-100 hover:bg-rose-50 hover:text-rose-600 dark:bg-zinc-900 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 border border-zinc-200 dark:border-zinc-800 hover:border-rose-200 dark:hover:border-rose-900/30 text-zinc-650 dark:text-zinc-400 rounded-full text-xs font-black transition-all cursor-pointer h-8 flex items-center gap-1 active:scale-95 duration-250 font-sans"
               >
-                로그아웃
+                <LogOut size={13} />
+                <span>로그아웃</span>
               </button>
             </div>
           ) : (
             <button
               onClick={onAuthClick}
-              className="px-4.5 py-1.5 bg-zinc-900 text-white dark:bg-zinc-800 select-none cursor-pointer rounded-md text-xs font-black hover:bg-red-655 transition-all flex items-center gap-1.5 h-8 font-sans"
+              className="px-4 py-1.5 bg-zinc-950 hover:bg-red-655 text-white dark:bg-zinc-800 dark:hover:bg-red-655 border border-zinc-900 dark:border-zinc-700 rounded-full text-xs font-black hover:scale-[1.02] transition-all flex items-center gap-1.5 h-8 font-sans cursor-pointer active:scale-95 duration-250 hover:shadow-md"
             >
-              <User size={13} />
-              로그인 / 가입
+              <User size={13} className="text-white" />
+              <span>로그인 / 가입</span>
             </button>
           )}
         </div>
@@ -12039,7 +12372,15 @@ const Navbar = ({
                   return (
                     <button
                       key={item.id}
-                      onClick={() => onPageChange("isol-post", item.id)}
+                      onClick={() => {
+                        if (item.id === "manual") {
+                          onManualClick();
+                        } else if (item.id === "aegis-ai-lab") {
+                          onPageChange("aegis-ai-lab");
+                        } else {
+                          onPageChange("isol-post", item.id);
+                        }
+                      }}
                       className={cn(
                         "text-[10.5px] font-extrabold tracking-tight transition-all duration-150 cursor-pointer flex items-center gap-1 py-0.5 px-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800",
                         isActive
@@ -12203,7 +12544,13 @@ const Navbar = ({
                               <button
                                 key={item.id}
                                 onClick={() => {
-                                  onPageChange("isol-post", item.id);
+                                  if (item.id === "manual") {
+                                    onManualClick();
+                                  } else if (item.id === "aegis-ai-lab") {
+                                    onPageChange("aegis-ai-lab");
+                                  } else {
+                                    onPageChange("isol-post", item.id);
+                                  }
                                   setIsAllCategoriesOpen(false);
                                 }}
                                 className="w-full text-left py-1.5 px-2.5 rounded-lg text-xs font-bold text-zinc-300 hover:bg-zinc-900 hover:text-white transition-all flex items-center gap-2"
@@ -12378,6 +12725,10 @@ const Navbar = ({
                         onClick={() => {
                           if (item.id === "hyeonwon-cinema") {
                             onPageChange("hyeonwon-cinema");
+                          } else if (item.id === "manual") {
+                            onManualClick();
+                          } else if (item.id === "aegis-ai-lab") {
+                            onPageChange("aegis-ai-lab");
                           } else {
                             onPageChange("isol-post", item.id);
                           }
@@ -12461,40 +12812,40 @@ const RealtimeHotClicksWidget = ({
   className?: string;
 }) => {
   return (
-    <div className={`bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/85 rounded-3xl p-6 space-y-5 shadow-sm ${className}`} id="realtime-hot-clicks-widget">
+    <div className={`bg-[#0c0d14] border border-zinc-800/80 rounded-[2rem] p-6 space-y-5 shadow-2xl shadow-black/30 ${className}`} id="realtime-hot-clicks-widget">
       {/* Header section with live icon and metadata */}
-      <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 pb-3">
+      <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3.5">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse flex items-center justify-center shrink-0">
+          <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse flex items-center justify-center shrink-0">
             <span className="w-1 h-1 rounded-full bg-white animate-ping" />
           </div>
-          <h4 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tight font-sans flex items-center gap-1.5">
+          <h4 className="text-sm font-black text-white uppercase tracking-tight font-sans flex items-center gap-1.5">
             실시간 핫클릭
-            <span className="text-[10px] font-extrabold text-red-600 bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded-md uppercase tracking-widest animate-pulse">
+            <span className="text-[10px] font-black text-rose-400 bg-rose-950/40 border border-rose-900/30 px-2 py-0.5 rounded-md uppercase tracking-widest animate-pulse font-sans">
               LIVE
             </span>
           </h4>
         </div>
-        <span className="text-[9px] font-black text-zinc-450 dark:text-zinc-505 font-mono">
+        <span className="text-[9.5px] font-black text-zinc-500 font-mono">
           {new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 기준
         </span>
       </div>
 
       {/* Sub-tabs for switching between "실시간 인기" and "급상승 기사" */}
-      <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl">
+      <div className="flex bg-[#121422] p-1.5 rounded-2xl border border-zinc-800/35">
         <button
           type="button"
           onClick={() => {
             if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
             setActiveHotClickTab("popular");
           }}
-          className={`flex-1 text-[11px] font-black py-2 rounded-lg transition-all cursor-pointer ${
+          className={`flex-1 text-[11px] font-black py-2.5 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 ${
             activeHotClickTab === "popular"
-              ? "bg-white dark:bg-zinc-850 text-red-600 dark:text-red-400 shadow-sm"
-              : "text-zinc-500 dark:text-zinc-450 hover:text-zinc-800 dark:hover:text-zinc-200"
+              ? "bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-950/50"
+              : "text-zinc-450 hover:text-zinc-200"
           }`}
         >
-          🔥 실시간 인기
+          <span>🔥 실시간 인기</span>
         </button>
         <button
           type="button"
@@ -12502,13 +12853,13 @@ const RealtimeHotClicksWidget = ({
             if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
             setActiveHotClickTab("trending");
           }}
-          className={`flex-1 text-[11px] font-black py-2 rounded-lg transition-all cursor-pointer ${
+          className={`flex-1 text-[11px] font-black py-2.5 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 ${
             activeHotClickTab === "trending"
-              ? "bg-white dark:bg-zinc-850 text-amber-600 dark:text-amber-400 shadow-sm"
-              : "text-zinc-500 dark:text-zinc-450 hover:text-zinc-800 dark:hover:text-zinc-200"
+              ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md shadow-orange-950/50"
+              : "text-zinc-450 hover:text-zinc-200"
           }`}
         >
-          ⚡ 급상승 기사
+          <span>⚡ 급상승 기사</span>
         </button>
       </div>
 
@@ -12530,7 +12881,7 @@ const RealtimeHotClicksWidget = ({
 
           if (items.length === 0) {
             return (
-              <p className="text-xs text-zinc-400 text-center py-4">인기 기사가 아직 존재하지 않습니다.</p>
+              <p className="text-xs text-zinc-500 text-center py-6 font-medium">인기 기사가 아직 존재하지 않습니다.</p>
             );
           }
 
@@ -12541,7 +12892,7 @@ const RealtimeHotClicksWidget = ({
             <>
               {/* Premium #1 Hero Item card with visual image */}
               <div
-                className="group relative overflow-hidden rounded-2xl bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-150 dark:border-zinc-900/40 p-3 flex flex-col gap-3 cursor-pointer hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
+                className="group relative overflow-hidden rounded-[1.5rem] bg-[#131522] border border-zinc-800 hover:border-zinc-700/80 p-3.5 flex flex-col gap-3.5 cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 transition-all duration-300"
                 onClick={() => {
                   if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
                   setSelectedNews(topItem);
@@ -12553,10 +12904,10 @@ const RealtimeHotClicksWidget = ({
                   }, 100);
                 }}
               >
-                <div className="aspect-[16/9] w-full rounded-xl overflow-hidden relative border border-zinc-200/50 dark:border-zinc-800/40 shadow-xs">
+                <div className="aspect-[16/10] w-full rounded-xl overflow-hidden relative border border-zinc-800/50 shadow-inner">
                   <img
                     src={topItem.thumbnail}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-104 animate-in fade-in duration-300"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src =
@@ -12565,26 +12916,27 @@ const RealtimeHotClicksWidget = ({
                     alt="1st Hot Click"
                     referrerPolicy="no-referrer"
                   />
-                  <div className="absolute top-2 left-2 z-10">
-                    <span className="bg-red-600 text-white text-[10px] font-black w-6 h-6 rounded-lg flex items-center justify-center shadow-md border border-red-500/30 font-sans italic">
+                  <div className="absolute top-2.5 left-2.5 z-10">
+                    <span className="bg-gradient-to-br from-red-500 to-rose-600 text-white text-[11px] font-black w-6.5 h-6.5 rounded-lg flex items-center justify-center shadow-lg border border-red-400/20 font-sans italic">
                       1
                     </span>
                   </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0c0d14]/90 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
                 </div>
-                <div className="space-y-1">
-                  <h5 className="text-[12.5px] font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                <div className="space-y-1.5">
+                  <h5 className="text-[13px] font-extrabold text-zinc-100 line-clamp-2 leading-snug group-hover:text-red-400 transition-colors duration-200">
                     {topItem.title}
                   </h5>
                   <div className="flex items-center justify-between pt-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-black text-red-600 bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                      <span className="text-[9px] font-black text-rose-400 bg-rose-950/50 border border-rose-900/30 px-1.5 py-0.5 rounded">
                         {sanitizeDisplayCategory(topItem.category, topItem.title) || "인기"}
                       </span>
-                      <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
+                      <span className="text-[10px] font-bold text-zinc-400">
                         {topItem.author || "시민"} 기자
                       </span>
                     </div>
-                    <span className="text-[10px] font-black text-rose-500 flex items-center gap-0.5">
+                    <span className="text-[10px] font-black text-rose-400 flex items-center gap-0.5">
                       🔥 {topItem.likes || 0}
                     </span>
                   </div>
@@ -12592,20 +12944,20 @@ const RealtimeHotClicksWidget = ({
               </div>
 
               {/* Rank 2-5 Sleek Text rows with elegant typography & hover transitions */}
-              <div className="space-y-1 pt-1">
+              <div className="space-y-1.5 pt-1">
                 {remainingItems.map((item: any, idx: number) => {
                   const rank = idx + 2;
                   const textColors = [
-                    "text-orange-500 dark:text-orange-400", // 2
-                    "text-amber-500 dark:text-amber-400",  // 3
-                    "text-zinc-400 dark:text-zinc-500",    // 4
-                    "text-zinc-400 dark:text-zinc-500"     // 5
+                    "text-orange-400", // 2
+                    "text-amber-400",  // 3
+                    "text-zinc-500",    // 4
+                    "text-zinc-500"     // 5
                   ];
 
                   return (
                     <div
                       key={item.id}
-                      className="group flex items-start gap-3.5 p-2 rounded-xl hover:bg-zinc-100/50 dark:hover:bg-zinc-900/30 transition-all duration-200 cursor-pointer"
+                      className="group flex items-start gap-3.5 p-3 rounded-2xl hover:bg-[#131522]/80 transition-all duration-200 cursor-pointer"
                       onClick={() => {
                         if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
                         setSelectedNews(item);
@@ -12617,24 +12969,24 @@ const RealtimeHotClicksWidget = ({
                         }, 100);
                       }}
                     >
-                      <span className={`text-base font-black italic select-none w-4 shrink-0 pt-0.5 font-sans leading-none text-center ${textColors[idx] || "text-zinc-400"}`}>
+                      <span className={`text-base font-black italic select-none w-4 shrink-0 pt-0.5 font-sans leading-none text-center ${textColors[idx] || "text-zinc-500"}`}>
                         {rank}
                       </span>
                       <div className="flex-1 min-w-0 space-y-1">
-                        <h5 className="text-[12px] font-bold text-zinc-800 dark:text-zinc-200 leading-snug group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors line-clamp-2">
+                        <h5 className="text-[12px] font-bold text-zinc-200 leading-snug group-hover:text-red-400 transition-colors line-clamp-2">
                           {item.title}
                         </h5>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[8.5px] font-bold text-zinc-400 dark:text-zinc-505 uppercase">
+                            <span className="text-[8.5px] font-black text-zinc-500 uppercase tracking-wider">
                               {sanitizeDisplayCategory(item.category, item.title) || "기사"}
                             </span>
-                            <span className="w-0.5 h-0.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-                            <span className="text-[9.5px] font-bold text-zinc-450 dark:text-zinc-505">
+                            <span className="w-0.5 h-0.5 rounded-full bg-zinc-800" />
+                            <span className="text-[9.5px] font-bold text-zinc-400">
                               {item.author || "시민"} 기자
                             </span>
                           </div>
-                          <span className="text-[9.5px] font-bold text-rose-500/90 flex items-center gap-0.5">
+                          <span className="text-[9.5px] font-black text-rose-400/90 flex items-center gap-0.5">
                             👍 {item.likes || 0}
                           </span>
                         </div>
@@ -12898,7 +13250,7 @@ const IsolPost = ({
     }
   }, [initialCategory, clearInitialCategory]);
 
-  const isAdmin = user && (user.email === "f8001161@gmail.com" || user.email === "shjvt@nate.com" || user.email === "shjvt470@nate.com");
+  const isAdmin = !!(user && checkIsAdmin(user.email));
 
   const filteredNews = citizenNews.filter((item) => {
     if (!item) return false;
@@ -13784,74 +14136,15 @@ const IsolPost = ({
                             </div>
                           );
                         })}
-                      </div>
-                    </>
-                  );
-                })()}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
-              
-              {/* 2. Secondary grid of regular news (the remaining articles) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 pt-4">
-                {(activeCategory === "전체기사"
-                  ? displayFilteredNews.filter(n => n.id !== featured?.id).slice(0, 15)
-                  : displayFilteredNews.slice(1, 16)
-                ).map((item) => {
-                  if (!item) return null;
-                  return (
-                    <div
-                      key={item.id}
-                      className="flex flex-col gap-4 group cursor-pointer border-b border-zinc-100 dark:border-zinc-900/60 pb-6 items-stretch text-left"
-                      onClick={() => setSelectedNews(item)}
-                    >
-                      <div className="aspect-video w-full overflow-hidden rounded-2xl bg-zinc-950 border border-zinc-900 relative flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-300">
-                        <img
-                          src={item.thumbnail || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400"}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400";
-                          }}
-                          alt="thumb"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="absolute bottom-3 left-3">
-                          <span className="bg-zinc-900/80 backdrop-blur-md text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider font-mono">
-                            2 MIN READ
-                          </span>
-                        </div>
-                      </div>
-                      <div className="space-y-2 flex-1 min-w-0 pr-0.5">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="bg-red-50 dark:bg-red-950/20 text-red-655 dark:text-red-400 text-[8.5px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
-                            {sanitizeDisplayCategory(item.category, item.title) || "일반"}
-                          </span>
-                          {item.isFeatured && (
-                            <span className="bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 text-[8.5px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
-                              헤드라인
-                            </span>
-                          )}
-                        </div>
-                        
-                        <h4 className="text-base font-extrabold text-zinc-900 dark:text-white group-hover:text-red-750 transition-colors leading-snug line-clamp-2">
-                          {item.title || "제목 없음"}
-                        </h4>
-                        
-                        <p className="text-xs text-zinc-450 dark:text-zinc-500 line-clamp-2 leading-relaxed">
-                          {item.content || "상세 뉴스를 누르시면 지능형 AI 독립 언론 이솔나라의 팩트체크 전문을 열람할 수 있습니다."}
-                        </p>
-
-                        <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider pt-2 border-t border-zinc-100/50 dark:border-zinc-900/40">
-                          {item.date || ""} | {item.author || "시민기자"} 기자
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            ) : activeCategory === "후원계좌/복지부통장" ? (
-              <div className="space-y-24 py-10">
+          ) : activeCategory === "후원계좌/복지부통장" ? (
+              <div className="space-y-24 py-10 text-left">
                 {/* Branding Header */}
                 <div className="text-center space-y-8 max-w-4xl mx-auto">
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 text-red-600 text-xs font-black uppercase tracking-[0.25em]">
@@ -13863,7 +14156,7 @@ const IsolPost = ({
                       여러분의 후원이 만듭니다
                     </span>
                   </h2>
-                  <p className="text-zinc-500 dark:text-zinc-400 text-xl font-medium leading-relaxed max-w-2xl mx-auto">
+                  <p className="text-zinc-500 dark:text-zinc-400 text-xl font-medium leading-relaxed max-w-2xl mx-auto text-center">
                     이솔나라는 국내 최초의 비건 AI 창작 기반 독립 언론사로서,
                     기술의 윤리와 생명의 가치를 보도합니다. 거대 권력으로부터
                     자유로운 진실된 보도를 위해 시민 여러분의 힘이 필요합니다.
@@ -13886,7 +14179,7 @@ const IsolPost = ({
                     {
                       icon: ShieldCheck,
                       title: "독립 저널리즘",
-                      desc: "자본 and 광고로부터 독립하여 중립을 지킬 수 있는 지속 가능한 뉴스룸 환경 구축",
+                      desc: "자본과 광고로부터 독립하여 중립을 지킬 수 있는 지속 가능한 뉴스룸 환경 구축",
                     },
                   ].map((item, idx) => (
                     <div
@@ -13937,7 +14230,7 @@ const IsolPost = ({
                           <CheckCircle2 size={24} className="text-red-500" />
                           {p.title}
                         </h5>
-                        <p className="text-zinc-450 text-sm leading-relaxed font-semibold">
+                        <p className="text-zinc-400 text-sm leading-relaxed font-semibold">
                           {p.desc}
                         </p>
                       </div>
@@ -13950,7 +14243,7 @@ const IsolPost = ({
                   {/* Coverage Support */}
                   <div className="relative group overflow-hidden rounded-[3rem] bg-gradient-to-br from-red-600 via-red-500 to-orange-400 p-1 shadow-2xl shadow-red-500/20">
                     <div className="h-full bg-white rounded-[2.9rem] p-12 flex flex-col justify-between">
-                      <div className="space-y-8">
+                      <div className="space-y-8 text-left">
                         <div className="flex items-center justify-between">
                           <div className="w-20 h-20 bg-red-600 text-white rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-red-500/40">
                             <Heart className="fill-white" size={40} />
@@ -13959,8 +14252,8 @@ const IsolPost = ({
                             <span className="text-[10px] font-black text-red-600 bg-red-50 px-3 py-1.5 rounded-full uppercase tracking-widest block mb-1">
                               Impact Project
                             </span>
-                            <p className="text-zinc-450 tracking-tight select-none font-bold">
-                              Updated: {new Date().toLocaleDateString()}
+                            <p className="text-zinc-400 text-[10px] font-bold">
+                              Press Coverage Fund
                             </p>
                           </div>
                         </div>
@@ -14719,195 +15012,15 @@ const IsolPost = ({
             )}
 
             {/* 🔥 실시간 핫클릭 (Real-time Hot Clicks) */}
-            <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/85 rounded-3xl p-6 space-y-5 shadow-sm" id="realtime-hot-clicks-widget">
-              {/* Header section with live icon and metadata */}
-              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse flex items-center justify-center shrink-0">
-                    <span className="w-1 h-1 rounded-full bg-white animate-ping" />
-                  </div>
-                  <h4 className="text-sm font-black text-zinc-900 dark:text-white uppercase tracking-tight font-sans flex items-center gap-1.5">
-                    실시간 핫클릭
-                    <span className="text-[10px] font-extrabold text-red-600 bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded-md uppercase tracking-widest animate-pulse">
-                      LIVE
-                    </span>
-                  </h4>
-                </div>
-                <span className="text-[9px] font-black text-zinc-450 dark:text-zinc-505 font-mono">
-                  {new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 기준
-                </span>
-              </div>
-
-              {/* Sub-tabs for switching between "실시간 인기" and "급상승 기사" */}
-              <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
-                    setActiveHotClickTab("popular");
-                  }}
-                  className={`flex-1 text-[11px] font-black py-2 rounded-lg transition-all cursor-pointer ${
-                    activeHotClickTab === "popular"
-                      ? "bg-white dark:bg-zinc-850 text-red-600 dark:text-red-400 shadow-sm"
-                      : "text-zinc-500 dark:text-zinc-450 hover:text-zinc-800 dark:hover:text-zinc-200"
-                  }`}
-                >
-                  🔥 실시간 인기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
-                    setActiveHotClickTab("trending");
-                  }}
-                  className={`flex-1 text-[11px] font-black py-2 rounded-lg transition-all cursor-pointer ${
-                    activeHotClickTab === "trending"
-                      ? "bg-white dark:bg-zinc-850 text-amber-600 dark:text-amber-400 shadow-sm"
-                      : "text-zinc-500 dark:text-zinc-450 hover:text-zinc-800 dark:hover:text-zinc-200"
-                  }`}
-                >
-                  ⚡ 급상승 기사
-                </button>
-              </div>
-
-              {/* Hot Clicks Feed Content */}
-              <div className="space-y-4">
-                {(() => {
-                  const items = (citizenNews || [])
-                    .filter((art: any) => art.isApproved !== false && art.status !== "pending")
-                    .sort((a: any, b: any) => {
-                      if (activeHotClickTab === "popular") {
-                        return (b.likes || 0) - (a.likes || 0);
-                      } else {
-                        // "trending" uses composite of id length/likes to look fresh and different
-                        const scoreA = (a.likes || 0) * 1.8 + (a.title ? a.title.length * 0.1 : 0);
-                        const scoreB = (b.likes || 0) * 1.8 + (b.title ? b.title.length * 0.1 : 0);
-                        return scoreB - scoreA;
-                      }
-                    })
-                    .slice(0, 5);
-
-                  if (items.length === 0) {
-                    return (
-                      <p className="text-xs text-zinc-400 text-center py-4">인기 기사가 아직 존재하지 않습니다.</p>
-                    );
-                  }
-
-                  // 1st item rendered as premium card with thumbnail
-                  const topItem = items[0];
-                  const remainingItems = items.slice(1);
-
-                  return (
-                    <>
-                      {/* Premium #1 Hero Item card with visual image */}
-                      <div
-                        className="group relative overflow-hidden rounded-2xl bg-zinc-100/50 dark:bg-zinc-900/30 border border-zinc-150 dark:border-zinc-900/40 p-3 flex flex-col gap-3 cursor-pointer hover:-translate-y-0.5 hover:shadow-md transition-all duration-300"
-                        onClick={() => {
-                          if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
-                          setSelectedNews(topItem);
-                          setTimeout(() => {
-                            const readerElem = document.getElementById("inline-news-reader-container");
-                            if (readerElem) {
-                              readerElem.scrollIntoView({ behavior: "smooth" });
-                            }
-                          }, 100);
-                        }}
-                      >
-                        <div className="aspect-[16/9] w-full rounded-xl overflow-hidden relative border border-zinc-200/50 dark:border-zinc-800/40 shadow-xs">
-                          <img
-                            src={topItem.thumbnail}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-104 animate-in fade-in duration-300"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src =
-                                "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=400";
-                            }}
-                            alt="1st Hot Click"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="absolute top-2 left-2 z-10">
-                            <span className="bg-red-600 text-white text-[10px] font-black w-6 h-6 rounded-lg flex items-center justify-center shadow-md border border-red-500/30 font-sans italic">
-                              1
-                            </span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <h5 className="text-[12.5px] font-extrabold text-zinc-900 dark:text-zinc-100 line-clamp-2 leading-snug group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-                            {topItem.title}
-                          </h5>
-                          <div className="flex items-center justify-between pt-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[9px] font-black text-red-600 bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                                {sanitizeDisplayCategory(topItem.category, topItem.title) || "인기"}
-                              </span>
-                              <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
-                                {topItem.author || "시민"} 기자
-                              </span>
-                            </div>
-                            <span className="text-[10px] font-black text-rose-500 flex items-center gap-0.5">
-                              🔥 {topItem.likes || 0}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Rank 2-5 Sleek Text rows with elegant typography & hover transitions */}
-                      <div className="space-y-1 pt-1">
-                        {remainingItems.map((item: any, idx: number) => {
-                          const rank = idx + 2;
-                          const textColors = [
-                            "text-orange-500 dark:text-orange-400", // 2
-                            "text-amber-500 dark:text-amber-400",  // 3
-                            "text-zinc-400 dark:text-zinc-500",    // 4
-                            "text-zinc-400 dark:text-zinc-500"     // 5
-                          ];
-
-                          return (
-                            <div
-                              key={item.id}
-                              className="group flex items-start gap-3.5 p-2 rounded-xl hover:bg-zinc-100/50 dark:hover:bg-zinc-900/30 transition-all duration-200 cursor-pointer"
-                              onClick={() => {
-                                if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
-                                setSelectedNews(item);
-                                setTimeout(() => {
-                                  const readerElem = document.getElementById("inline-news-reader-container");
-                                  if (readerElem) {
-                                    readerElem.scrollIntoView({ behavior: "smooth" });
-                                  }
-                                }, 100);
-                              }}
-                            >
-                              <span className={`text-base font-black italic select-none w-4 shrink-0 pt-0.5 font-sans leading-none text-center ${textColors[idx] || "text-zinc-400"}`}>
-                                {rank}
-                              </span>
-                              <div className="flex-1 min-w-0 space-y-1">
-                                <h5 className="text-[12px] font-bold text-zinc-800 dark:text-zinc-200 leading-snug group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors line-clamp-2">
-                                  {item.title}
-                                </h5>
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[8.5px] font-bold text-zinc-400 dark:text-zinc-500 uppercase">
-                                      {sanitizeDisplayCategory(item.category, item.title) || "기사"}
-                                    </span>
-                                    <span className="w-0.5 h-0.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-                                    <span className="text-[9.5px] font-bold text-zinc-450 dark:text-zinc-500">
-                                      {item.author || "시민"} 기자
-                                    </span>
-                                  </div>
-                                  <span className="text-[9.5px] font-bold text-rose-500/90 flex items-center gap-0.5">
-                                    👍 {item.likes || 0}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
+            <RealtimeHotClicksWidget
+              citizenNews={citizenNews}
+              activeHotClickTab={activeHotClickTab}
+              setActiveHotClickTab={setActiveHotClickTab}
+              setSelectedNews={setSelectedNews}
+              playHapticClick={playHapticClick}
+              sanitizeDisplayCategory={sanitizeDisplayCategory}
+              className="w-full"
+            />
           </aside>
         )}
         </div>
@@ -17518,7 +17631,7 @@ const SoulCenter = ({
     try {
       const newRef = doc(db, "reporters", user.uid);
       const isProfessionalMode = regType === "professional";
-      const isAdminUser = user.email === "f8001161@gmail.com" || user.email === "shjvt@nate.com" || user.email === "shjvt470@nate.com";
+      const isAdminUser = checkIsAdmin(user.email);
 
       // Calculate Trust Integrity Score
       let score = 40; // baseline
@@ -17627,8 +17740,7 @@ const SoulCenter = ({
     }
 
     try {
-      const isAdmin =
-        activeUser.email === "f8001161@gmail.com" || activeUser.email === "shjvt@nate.com" || activeUser.email === "shjvt470@nate.com";
+      const isAdmin = checkIsAdmin(activeUser.email);
       const artRef = editingArticle
         ? doc(db, "citizen_news", editingArticle.id)
         : doc(collection(db, "citizen_news"));
@@ -20584,7 +20696,7 @@ const AuthModal = ({
 
     // Support flexible inputs
     if (
-      (trimmedEmail === "f8001161@gmail.com" || trimmedEmail === "shjvt@nate.com" || trimmedEmail === "shjvt470@nate.com" || trimmedEmail === "admin@isolnara.com" || trimmedEmail === "admin") &&
+      (checkIsAdmin(trimmedEmail) || trimmedEmail === "admin") &&
       (trimmedPassword === "1234" || trimmedPassword === "desk2026")
     ) {
       const targetEmail = trimmedEmail.includes("@") ? trimmedEmail : "shjvt470@nate.com";
@@ -22872,6 +22984,20 @@ function App() {
     | "hyeonwon-cinema"
   >("isol-post");
 
+  const [windowScrollProgress, setWindowScrollProgress] = React.useState(0);
+  React.useEffect(() => {
+    const handleWindowScroll = () => {
+      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalScroll > 0) {
+        setWindowScrollProgress((window.scrollY / totalScroll) * 100);
+      } else {
+        setWindowScrollProgress(0);
+      }
+    };
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleWindowScroll);
+  }, []);
+
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [currentPage]);
@@ -23811,8 +23937,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
         setIsAdminView(false);
       } else {
         // Auto-register admin as reporter
-        const adminEmails = ["f8001161@gmail.com", "shjvt@nate.com", "shjvt470@nate.com"];
-        if (adminEmails.includes(u.email || "")) {
+        if (checkIsAdmin(u.email)) {
           try {
             const reporterDoc = await getDoc(doc(db, "reporters", u.uid));
             if (!reporterDoc.exists()) {
@@ -23842,8 +23967,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
   // Webtoons Sync with Auto-Upgrade
   const isSeeding = useRef(false);
   useEffect(() => {
-    const isAdminUser =
-      user?.email === "f8001161@gmail.com" || user?.email === "shjvt@nate.com" || user?.email === "shjvt470@nate.com";
+    const isAdminUser = !!(user && checkIsAdmin(user.email));
     const q = query(collection(db, "webtoons"));
     const unsubscribe = onSnapshot(
       q,
@@ -23887,8 +24011,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
   // News Sync
   const isSeedingNews = useRef(false);
   useEffect(() => {
-    const isAdminUser =
-      user?.email === "f8001161@gmail.com" || user?.email === "shjvt@nate.com" || user?.email === "shjvt470@nate.com";
+    const isAdminUser = !!(user && checkIsAdmin(user.email));
     const q = query(collection(db, "news_archives"));
     const unsubscribe = onSnapshot(
       q,
@@ -23925,8 +24048,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
   // CitizenNews Sync
   const isSeedingCitizenNews = useRef(false);
   useEffect(() => {
-    const isAdminUser =
-      user?.email === "f8001161@gmail.com" || user?.email === "shjvt@nate.com" || user?.email === "shjvt470@nate.com";
+    const isAdminUser = !!(user && checkIsAdmin(user.email));
     const q = query(
       collection(db, "citizen_news"),
       orderBy("createdAt", "desc"),
@@ -23991,8 +24113,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
   // Reporters Sync
   const isSeedingReporters = useRef(false);
   useEffect(() => {
-    const isAdminUser =
-      user?.email === "f8001161@gmail.com" || user?.email === "shjvt@nate.com" || user?.email === "shjvt470@nate.com";
+    const isAdminUser = !!(user && checkIsAdmin(user.email));
     const q = query(collection(db, "reporters"));
     const unsubscribe = onSnapshot(
       q,
@@ -24323,6 +24444,17 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
         siteSettings={siteSettings}
         grievances={grievances}
         onUpdateGrievanceStatus={handleUpdateGrievanceStatus}
+        ragDocuments={ragDocuments}
+        setRagDocuments={setRagDocuments}
+        ragChunkSize={ragChunkSize}
+        setRagChunkSize={setRagChunkSize}
+        ragChunkOverlap={ragChunkOverlap}
+        setRagChunkOverlap={setRagChunkOverlap}
+        ragSimilarityThreshold={ragSimilarityThreshold}
+        setRagSimilarityThreshold={setRagSimilarityThreshold}
+        ragTopK={ragTopK}
+        setRagTopK={setRagTopK}
+        isLoading={isLoading}
       />
     );
   }
@@ -25563,8 +25695,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           toast.success(`${mockUser.displayName || mockUser.email} 편집위원님, 기자실 자격이 인증되었습니다!`);
 
           // Auto-register admin as reporter
-          const adminEmails = ["f8001161@gmail.com", "shjvt@nate.com", "shjvt470@nate.com"];
-          if (adminEmails.includes(mockUser.email || "")) {
+          if (checkIsAdmin(mockUser.email)) {
             try {
               const rDoc = await getDoc(doc(db, "reporters", mockUser.uid));
               if (!rDoc.exists()) {
@@ -25939,14 +26070,6 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
               setIsAdminView(false);
               setIsOmbudsmanModalOpen(false);
               setCurrentPage("soul-center");
-            } 
-          },
-          { id: "aegis-ai-lab", label: "AI 랩", icon: Brain, action: () => {
-              setSelectedNews(null);
-              setSelectedWebtoon(null);
-              setIsAdminView(false);
-              setIsOmbudsmanModalOpen(false);
-              setCurrentPage("aegis-ai-lab");
             } 
           },
           { id: "ombudsman", label: "민원/권익", icon: Scale, action: () => {

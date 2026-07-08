@@ -119,6 +119,19 @@ async function testConnection() {
 }
 testConnection();
 
+export const ADMIN_EMAILS = [
+  "f8001161@gmail.com",
+  "shjvt@nate.com",
+  "shjvt470@nate.com",
+  "admin@isolnara.com"
+];
+
+export function checkIsAdmin(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const trimmed = email.trim().toLowerCase();
+  return ADMIN_EMAILS.some(adminEmail => adminEmail.toLowerCase() === trimmed);
+}
+
 export {
   collection,
   doc,
