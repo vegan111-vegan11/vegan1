@@ -23,6 +23,24 @@
   --color-red-655: #C51B24;
   --color-indigo-650: #4F46E5;
   --color-purple-650: #7C3AED;
+
+  --color-zinc-55: #FAFAFB;
+  --color-zinc-150: #EBEBEF;
+  --color-zinc-155: #E2E2E9;
+  --color-zinc-205: #DCDCE3;
+  --color-zinc-250: #D2D2D9;
+  --color-zinc-405: #8E8E9F;
+  --color-zinc-650: #4B4B55;
+  --color-zinc-750: #2C2C35;
+  --color-zinc-850: #1E1E24;
+  --color-zinc-905: #121216;
+
+  --color-emerald-450: #10B981;
+  --color-emerald-850: #064E3B;
+  
+  --color-amber-450: #D97706;
+  --color-blue-850: #1E3A8A;
+  --color-indigo-550: #4F46E5;
 }
 
 @layer base {
@@ -411,3 +429,132 @@
   width: max-content;
   animation: ticker 40s linear infinite;
 }
+
+/* ==========================================================================
+   ✨ 10 DESIGN IMPROVEMENTS: PREMIUM TRENDS & MOBILE OPTIMIZATIONS
+   ========================================================================== */
+
+/* 1. Global Smoothing & Luxury Feel */
+html, body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* 2. Premium Volcanic/Deep Charcoal Dark Mode */
+.dark body, .dark .bg-bg {
+  background-color: #0c0d10 !important;
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(230, 30, 43, 0.03) 0, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(124, 58, 237, 0.03) 0, transparent 40%) !important;
+}
+
+/* 3. Luxury Bento Card Overrides */
+.premium-card {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(228, 228, 231, 0.6);
+  position: relative;
+  overflow: hidden;
+}
+.dark .premium-card {
+  border: 1px solid rgba(63, 63, 70, 0.35);
+  background: rgba(18, 18, 22, 0.7);
+  backdrop-filter: blur(12px);
+}
+.premium-card-hover:hover {
+  transform: translateY(-4px) scale(1.008);
+  box-shadow: 
+    0 12px 30px -10px rgba(0, 0, 0, 0.08),
+    0 0 1px 1px rgba(230, 30, 43, 0.1);
+}
+.dark .premium-card-hover:hover {
+  box-shadow: 
+    0 20px 40px -15px rgba(0, 0, 0, 0.5),
+    0 0 1px 1px rgba(230, 30, 43, 0.15);
+}
+
+/* 4. Touch-optimized Pill Tabs Scroll Track & Fades */
+.pill-scroll-track {
+  position: relative;
+}
+.pill-scroll-track::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 24px;
+  background: linear-gradient(to left, #ffffff, transparent);
+  pointer-events: none;
+  z-index: 10;
+}
+.dark .pill-scroll-track::after {
+  background: linear-gradient(to left, #0c0d10, transparent);
+}
+
+/* 5. Tactile Button Click Spring-back */
+.click-spring {
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.click-spring:active {
+  transform: scale(0.95);
+}
+
+/* 6. Precision Editorial Font-pairings */
+.editorial-headline {
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  font-weight: 900;
+}
+.editorial-body {
+  font-size: 1.05rem;
+  line-height: 1.85;
+  letter-spacing: -0.01em;
+}
+@media (max-width: 640px) {
+  .editorial-body {
+    font-size: 0.95rem;
+    line-height: 1.75;
+  }
+}
+
+/* 7. Crimson Heart Visual Feedback (Likes Bloom) */
+@keyframes heart-bloom {
+  0% { transform: scale(0.3) translateY(0); opacity: 0; }
+  25% { transform: scale(1.3) translateY(-10px); opacity: 0.95; }
+  75% { transform: scale(1) translateY(-30px); opacity: 0.9; }
+  100% { transform: scale(0.8) translateY(-50px) rotate(15deg); opacity: 0; }
+}
+.heart-particle {
+  animation: heart-bloom 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* 8. Pulsing Active Live Indicator Ring */
+.live-glow-ring {
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+  animation: live-pulse 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+@keyframes live-pulse {
+  to {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
+/* 9. Glassmorphic Dropdown & Overlay Sheets */
+.premium-glass-dropdown {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(228, 228, 231, 0.5);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+.dark .premium-glass-dropdown {
+  background: rgba(15, 16, 20, 0.9);
+  border: 1px solid rgba(63, 63, 70, 0.3);
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* 10. Superb Touch Target Padding */
+.mobile-touch-target {
+  min-height: 44px;
+}
+
