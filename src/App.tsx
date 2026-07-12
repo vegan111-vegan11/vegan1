@@ -10531,7 +10531,84 @@ const NewsDetailModal: React.FC<{
     }
   };
 
-  const coreBody =
+  const coreBody = (
+    <div className="w-full h-full flex flex-col font-sans relative overflow-hidden bg-white dark:bg-[#0c0d10] text-zinc-900 dark:text-zinc-100">
+      {/* Scroll Progress Line */}
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-zinc-100 dark:bg-zinc-900 z-50 overflow-hidden pointer-events-none">
+        <div 
+          className="h-full bg-red-500 transition-all duration-75"
+          style={{ width: `${scrollProgress}%` }}
+        />
+      </div>
+
+      {/* Scrollable Container */}
+      <div className="flex-1 overflow-y-auto px-6 py-8 md:px-12 md:py-10 space-y-6 no-scrollbar" id="news-modal-scroll-viewport">
+        <div className="flex flex-col gap-6">
+          {/* Header Close Bar */}
+          <div className="flex items-center justify-between border-b pb-4 border-zinc-100 dark:border-zinc-800">
+            <span className="text-[10px] font-black tracking-[0.2em] uppercase text-zinc-400">ISOL NEWSREADER</span>
+            <button onClick={onClose} className="p-2 -mr-2 text-zinc-400 hover:text-zinc-655 dark:hover:text-white transition-all cursor-pointer">
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Title Section */}
+          <h3 className="text-2xl md:text-3xl font-black text-zinc-900 dark:text-white tracking-tight leading-tight">
+            <span className="text-red-655 mr-2">[{sanitizeDisplayCategory(news.category, news.title)}]</span>
+            {news.title}
+          </h3>
+
+          {/* 📸 첨부 이미지 (Article Representative Image) - 기사제목 밑에 배치 */}
+          {news.thumbnail && (
+            <div className="overflow-hidden rounded-3xl border border-zinc-200/60 dark:border-white/10 shadow-xl max-w-2xl mx-auto bg-zinc-50 dark:bg-zinc-900/10">
+              <img
+                src={news.thumbnail}
+                alt={news.title}
+                className="w-full h-auto object-cover max-h-[480px]"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800";
+                }}
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          )}
+
+          {/* True Article Content Body */}
+          <div className="p-6 md:p-8 rounded-3xl bg-transparent text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-900 shadow-xs">
+            <div className="leading-relaxed whitespace-pre-wrap min-h-[120px] select-text font-sans text-sm md:text-base leading-loose tracking-wide animate-fade-in">
+              {renderFormattedContent(news.content)}
+            </div>
+          </div>
+
+          {/* Footer Close Bar */}
+          <div className="pt-6 border-t border-zinc-100 dark:border-zinc-900 flex items-center justify-end font-sans">
+            {isInline ? (
+              <button
+                type="button"
+                onClick={() => {
+                  document.getElementById("inline-news-reader-container")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="px-8 py-3 bg-zinc-900 dark:bg-zinc-800 text-white rounded-xl font-bold hover:scale-105 active:scale-95 transition-all text-sm cursor-pointer whitespace-nowrap"
+              >
+                아래 전체뉴스 목록보기
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-8 py-3 bg-zinc-900 dark:bg-zinc-800 text-white rounded-xl font-bold hover:scale-105 active:scale-95 transition-all text-sm cursor-pointer"
+              >
+                닫기
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const obsoleteCoreBody =
     <div className={cn(
       "w-full h-full flex flex-col font-sans relative selection:bg-red-500/20 selection:text-red-500 overflow-hidden",
       eyeCareBg === "sepia" ? "bg-[#f4ebd0] text-[#433422]" : eyeCareBg === "charcoal" ? "bg-[#1e252b] text-[#c9d1d9]" : eyeCareBg === "pure_black" ? "bg-black text-white" : eyeCareBg === "nord_blue" ? "bg-[#2e3440] text-[#eceff4]" : eyeCareBg === "warm_sand" ? "bg-[#faf6f0] text-[#2c2c2c]" : "bg-white dark:bg-[#0c0d10] text-zinc-900 dark:text-zinc-100"
@@ -10953,6 +11030,25 @@ const NewsDetailModal: React.FC<{
                   )}
                 </div>
               </div>
+
+              {/* 📸 첨부 이미지 (Article Representative Image) - 기사 내용보다 아래에 배치하여 가시성/가독성 증대 */}
+              {news.thumbnail && (
+                <div className="mt-8 overflow-hidden rounded-3xl border border-zinc-200/60 dark:border-white/10 shadow-xl group/thumb max-w-2xl mx-auto bg-zinc-50 dark:bg-zinc-900/10">
+                  <img
+                    src={news.thumbnail}
+                    alt={news.title}
+                    className="w-full h-auto object-cover max-h-[480px] transition-transform duration-700 group-hover/thumb:scale-[1.015]"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800";
+                    }}
+                    referrerPolicy="no-referrer"
+                  />
+                  <p className="p-3.5 text-[10.5px] text-center font-black text-zinc-500 bg-zinc-100/50 dark:bg-zinc-900/30 border-t border-zinc-150 dark:border-zinc-800 font-sans">
+                    📸 본 보도 기사 관련 첨부 이미지 (Representative Attached Asset)
+                  </p>
+                </div>
+              )}
 
               {/* BRAND-NEW PROFESSIONAL JOURNALIST SIGNATURE SEAL (우측 기명 날인 대조 전문 언론사 규격) */}
               <div className="mt-8 p-6 rounded-3xl border border-zinc-150 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-col sm:flex-row items-center justify-between gap-6 text-left font-sans">
@@ -11993,6 +12089,14 @@ const Navbar = ({
     }
   };
 
+  const getCleanLabel = (label: string) => {
+    const parts = label.split(" ");
+    if (parts.length > 1) {
+      return parts.slice(1).join(" ");
+    }
+    return label;
+  };
+
   const topNavItems = [
     { id: "이솔나라스타", label: "🌟 이솔나라스타" },
     { id: "이솔나라포토", label: "📸 이솔나라포토" },
@@ -12169,12 +12273,15 @@ const Navbar = ({
 
       {/* 
         Mobile Secondary Channel Bar (lg:hidden):
-        Small grey text links right above the category pills for sub-channels
+        Sleek micro-3D capsules optimized for comfortable thumb-tapping
       */}
       {!isWorkshopActive && (
-        <div className="lg:hidden relative pill-scroll-track bg-zinc-100/60 dark:bg-zinc-900/60 border-b border-zinc-200/50 dark:border-zinc-800/30">
-          <div className="py-1.5 overflow-x-auto scrollbar-none scroll-smooth flex items-center gap-4 whitespace-nowrap px-4 h-8 select-none touch-pan-x" style={{ WebkitOverflowScrolling: "touch" }}>
-            <span className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block shrink-0 italic mr-0.5">채널데스크:</span>
+        <div className="lg:hidden relative bg-zinc-50 dark:bg-zinc-950/40 border-b border-zinc-200/40 dark:border-zinc-850/60 shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
+          <div className="py-2.5 overflow-x-auto no-scrollbar flex items-center gap-2 whitespace-nowrap px-4 select-none touch-pan-x" style={{ WebkitOverflowScrolling: "touch" }}>
+            <span className="text-[9px] font-black text-zinc-450 dark:text-zinc-500 uppercase tracking-widest block shrink-0 mr-1 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              데스크:
+            </span>
             {topNavItems.map((item) => {
               const isActive = currentPage === item.id || (item.id === "이솔공방" && currentPage.startsWith("이솔공방"));
               return (
@@ -12190,13 +12297,14 @@ const Navbar = ({
                     }
                   }}
                   className={cn(
-                    "text-[9.5px] font-black tracking-wider transition-all duration-200 shrink-0 cursor-pointer active:scale-95 py-0.5 px-1 rounded click-spring",
+                    "text-[10px] font-bold tracking-tight transition-all duration-200 shrink-0 cursor-pointer active:scale-95 py-1 px-3 rounded-full border flex items-center gap-1.5 shadow-xs",
                     isActive
-                      ? "text-red-655 dark:text-red-400 font-black underline underline-offset-2"
-                      : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                      ? "bg-gradient-to-r from-red-500 to-red-655 text-white border-red-500/70 font-black shadow-[0_2px_6px_rgba(239,68,68,0.2)]"
+                      : "bg-white dark:bg-zinc-900 text-zinc-650 dark:text-zinc-350 border-zinc-200/50 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   )}
                 >
-                  {item.label}
+                  {renderIcon(item.id, "w-2.5 h-2.5 shrink-0")}
+                  <span>{getCleanLabel(item.label)}</span>
                 </button>
               );
             })}
@@ -12243,16 +12351,13 @@ const Navbar = ({
         <div className="flex items-center gap-5 shrink-0">
           <div
             onClick={() => onPageChange("isol-post", "전체기사")}
-            className="bg-gradient-to-b from-red-500 via-red-600 to-red-700 hover:from-red-600 hover:to-red-800 text-white px-5 py-2.5 rounded-2xl cursor-pointer select-none shadow-[0_4px_12px_rgba(239,68,68,0.3),inset_0_1px_1px_rgba(255,255,255,0.4)] hover:shadow-[0_6px_16px_rgba(239,68,68,0.4),inset_0_1.5px_2px_rgba(255,255,255,0.5)] active:shadow-[0_2px_4px_rgba(239,68,68,0.2),inset_0_1px_0px_rgba(255,255,255,0.2)] active:scale-95 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 shrink-0 border border-red-500/50 relative overflow-hidden group"
+            className="luxury-logo-3d px-5 py-2.5 cursor-pointer select-none group"
           >
-            {/* Glossy 3D reflection overlay */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-            
             <div className="flex flex-col items-center relative z-10">
               <h1 className="text-white text-md xl:text-[17px] font-black italic tracking-tight leading-none uppercase">
                 IsolNaraNews
               </h1>
-              <p className="text-zinc-200 text-[8.5px] font-black uppercase mt-1 tracking-wider">
+              <p className="text-zinc-100 text-[8.5px] font-black uppercase mt-1 tracking-wider">
                 모든 시민은 기자다
               </p>
             </div>
@@ -12284,7 +12389,7 @@ const Navbar = ({
                   )}
                 >
                   {renderIcon(item.id, "w-3 h-3 shrink-0")}
-                  <span>{item.label}</span>
+                  <span>{getCleanLabel(item.label)}</span>
                 </button>
               );
             })}
@@ -12292,7 +12397,7 @@ const Navbar = ({
         </div>
 
         {/* Right side: Search Box + Premium Actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="relative font-sans group">
             <input
               type="text"
@@ -12306,23 +12411,22 @@ const Navbar = ({
 
           <button
             onClick={onWriteClick}
-            className="flex items-center gap-1.5 px-4.5 py-1.5 bg-gradient-to-b from-red-500 to-red-655 hover:from-red-600 hover:to-red-750 text-white rounded-2xl text-xs font-black tracking-tight shadow-[0_4px_12px_rgba(239,68,68,0.25),inset_0_1px_1px_rgba(255,255,255,0.3)] hover:shadow-[0_6px_16px_rgba(239,68,68,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.4)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95 active:shadow-[0_2px_4px_rgba(239,68,68,0.15)] transition-all duration-300 cursor-pointer h-8.5 border border-red-500/40 relative overflow-hidden group"
+            className="luxury-3d-btn luxury-3d-red h-8.5 font-bold"
             title="시민 기자로서 정직한 뉴스를 제보하고 제안합니다"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-            <Edit2 size={13} className="relative z-10" />
-            <span className="relative z-10">기사제보</span>
+            <Edit2 size={13} className="relative z-10 text-white shrink-0" />
+            <span className="relative z-10 text-white font-extrabold">기사제보</span>
           </button>
           
           <button
             onClick={onAdminClick}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-b from-white to-zinc-100/90 dark:from-zinc-900 dark:to-zinc-950 border border-zinc-250 dark:border-zinc-800 rounded-full text-xs font-black tracking-tight hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 shadow-[0_4px_10px_rgba(0,0,0,0.04),inset_0_1px_1px_white] dark:shadow-[0_4px_10px_rgba(0,0,0,0.2),inset_0_1px_0.5px_rgba(255,255,255,0.05)] hover:shadow-[0_6px_15px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_6px_15px_rgba(0,0,0,0.3)] hover:border-zinc-300 dark:hover:border-zinc-700 active:scale-95 cursor-pointer h-8.5 relative font-sans"
+            className="luxury-3d-btn luxury-3d-silver h-8.5 group"
             title="관리자 뉴스 데스크 제어실로 이동합니다"
           >
-            <LayoutDashboard size={13} className="text-indigo-600 dark:text-indigo-400" />
-            <span className="text-zinc-800 dark:text-zinc-200">데스크</span>
+            <LayoutDashboard size={13} className="text-indigo-500 dark:text-indigo-400 shrink-0 transition-transform duration-350 group-hover:rotate-6" />
+            <span className="font-semibold text-zinc-700 dark:text-zinc-200">데스크</span>
             {pendingCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-650 text-white text-[8.5px] font-black w-5 h-5 rounded-full flex items-center justify-center animate-bounce shadow-[0_3px_8px_rgba(244,63,94,0.4)] border border-white dark:border-zinc-900">
+              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[8.5px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center animate-bounce shadow-[0_2px_6px_rgba(244,63,94,0.3)] border border-white dark:border-zinc-900">
                 {pendingCount}
               </span>
             )}
@@ -12330,62 +12434,61 @@ const Navbar = ({
 
           <button
             onClick={() => onPageChange("community")}
-            className={cn(
-              "flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black tracking-tight hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 active:scale-95 cursor-pointer h-8.5 border font-sans",
-              currentPage === "community"
-                ? "bg-gradient-to-b from-red-500 to-red-655 text-white border-red-500/50 shadow-[0_4px_12px_rgba(239,68,68,0.25),inset_0_1px_1px_rgba(255,255,255,0.3)] hover:from-red-550 hover:to-red-700 hover:shadow-[0_6px_16px_rgba(239,68,68,0.35)]"
-                : "bg-gradient-to-b from-emerald-50 to-emerald-100/90 dark:from-emerald-950/40 dark:to-emerald-900/20 border-emerald-200/80 dark:border-emerald-900/40 shadow-[0_4px_10px_rgba(16,185,129,0.06),inset_0_1px_1px_rgba(255,255,255,0.6)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.15)] hover:from-emerald-100 hover:to-emerald-200 dark:hover:from-emerald-900/50 dark:hover:to-emerald-850/30 hover:shadow-[0_6px_15px_rgba(16,185,129,0.15)] hover:border-emerald-300 dark:hover:border-emerald-800"
-            )}
+            className="luxury-3d-btn luxury-3d-mint h-8.5"
             title="시민들이 자율적으로 소통하고 스마트팜, 버스킹 등 소모임을 교류하는 소모임 광장으로 이동합니다"
           >
-            <Users size={13} className={currentPage === "community" ? "text-white" : "text-emerald-700 dark:text-emerald-400"} />
-            <span className={currentPage === "community" ? "text-white" : "text-emerald-900 dark:text-emerald-200"}>이솔 소모임</span>
+            <Users size={13} className="text-emerald-500 dark:text-emerald-400 shrink-0" />
+            <span className="font-semibold text-zinc-700 dark:text-zinc-200">이솔 소모임</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
           </button>
 
           <button
             onClick={onKakaoClick}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-b from-amber-50 via-amber-100 to-amber-200/90 dark:from-amber-950/35 dark:via-amber-900/25 dark:to-amber-850/15 border border-amber-200 dark:border-amber-850/40 rounded-full text-xs font-black tracking-tight hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 shadow-[0_4px_10px_rgba(245,158,11,0.06),inset_0_1px_1px_rgba(255,255,255,0.7)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.15),inset_0_1px_0.5px_rgba(255,255,255,0.05)] hover:shadow-[0_6px_15px_rgba(245,158,11,0.15)] hover:border-amber-300 dark:hover:border-amber-700/60 active:scale-95 cursor-pointer h-8.5 relative font-sans"
+            className="luxury-3d-btn luxury-3d-gold h-8.5"
             title="복잡한 메뉴 대신 카톡 챗봇에게 한마디 전하여 direct 처리합니다"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse absolute top-0.5 right-1.5 shadow-[0_0_6px_#ef4444]" />
-            <Bot size={13} className="text-amber-700 dark:text-amber-400 animate-pulse" />
-            <span className="text-amber-950 dark:text-amber-200">카톡 AI 비서</span>
+            <Bot size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
+            <span className="font-semibold text-zinc-700 dark:text-zinc-200">카톡 AI 비서</span>
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+            </span>
           </button>
 
           {onProfessionalRegClick && (
             <button
               onClick={onProfessionalRegClick}
-              className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-b from-blue-50 to-blue-100/90 dark:from-blue-950/35 dark:to-blue-900/25 border border-blue-200/70 dark:border-blue-900/40 rounded-full text-xs font-black tracking-tight hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 shadow-[0_4px_10px_rgba(59,130,246,0.06),inset_0_1px_1px_rgba(255,255,255,0.6)] dark:shadow-[0_4px_10px_rgba(0,0,0,0.15)] hover:from-blue-100 hover:to-blue-200 dark:hover:from-blue-900/50 dark:hover:to-blue-850/40 hover:shadow-[0_6px_15px_rgba(59,130,246,0.12)] hover:border-blue-300 dark:hover:border-blue-800 active:scale-95 cursor-pointer h-8.5 font-sans"
+              className="luxury-3d-btn luxury-3d-blue h-8.5"
               title="검증된 전문 필진으로 등록하는 절차를 진행합니다"
             >
-              <UserCheck size={13} className="text-blue-600 dark:text-blue-400" />
-              <span className="text-blue-900 dark:text-blue-300">전문필진 신청</span>
+              <UserCheck size={13} className="text-sky-500 dark:text-sky-400 shrink-0" />
+              <span className="font-semibold text-zinc-700 dark:text-zinc-200">전문필진 신청</span>
             </button>
           )}
 
           {user ? (
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-full h-8.5 max-w-[130px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg h-8.5 max-w-[130px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
                 <User size={13} className="text-zinc-500 shrink-0" />
-                <span className="text-xs font-black text-zinc-700 dark:text-zinc-300 font-sans truncate">
+                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 font-sans truncate">
                   {user.displayName || "기자"}
                 </span>
               </div>
               <button
                 onClick={onLogout}
-                className="px-4 py-1.5 bg-gradient-to-b from-zinc-100 to-zinc-150 hover:from-rose-50 hover:to-rose-100 hover:text-rose-600 dark:from-zinc-900 dark:to-zinc-950 dark:hover:from-rose-950/40 dark:hover:to-rose-950/20 dark:hover:text-rose-400 border border-zinc-200 dark:border-zinc-800 hover:border-rose-200 dark:hover:border-rose-900/30 text-zinc-650 dark:text-zinc-400 rounded-full text-xs font-black transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer h-8.5 flex items-center gap-1 active:scale-95 font-sans shadow-[0_4px_10px_rgba(0,0,0,0.03)] hover:shadow-[0_6px_15px_rgba(239,68,68,0.08)]"
+                className="px-4 py-1.5 bg-gradient-to-b from-zinc-100 to-zinc-150 hover:from-rose-50 hover:to-rose-100 hover:text-rose-600 dark:from-zinc-900 dark:to-zinc-950 dark:hover:from-rose-950/40 dark:hover:to-rose-950/20 dark:hover:text-rose-400 border border-zinc-200 dark:border-zinc-800 hover:border-rose-200 dark:hover:border-rose-900/30 text-zinc-650 dark:text-zinc-400 rounded-lg text-xs font-bold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer h-8.5 flex items-center gap-1 active:scale-95 font-sans shadow-[0_2px_6px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_12px_rgba(239,68,68,0.05)]"
               >
-                <LogOut size={13} />
-                <span>로그아웃</span>
+                <LogOut size={13} className="shrink-0" />
+                <span className="font-semibold">로그아웃</span>
               </button>
             </div>
           ) : (
             <button
               onClick={onAuthClick}
-              className="px-4.5 py-1.5 bg-gradient-to-b from-zinc-900 to-black hover:from-zinc-800 hover:to-zinc-950 text-white dark:from-zinc-800 dark:to-zinc-900 dark:hover:from-zinc-700 dark:hover:to-zinc-850 border border-zinc-850 dark:border-zinc-750 rounded-full text-xs font-black hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center gap-1.5 h-8.5 font-sans cursor-pointer active:scale-95 shadow-[0_4px_12px_rgba(0,0,0,0.15),inset_0_1px_0.5px_rgba(255,255,255,0.15)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.25)] hover:border-zinc-700/60"
+              className="luxury-3d-btn luxury-3d-black h-8.5"
             >
-              <User size={13} className="text-white" />
-              <span>로그인 / 가입</span>
+              <User size={13} className="text-zinc-300 shrink-0" />
+              <span className="text-white font-extrabold">로그인 / 가입</span>
             </button>
           )}
         </div>
@@ -12393,14 +12496,15 @@ const Navbar = ({
 
       {/* Row 1.5: Desktop Portal Channel Desk Sub-navigation Menu Bar (Placed above Row 2 - Category Bar with "전체뉴스") */}
       {!isWorkshopActive && (
-        <div className="hidden lg:block bg-gradient-to-r from-zinc-50/90 via-zinc-50/50 to-zinc-100/90 dark:from-zinc-900/95 dark:via-zinc-900/60 dark:to-zinc-950/95 border-b border-zinc-200 dark:border-zinc-800/80 select-none py-2 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+        <div className="hidden lg:block luxury-subnav-container py-2.5 select-none backdrop-blur-md">
           <div className="max-w-7xl mx-auto flex items-center justify-between px-4 md:px-8">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black tracking-widest text-zinc-400 dark:text-zinc-500 uppercase flex items-center gap-1.5 mr-2.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_6px_#ef4444]" />
-                🌟 포털 채널데스크
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-extrabold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase flex items-center gap-1.5 mr-3 relative">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping absolute opacity-75" />
+                <span className="w-2 h-2 rounded-full bg-red-500 relative" />
+                <span className="font-sans font-black tracking-tight text-zinc-800 dark:text-zinc-200 ml-1">포털 채널데스크</span>
               </span>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {topNavItems.map((item) => {
                   const isActive = currentPage === item.id || (item.id === "이솔공방" && currentPage.startsWith("이솔공방"));
                   return (
@@ -12416,25 +12520,28 @@ const Navbar = ({
                         }
                       }}
                       className={cn(
-                        "text-[10.5px] font-black tracking-tight transition-all duration-300 cursor-pointer flex items-center gap-1.5 py-1 px-3 rounded-full hover:scale-[1.02] active:scale-95",
+                        "luxury-subnav-btn-3d shadow-xs group",
                         isActive
-                          ? "text-red-655 dark:text-red-400 font-black bg-white dark:bg-zinc-950 shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_1px_white] dark:shadow-none border border-zinc-200/50 dark:border-zinc-850"
-                          : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50"
+                          ? "luxury-subnav-btn-3d-active"
+                          : "luxury-subnav-btn-3d-inactive"
                       )}
                     >
-                      {renderIcon(item.id, "w-3 h-3 opacity-80 shrink-0")}
-                      <span>{item.label}</span>
+                      {renderIcon(item.id, "w-3.5 h-3.5 shrink-0 transition-transform duration-300 group-hover:scale-110")}
+                      <span>{getCleanLabel(item.label)}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
             
-            <div className="flex items-center gap-3.5 text-[10px] text-zinc-400 dark:text-zinc-500 font-bold">
-              <span className="flex items-center gap-1 text-[10px] text-zinc-400 bg-white dark:bg-zinc-900 border border-zinc-200/40 dark:border-zinc-800 px-2 py-0.5 rounded-full font-mono shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
-                LIVE <span className="text-emerald-500 text-[8px] animate-pulse">●</span>
+            <div className="flex items-center gap-4 text-[10.5px] font-bold">
+              <span className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-900/30 px-2.5 py-0.5 rounded-full font-sans shadow-[inset_0_1px_2px_rgba(16,185,129,0.05)]">
+                LIVE <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
               </span>
-              <span className="tracking-tight text-zinc-400 dark:text-zinc-500">이솔미디어 허브</span>
+              <span className="tracking-tight text-zinc-500 dark:text-zinc-400 font-black">이솔미디어 허브</span>
             </div>
           </div>
         </div>
@@ -12749,35 +12856,39 @@ const Navbar = ({
                 </div>
 
                 <div className="space-y-3 w-full">
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 block">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 block select-none">
                     서브 브랜드 채널
                   </span>
                   <div className="grid grid-cols-2 gap-2 w-full">
-                    {topNavItems.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          if (item.id === "hyeonwon-cinema") {
-                            onPageChange("hyeonwon-cinema");
-                          } else if (item.id === "manual") {
-                            onManualClick();
-                          } else if (item.id === "aegis-ai-lab") {
-                            onPageChange("aegis-ai-lab");
-                          } else {
-                            onPageChange("isol-post", item.id);
-                          }
-                          setIsMobileMenuOpen(false);
-                        }}
-                        className={cn(
-                          "text-[11px] font-extrabold border text-center transition-colors rounded-lg py-2.5 px-3 flex items-center justify-center h-10",
-                          currentPage === item.id 
-                            ? "bg-red-655 border-red-200 text-white font-black shadow-sm" 
-                            : "bg-gray-50/50 border-gray-100 text-gray-700 hover:text-red-500 hover:bg-red-5/30"
-                        )}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
+                    {topNavItems.map((item) => {
+                      const isActive = currentPage === item.id || (item.id === "이솔공방" && currentPage.startsWith("이솔공방"));
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            if (item.id === "hyeonwon-cinema") {
+                              onPageChange("hyeonwon-cinema");
+                            } else if (item.id === "manual") {
+                              onManualClick();
+                            } else if (item.id === "aegis-ai-lab") {
+                              onPageChange("aegis-ai-lab");
+                            } else {
+                              onPageChange("isol-post", item.id);
+                            }
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className={cn(
+                            "text-[11px] font-bold border transition-all duration-200 rounded-xl py-2 px-3 flex items-center gap-1.5 justify-center h-10 shadow-xs",
+                            isActive 
+                              ? "bg-gradient-to-r from-red-500 to-red-655 border-red-500 text-white font-black shadow-[0_2px_6px_rgba(239,68,68,0.25)]" 
+                              : "bg-white dark:bg-zinc-900 border-zinc-200/50 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-red-500 hover:bg-zinc-50"
+                          )}
+                        >
+                          {renderIcon(item.id, "w-3.5 h-3.5 shrink-0")}
+                          <span>{getCleanLabel(item.label)}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -13511,7 +13622,13 @@ const IsolPost = ({
         }}
         onWriteClick={onWriteClick}
         breakingArticles={breakingArticles}
-        onHeadlineClick={(n: any) => setSelectedNews(n)}
+        onHeadlineClick={(n: any) => {
+          setSelectedNews(n);
+          setActiveCategory("전체기사");
+          setTimeout(() => {
+            document.getElementById("inline-news-reader-container")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 100);
+        }}
         searchQuery={newsSearchQuery}
         onSearchChange={setNewsSearchQuery}
         citizenNews={citizenNews}
@@ -16059,7 +16176,7 @@ const AdminNewsCenter = ({
                           type="text"
                           value={inlineForm.thumbnail}
                           onChange={(e) => setInlineForm({ ...inlineForm, thumbnail: e.target.value })}
-                          className="flex-1 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-2xl px-5 py-4 text-sm font-bold text-zinc-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none transition-all"
+                          className="flex-1 luxury-3d-input px-5 py-4 text-sm font-bold text-zinc-900 dark:text-white focus:outline-none"
                           placeholder="https://images.unsplash.com/..."
                         />
                         {inlineForm.thumbnail && (
@@ -16416,6 +16533,191 @@ const renderFormattedContent = (text: string) => {
   });
 };
 
+const designInnovations30 = [
+  {
+    id: 1,
+    title: "첨부 이미지 3D 원근 패럴랙스",
+    desc: "마우스나 터치 동작에 맞춰 세련된 3D 뎁스 회전을 가미하는 프리뷰 모션 기술.",
+    tag: "3D",
+    icon: "ImageIcon"
+  },
+  {
+    id: 2,
+    title: "3D 레터프레스 글씨 레진 음양각",
+    desc: "다중 광원 그림자로 글씨가 음각/양각으로 각인된 듯 기품 있는 서체 레버리지 설계.",
+    tag: "Font",
+    icon: "PenTool"
+  },
+  {
+    id: 3,
+    title: "엄지 친화형 44px 대형 터치 규격",
+    desc: "터치 반경을 넓힌 패딩 배치로 모바일 오타와 근접 버튼 중복 지연을 철저히 차단.",
+    tag: "Mobile"
+  },
+  {
+    id: 4,
+    title: "유체 타이포그래피 밀도 보정",
+    desc: "모바일 단말기 너비에 맞춰 한글 자간과 높이를 최적 비율로 자동 보정해 가독성 강화.",
+    tag: "Layout"
+  },
+  {
+    id: 5,
+    title: "3D 돌출 세그먼트 스위치 토글",
+    desc: "양각 돌출감과 내부 섀도우를 조합하여 실제 아날로그 스위치를 누르는 듯한 손맛 선사.",
+    tag: "3D"
+  },
+  {
+    id: 6,
+    title: "1px 미세 굴절 글래스모피즘 베젤",
+    desc: "극히 얇고 조밀한 광택 테두리로 물리적 유리 질감 경계를 고급스럽게 구획.",
+    tag: "3D"
+  },
+  {
+    id: 7,
+    title: "베지에 곡선 가속 트랜지션 스프링",
+    desc: "리니어 모션 대신 스프링 완충이 가미된 3차 가치 곡선 물리 효과로 부드러운 전개.",
+    tag: "Interaction"
+  },
+  {
+    id: 8,
+    title: "컨텍스트 액티브 포커스 라이팅",
+    desc: "입력 필드 터치 시 슬레이트 광채가 황금색 엠보싱 링 오버레이로 즉각 상호작용.",
+    tag: "UI/UX"
+  },
+  {
+    id: 9,
+    title: "고해상도 다크 대비 모노스페이스",
+    desc: "통계와 메타데이터 수치를 제트브레인 모노 폰트로 한층 더 강렬한 대비 속 출력.",
+    tag: "Font"
+  },
+  {
+    id: 10,
+    title: "산스-이탤릭 디스플레이 타이틀 대비",
+    desc: "모던 산스 서체와 미려한 이탤릭 헤드라인을 리드미컬하게 매칭하여 명품 지면 느낌 연출.",
+    tag: "Font"
+  },
+  {
+    id: 11,
+    title: "비동기 CLS 레이아웃 흔들림 방지",
+    desc: "사전 고정 화면비를 지정하여 미디어 파일 로딩 중 일어나는 화면 튕김(CLS) 완전 해결.",
+    tag: "Performance"
+  },
+  {
+    id: 12,
+    title: "가상 광원 앰비언트 접촉 그림자 스택",
+    desc: "현실 공간의 빛 각도를 계산한 것처럼 다층으로 점진 융합되는 디테일 섀도우 탑재.",
+    tag: "3D"
+  },
+  {
+    id: 13,
+    title: "오버헤드 라이트 스윕 하이라이터",
+    desc: "3D 이미지 마우스 호버 및 모바일 터치 시 표면에 화사한 백광 스윕이 자동 구동.",
+    tag: "3D"
+  },
+  {
+    id: 14,
+    title: "다크모드 특화 아쿠아슬레이트 심화",
+    desc: "어두운 테마에서도 입체 굴곡과 반사 하이라이트가 뭉개지지 않고 기품 있게 보존.",
+    tag: "Color"
+  },
+  {
+    id: 15,
+    title: "비전 AI OCR 실시간 레이저 시뮬레이터",
+    desc: "스마트폰 스캔 시 실시간으로 위아래 왕복하는 오렌지빛 레이저 선 오버레이 적용.",
+    tag: "Interaction"
+  },
+  {
+    id: 16,
+    title: "반응형 자동 1열 Bento 그리드 정렬",
+    desc: "모바일 너비 감지 즉시 카드들을 단단히 일렬 직렬화해 시각 피로 요인 제로화.",
+    tag: "Mobile"
+  },
+  {
+    id: 17,
+    title: "유기적 컬러 시프팅 비주얼 스코어",
+    desc: "심사 적격 충족도에 따라 오렌지에서 정론 녹색으로 연속 전환되는 점진 게이지.",
+    tag: "UI/UX"
+  },
+  {
+    id: 18,
+    title: "스마트폰 바텀 세이프 아웃셋 패딩",
+    desc: "최신 휴대폰의 물리 홈 스와이프 바 영역과 겹쳐 오작동하지 않게 안전 여백 완비.",
+    tag: "Mobile"
+  },
+  {
+    id: 19,
+    title: "터치 액티브 저마찰 스크롤바 메커니즘",
+    desc: "화면 스크롤 중일 때만 세련되게 점멸해 모바일 본문 가독 폭을 넓히는 커스텀 스크롤.",
+    tag: "Mobile"
+  },
+  {
+    id: 20,
+    title: "3D 촉감 디지털 드로잉 서명장",
+    desc: "미세 외곽 보정과 압력 시뮬레이션 브러쉬로 손가락 서명 시 한결 매끄러운 궤적 보장.",
+    tag: "3D"
+  },
+  {
+    id: 21,
+    title: "CORS 프록시 원천 회피 이미지 필터",
+    desc: "외부 이미지 주소 삽입 시 해당 서버의 접속 차단을 완화하는 안전 no-referrer 수립.",
+    tag: "Performance"
+  },
+  {
+    id: 22,
+    title: "화면 번쩍임 차단 렌더 실드 클램프",
+    desc: "주야간 테마 변경 시 야간 실내 안구에 치명적인 흰 화면 깜빡임을 무결점 차단.",
+    tag: "Performance"
+  },
+  {
+    id: 23,
+    title: "고정밀 기하학 백터 픽셀 벡터셋",
+    desc: "디바이스 해상도가 바뀌어도 정밀한 디테일을 유지하는 100% 무손실 픽셀 아이콘 정렬.",
+    tag: "UI/UX"
+  },
+  {
+    id: 24,
+    title: "모바일 초고속 스크롤 댐핑 제어",
+    desc: "화면을 빠르게 슥 넘길 때 버튼들이 제멋대로 마크되거나 번쩍이는 에러 완치.",
+    tag: "Mobile"
+  },
+  {
+    id: 25,
+    title: "고밀도 에디토리얼 프리미엄 벤토 슬롯",
+    desc: "공간 낭비 없이 꽉 짜인 밀도로 레이아웃의 완성도를 데스크톱 수준으로 유지.",
+    tag: "UI/UX"
+  },
+  {
+    id: 26,
+    title: "화소 정밀 간격 비율 그리드 얼라인",
+    desc: "컨테이너 패딩과 마진 비율이 황금 조화 비례를 이루어 시각적 안정감 극대화.",
+    tag: "Layout"
+  },
+  {
+    id: 27,
+    title: "무장애 다채널 심볼 정보 매칭 시스템",
+    desc: "단순히 적색/녹색 구별이 아닌 텍스트 기호와 배지를 병렬 출력해 정보 누락 사전 방지.",
+    tag: "UI/UX"
+  },
+  {
+    id: 28,
+    title: "한 손 엄지 기동 엄선 최적 터치존",
+    desc: "스마트폰을 한 손으로 쥐었을 때 엄지가 닿는 하단 65% 반경 내에 주요 확인 버튼 배치.",
+    tag: "Mobile"
+  },
+  {
+    id: 29,
+    title: "3D 펄스 미세 로딩 스켈레톤 마크",
+    desc: "기사가 실시간 가공 생성 중일 때 딱딱함을 없애는 파형 입체 플레이스홀더.",
+    tag: "Interaction"
+  },
+  {
+    id: 30,
+    title: "터치 인접 오동작 타겟 세이프 존 규격",
+    desc: "터치 미스가 자주 나는 인접 액션 단추 사이에 확실한 이격 거리를 두어 안전성 증대.",
+    tag: "Mobile"
+  }
+];
+
 const SoulCenter = ({
   user,
   onAuthClick,
@@ -16446,6 +16748,12 @@ const SoulCenter = ({
   }, [user]);
 
   const [isDirectWritingWithoutReg, setIsDirectWritingWithoutReg] = useState(false);
+
+  // 30대 하이엔드 디자인 및 모바일 최적화 보완 체크리스트 상태 관리
+  const [checkedInnovations, setCheckedInnovations] = useState<number[]>([
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30
+  ]);
+  const [selectedInnovationTag, setSelectedInnovationTag] = useState<string>("ALL");
 
   const reporterProfile = useMemo(() => {
     if (user) {
@@ -17090,53 +17398,55 @@ const SoulCenter = ({
                               <div className="space-y-4">
                                 {postData.thumbnail ? (
                                   <div className="space-y-4">
-                                    <div className="relative w-full aspect-[16/10] rounded-2.5xl overflow-hidden border border-zinc-200 dark:border-zinc-850 bg-zinc-100 dark:bg-zinc-950 shadow-lg animate-in fade-in zoom-in-95 duration-300 group">
-                                      <img
-                                        src={postData.thumbnail}
-                                        alt="Preview"
-                                        className="w-full h-full object-cover"
-                                        referrerPolicy="no-referrer"
-                                      />
-                                      
-                                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/75 to-transparent p-4 flex flex-col gap-2.5 text-left transform translate-y-1 group-hover:translate-y-0 transition-transform duration-300">
-                                        <div className="flex items-center gap-2">
-                                          <span className="relative flex h-2 w-2 shrink-0">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                          </span>
-                                          <span className="text-[9px] font-black tracking-widest text-emerald-400 uppercase">
-                                            미디어 자산 정상 검증 완료
-                                          </span>
-                                        </div>
+                                    <div className="luxury-3d-image-card w-full aspect-[16/10] overflow-hidden p-1 duration-300 group">
+                                      <div className="luxury-3d-image-inner w-full h-full relative">
+                                        <img
+                                          src={postData.thumbnail}
+                                          alt="Preview"
+                                          className="w-full h-full object-cover rounded-2xl"
+                                          referrerPolicy="no-referrer"
+                                        />
                                         
-                                        <div className="flex items-center justify-between gap-3">
-                                          <p className="text-[11px] font-black text-white truncate flex-1" title={postData.thumbnailName}>
-                                            📄 {postData.thumbnailName || "대표_이미지_첨부.jpg"}
-                                          </p>
+                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/75 to-transparent p-4 flex flex-col gap-2.5 text-left transform translate-y-1 group-hover:translate-y-0 transition-transform duration-300 z-20">
+                                          <div className="flex items-center gap-2">
+                                            <span className="relative flex h-2 w-2 shrink-0">
+                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                            </span>
+                                            <span className="text-[9px] font-black tracking-widest text-emerald-400 uppercase">
+                                              미디어 자산 정상 검증 완료
+                                            </span>
+                                          </div>
                                           
-                                          <div className="flex items-center gap-1.5 shrink-0">
-                                            <button
-                                              type="button"
-                                              onClick={() => handleRotateImage()}
-                                              className="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer border border-zinc-700"
-                                              title="사진 방향 회전 보정"
-                                            >
-                                              🔄 회전
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => fileInputRef.current?.click()}
-                                              className="px-2.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
-                                            >
-                                              교체
-                                            </button>
-                                            <button
-                                              type="button"
-                                              onClick={() => setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }))}
-                                              className="px-2.5 py-1.5 bg-red-650 hover:bg-red-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
-                                            >
-                                              삭제
-                                            </button>
+                                          <div className="flex items-center justify-between gap-3">
+                                            <p className="text-[11px] font-black text-white truncate flex-1" title={postData.thumbnailName}>
+                                              📄 {postData.thumbnailName || "대표_이미지_첨부.jpg"}
+                                            </p>
+                                            
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                              <button
+                                                type="button"
+                                                onClick={() => handleRotateImage()}
+                                                className="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer border border-zinc-700"
+                                                title="사진 방향 회전 보정"
+                                              >
+                                                🔄 회전
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="px-2.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
+                                              >
+                                                교체
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() => setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }))}
+                                                className="px-2.5 py-1.5 bg-red-650 hover:bg-red-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
+                                              >
+                                                삭제
+                                              </button>
+                                            </div>
                                           </div>
                                         </div>
                                       </div>
@@ -17302,41 +17612,43 @@ const SoulCenter = ({
                                 </div>
 
                                 {postData.thumbnail ? (
-                                  <div className="relative w-full aspect-[16/10] rounded-2.5xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 shadow-lg animate-in fade-in duration-300">
-                                    <img
-                                      src={postData.thumbnail}
-                                      alt="AI Preview"
-                                      className="w-full h-full object-cover"
-                                      referrerPolicy="no-referrer"
-                                    />
-                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 flex flex-col gap-2.5 text-left">
-                                      <div className="flex items-center gap-2">
-                                        <span className="relative flex h-2 w-2 shrink-0">
-                                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                          <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
-                                        </span>
-                                        <span className="text-[9px] font-black tracking-widest text-orange-400 uppercase">
-                                          이솔 AI 생성 썸네일 연동됨
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center justify-between gap-3">
-                                        <p className="text-[11px] font-black text-white truncate flex-1">
-                                          ✨ AI_Generated_Editorial_Art.png
-                                        </p>
-                                        <button
-                                          type="button"
-                                          onClick={() => setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }))}
-                                          className="px-2.5 py-1.5 bg-red-650 hover:bg-red-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
-                                        >
-                                          삭제
-                                        </button>
+                                  <div className="luxury-3d-image-card w-full aspect-[16/10] overflow-hidden p-1 duration-300 group">
+                                    <div className="luxury-3d-image-inner w-full h-full relative">
+                                      <img
+                                        src={postData.thumbnail}
+                                        alt="AI Preview"
+                                        className="w-full h-full object-cover rounded-2xl"
+                                        referrerPolicy="no-referrer"
+                                      />
+                                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 flex flex-col gap-2.5 text-left z-20">
+                                        <div className="flex items-center gap-2">
+                                          <span className="relative flex h-2 w-2 shrink-0">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                                          </span>
+                                          <span className="text-[9px] font-black tracking-widest text-orange-400 uppercase">
+                                            이솔 AI 생성 썸네일 연동됨
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3">
+                                          <p className="text-[11px] font-black text-white truncate flex-1">
+                                            ✨ AI_Generated_Editorial_Art.png
+                                          </p>
+                                          <button
+                                            type="button"
+                                            onClick={() => setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }))}
+                                            className="px-2.5 py-1.5 bg-red-650 hover:bg-red-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer z-20"
+                                          >
+                                            삭제
+                                          </button>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="w-full aspect-[16/10] rounded-2.5xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center p-6 text-center select-none bg-zinc-50/40 dark:bg-zinc-950/20">
-                                    <ImageIcon size={28} className="text-zinc-300 dark:text-zinc-700 mb-2" />
-                                    <p className="text-xs font-bold text-zinc-400">대표 썸네일 아트웍이 비어 있습니다</p>
+                                  <div className="luxury-3d-dropzone w-full aspect-[16/10] flex flex-col items-center justify-center p-6 text-center select-none">
+                                    <ImageIcon size={28} className="text-zinc-450 dark:text-zinc-550 mb-2 luxury-3d-float" />
+                                    <p className="text-xs font-black text-zinc-700 dark:text-zinc-300">대표 썸네일 아트웍이 비어 있습니다</p>
                                   </div>
                                 )}
                               </div>
@@ -17346,7 +17658,7 @@ const SoulCenter = ({
                                   <input
                                     value={postData.thumbnail}
                                     onChange={(e) => setPostData({ ...postData, thumbnail: e.target.value })}
-                                    className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-10 pr-10 py-3 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-orange-500 font-bold transition-colors"
+                                    className="w-full luxury-3d-input pl-10 pr-10 py-3 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none font-bold"
                                     placeholder="인터넷 이미지 주소(JPEG, PNG, WEBP URL)를 입력하세요"
                                   />
                                   <LinkIcon size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
@@ -17361,19 +17673,19 @@ const SoulCenter = ({
                                   )}
                                 </div>
 
-                                <div className="relative w-full aspect-[16/10] rounded-2.5xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/20 flex flex-col items-center justify-center p-1 shadow-inner">
+                                <div className="luxury-3d-image-card w-full aspect-[16/10] overflow-hidden p-1 duration-300 group">
                                   {postData.thumbnail && (postData.thumbnail.startsWith("http") || postData.thumbnail.startsWith("data:image")) ? (
-                                    <div className="group relative w-full h-full">
+                                    <div className="luxury-3d-image-inner w-full h-full relative">
                                       <img
                                         src={postData.thumbnail}
                                         alt="Web URL Preview"
-                                        className="w-full h-full object-cover rounded-2.5xl animate-fade-in"
+                                        className="w-full h-full object-cover rounded-2xl animate-fade-in"
                                         onError={(e) => {
                                           (e.target as HTMLElement).style.display = "none";
                                         }}
                                         referrerPolicy="no-referrer"
                                       />
-                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px] z-20 rounded-2xl">
                                         <button
                                           type="button"
                                           onClick={() => setPostData({ ...postData, thumbnail: "" })}
@@ -17384,10 +17696,10 @@ const SoulCenter = ({
                                       </div>
                                     </div>
                                   ) : (
-                                    <div className="text-center p-6 text-zinc-400">
-                                      <ImageIcon size={26} className="mx-auto mb-2 text-zinc-350 dark:text-zinc-700 animate-pulse" />
+                                    <div className="flex flex-col items-center justify-center h-full text-center p-6 text-zinc-400">
+                                      <ImageIcon size={26} className="mx-auto mb-2 text-zinc-450 dark:text-zinc-550 luxury-3d-float" />
                                       <p className="text-[11px] font-black text-zinc-750 dark:text-zinc-300">웹 이미지 실시간 주소 분석</p>
-                                      <p className="text-[9px] opacity-60 mt-1 max-w-[220px] mx-auto leading-relaxed">
+                                      <p className="text-[9px] opacity-65 mt-1 max-w-[220px] mx-auto leading-relaxed">
                                         유효한 이미지 웹 링크 주소를 대입하시면 즉시 전문 보도용 이미지 필터 및 크롭 분석이 전개됩니다.
                                       </p>
                                     </div>
@@ -18362,12 +18674,12 @@ const SoulCenter = ({
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <button
+                           <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
-                            className="aspect-[4/3] rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-805 hover:border-orange-500 bg-zinc-50 dark:bg-zinc-950/20 hover:bg-orange-500/[0.02] flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all"
+                            className="luxury-3d-dropzone aspect-[4/3] flex flex-col items-center justify-center p-4 text-center"
                           >
-                            <Upload className="text-zinc-400 mb-2" size={24} />
+                            <Upload className="text-zinc-500 dark:text-zinc-400 group-hover:text-orange-500 transition-colors luxury-3d-float mb-2" size={24} />
                             <span className="text-xs font-black text-zinc-800 dark:text-zinc-200">📸 사진 첨부 / 촬영</span>
                             <span className="text-[10px] text-zinc-400 mt-1">스마트폰 갤러리 또는 카메라</span>
                           </button>
@@ -18376,12 +18688,12 @@ const SoulCenter = ({
                             type="button"
                             onClick={handleGenerateImageUser}
                             disabled={isGeneratingImageUser}
-                            className="aspect-[4/3] rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-805 hover:border-purple-500 bg-zinc-50 dark:bg-zinc-950/20 hover:bg-purple-500/[0.02] flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all disabled:opacity-50"
+                            className="luxury-3d-dropzone aspect-[4/3] flex flex-col items-center justify-center p-4 text-center disabled:opacity-50"
                           >
                             {isGeneratingImageUser ? (
                               <Loader2 className="text-purple-500 animate-spin mb-2" size={24} />
                             ) : (
-                              <Sparkles className="text-purple-500 mb-2 animate-pulse" size={24} />
+                              <Sparkles className="text-purple-500 mb-2 animate-pulse luxury-3d-float" size={24} />
                             )}
                             <span className="text-xs font-black text-zinc-800 dark:text-zinc-200">🪄 AI 추천 이미지 그리기</span>
                             <span className="text-[10px] text-zinc-400 mt-1">
@@ -18463,62 +18775,70 @@ const SoulCenter = ({
                           {postData.thumbnail ? (
                             /* Premium Newsroom Interactive Preview Window with Persistent Controls */
                             <div className="space-y-3">
-                              <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 shadow-lg animate-in fade-in zoom-in-95 duration-300">
-                                <img
-                                  src={postData.thumbnail}
-                                  alt="Preview"
-                                  className="w-full h-full object-cover rounded-3xl"
-                                  referrerPolicy="no-referrer"
-                                />
-                                
-                                {/* Bottom Control Drawer (Always-on mobile-friendly design) */}
-                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 flex flex-col gap-2.5 text-left">
-                                  <div className="flex items-center gap-2">
-                                    <span className="relative flex h-2 w-2 shrink-0">
-                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                    </span>
-                                    <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase">
-                                      기사 첨부 썸네일 파일 정상 수신됨
-                                    </span>
-                                  </div>
+                              <div className={cn(
+                                checkedInnovations.includes(1) ? "luxury-3d-image-card" : "border border-zinc-200 dark:border-zinc-800 rounded-3xl",
+                                "w-full aspect-video overflow-hidden p-1 duration-300"
+                              )}>
+                                <div className={cn(
+                                  checkedInnovations.includes(1) ? "luxury-3d-image-inner" : "",
+                                  "w-full h-full relative"
+                                )}>
+                                  <img
+                                    src={postData.thumbnail}
+                                    alt="Preview"
+                                    className="w-full h-full object-cover rounded-2xl"
+                                    referrerPolicy="no-referrer"
+                                  />
                                   
-                                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                                    <div className="min-w-0 flex-1">
-                                      <p className="text-xs font-bold text-white truncate pr-2" title={postData.thumbnailName}>
-                                        📄 {postData.thumbnailName || "대표_이미지_첨부.jpg"}
-                                      </p>
+                                  {/* Bottom Control Drawer (Always-on mobile-friendly design) */}
+                                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 flex flex-col gap-2.5 text-left z-20">
+                                    <div className="flex items-center gap-2">
+                                      <span className="relative flex h-2 w-2 shrink-0">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                      </span>
+                                      <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase">
+                                        기사 첨부 썸네일 파일 정상 수신됨
+                                      </span>
                                     </div>
                                     
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRotateImage()}
-                                        className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-750 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
-                                        title="모바일 세로방향 회전 보정"
-                                      >
-                                        🔄 회전
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          fileInputRef.current?.click();
-                                        }}
-                                        className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer border border-white/10"
-                                      >
-                                        <RefreshCw size={11} />
-                                        교체
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }));
-                                        }}
-                                        className="px-2.5 py-1.5 bg-red-650 hover:bg-red-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
-                                      >
-                                        <Trash2 size={11} />
-                                        삭제
-                                      </button>
+                                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-xs font-bold text-white truncate pr-2" title={postData.thumbnailName}>
+                                          📄 {postData.thumbnailName || "대표_이미지_첨부.jpg"}
+                                        </p>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRotateImage()}
+                                          className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-750 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
+                                          title="모바일 세로방향 회전 보정"
+                                        >
+                                          🔄 회전
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            fileInputRef.current?.click();
+                                          }}
+                                          className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer border border-white/10"
+                                        >
+                                          <RefreshCw size={11} />
+                                          교체
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }));
+                                          }}
+                                          className="px-2.5 py-1.5 bg-red-650 hover:bg-red-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
+                                        >
+                                          <Trash2 size={11} />
+                                          삭제
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -18573,20 +18893,18 @@ const SoulCenter = ({
                                 }
                               }}
                               className={cn(
-                                "group relative w-full aspect-video rounded-3xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-300 overflow-hidden p-6 text-center select-none",
-                                isDragActive
-                                  ? "border-purple-500 bg-purple-500/10 scale-[1.02] shadow-xl"
-                                  : "border-zinc-200 dark:border-zinc-800 hover:border-purple-400 hover:bg-purple-50/10 dark:hover:bg-purple-950/10"
+                                "luxury-3d-dropzone w-full aspect-video p-6 text-center flex flex-col items-center justify-center select-none",
+                                isDragActive && "border-purple-500 bg-purple-500/10 scale-[1.02] shadow-xl"
                               )}
                             >
                               <div className="flex flex-col items-center gap-2.5 text-zinc-400 group-hover:text-purple-500 transition-colors">
                                 <div className={cn(
-                                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
+                                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-all luxury-3d-float border border-zinc-200/50 dark:border-zinc-800 shadow-md",
                                   isDragActive
                                     ? "bg-purple-500 text-white scale-110 rotate-12"
-                                    : "bg-zinc-100 dark:bg-zinc-850 text-zinc-550 group-hover:scale-110 group-hover:rotate-3"
+                                    : "bg-zinc-100 dark:bg-zinc-850 text-zinc-500 group-hover:scale-110 group-hover:rotate-3"
                                 )}>
-                                  <Upload size={22} className={isDragActive ? "text-white animate-bounce" : "text-zinc-500 dark:text-zinc-400 group-hover:text-purple-500"} />
+                                  <Upload size={20} className={isDragActive ? "text-white animate-bounce" : "text-zinc-500 dark:text-zinc-400 group-hover:text-purple-500"} />
                                 </div>
                                 <div className="text-center w-full px-4 space-y-1">
                                   <p className="text-xs font-black tracking-tight text-zinc-700 dark:text-zinc-350">
@@ -18605,7 +18923,7 @@ const SoulCenter = ({
                                       e.stopPropagation();
                                       mobileCameraInputRef.current?.click();
                                     }}
-                                    className="px-3.5 py-2 bg-zinc-900 border border-zinc-750 dark:border-zinc-800 hover:bg-black dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white text-[10.5px] font-black rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer max-w-[200px]"
+                                    className="px-3.5 py-2 bg-zinc-900 hover:bg-black dark:bg-zinc-850 dark:hover:bg-zinc-800 text-white text-[10.5px] font-black rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer max-w-[200px] border border-zinc-800"
                                   >
                                     <Camera size={12} className="text-purple-400 animate-pulse shrink-0" />
                                     <span>스마트폰 현장 촬영 직접 투고</span>
@@ -19976,7 +20294,7 @@ const SoulCenter = ({
               </div>
 
               {/* Segmented Registration Type Selector */}
-              <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-200 dark:border-zinc-800/80">
+              <div className="flex luxury-3d-tab-container p-1.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -19986,8 +20304,8 @@ const SoulCenter = ({
                   className={cn(
                     "flex-1 py-3 text-xs font-black rounded-xl transition-all uppercase tracking-wider",
                     regType === "citizen"
-                      ? "bg-white dark:bg-zinc-800 shadow text-purple-600 dark:text-purple-400"
-                      : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                      ? "luxury-3d-tab-btn-active text-purple-600 dark:text-purple-400"
+                      : "text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 hover:-translate-y-[1px]"
                   )}
                 >
                   ✍️ 시민 기자 등록
@@ -20001,8 +20319,8 @@ const SoulCenter = ({
                   className={cn(
                     "flex-1 py-3 text-xs font-black rounded-xl transition-all uppercase tracking-wider",
                     regType === "professional"
-                      ? "bg-white dark:bg-zinc-800 shadow text-amber-500 dark:text-amber-400"
-                      : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                      ? "luxury-3d-tab-btn-active text-amber-500 dark:text-amber-400"
+                      : "text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 hover:-translate-y-[1px]"
                   )}
                 >
                   🏢 전문 언론사 제휴
@@ -20011,32 +20329,32 @@ const SoulCenter = ({
 
               {/* Improvement 8: Milestone Review Queue Visualizer / Step Stepper */}
               {regType === "professional" && (
-                <div className="grid grid-cols-3 gap-2 bg-zinc-50 dark:bg-zinc-900/50 p-2.5 rounded-2xl text-center items-center border border-zinc-150 dark:border-zinc-850/80">
+                <div className="grid grid-cols-3 gap-2 luxury-3d-stepper-container p-2.5 text-center items-center">
                   <div className={cn(
-                    "text-[10px] font-black py-1 rounded-lg transition-all",
+                    "text-[10px] font-black py-1.5 rounded-lg transition-all border",
                     regStep === 1 
-                      ? "bg-amber-500 text-black shadow" 
+                      ? "bg-gradient-to-b from-amber-400 to-amber-500 text-black border-amber-500/20 font-extrabold shadow-sm scale-[1.02]" 
                       : regStep > 1 
-                      ? "text-emerald-500" 
-                      : "text-zinc-400"
+                      ? "bg-emerald-500/10 text-emerald-650 dark:text-emerald-450 border-emerald-500/20" 
+                      : "bg-transparent text-zinc-400 border-transparent"
                   )}>
                     {regStep > 1 ? "✓ 1.기본정보" : "1.기본정보"}
                   </div>
                   <div className={cn(
-                    "text-[10px] font-black py-1 rounded-lg transition-all",
+                    "text-[10px] font-black py-1.5 rounded-lg transition-all border",
                     regStep === 2 
-                      ? "bg-amber-500 text-black shadow" 
+                      ? "bg-gradient-to-b from-amber-400 to-amber-500 text-black border-amber-500/20 font-extrabold shadow-sm scale-[1.02]" 
                       : regStep > 2 
-                      ? "text-emerald-500" 
-                      : "text-zinc-400"
+                      ? "bg-emerald-500/10 text-emerald-650 dark:text-emerald-450 border-emerald-500/20" 
+                      : "bg-transparent text-zinc-400 border-transparent"
                   )}>
                     {regStep > 2 ? "✓ 2.자격검증" : "2.자격검증"}
                   </div>
                   <div className={cn(
-                    "text-[10px] font-black py-1 rounded-lg transition-all",
+                    "text-[10px] font-black py-1.5 rounded-lg transition-all border",
                     regStep === 3 
-                      ? "bg-amber-500 text-black shadow" 
-                      : "text-zinc-400"
+                      ? "bg-gradient-to-b from-amber-400 to-amber-500 text-black border-amber-500/20 font-extrabold shadow-sm scale-[1.02]" 
+                      : "bg-transparent text-zinc-400 border-transparent"
                   )}>
                     3.전자서명
                   </div>
@@ -20183,7 +20501,7 @@ const SoulCenter = ({
                             onChange={(e) =>
                               setFormData({ ...formData, agencyName: e.target.value })
                             }
-                            className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors"
+                            className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
                             placeholder="예: 이솔경제 타임즈"
                           />
                         </div>
@@ -20198,7 +20516,7 @@ const SoulCenter = ({
                             onChange={(e) =>
                               setFormData({ ...formData, ceoName: e.target.value })
                             }
-                            className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors"
+                            className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
                             placeholder="예: 이사장 홍길동"
                           />
                         </div>
@@ -20213,7 +20531,7 @@ const SoulCenter = ({
                             onChange={(e) =>
                               setFormData({ ...formData, field: e.target.value })
                             }
-                            className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors cursor-pointer"
+                            className="w-full luxury-3d-input px-4 py-3.5 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none cursor-pointer"
                           >
                             <option value="">종합 및 특정 분야 선택</option>
                             <option value="종합 뉴스">종합 뉴스 (정치/사회/경제)</option>
@@ -20236,7 +20554,7 @@ const SoulCenter = ({
                               onChange={(e) =>
                                 setFormData({ ...formData, establishedDate: e.target.value })
                               }
-                              className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors"
+                              className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
                             />
                           </div>
                           <div>
@@ -20252,7 +20570,7 @@ const SoulCenter = ({
                               onChange={(e) =>
                                 setFormData({ ...formData, crewCount: e.target.value })
                               }
-                              className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors"
+                              className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
                             />
                           </div>
                         </div>
@@ -20286,7 +20604,7 @@ const SoulCenter = ({
                               setFormData({ ...formData, officialUrl: e.target.value });
                               setDnsVerificationState("idle");
                             }}
-                            className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors"
+                            className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
                             placeholder="https://www.yourdomain.com"
                           />
                           
@@ -20339,7 +20657,7 @@ const SoulCenter = ({
                             onChange={(e) =>
                               setFormData({ ...formData, regNo: e.target.value })
                             }
-                            className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors"
+                            className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
                             placeholder="예: 서울-인터넷-제2026호"
                           />
                           {/* Improvement 3: Real-time Input Masking Validation Indicator */}
@@ -20370,7 +20688,7 @@ const SoulCenter = ({
                               onChange={(e) =>
                                 setFormData({ ...formData, contact: e.target.value })
                               }
-                              className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors"
+                              className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
                               placeholder="contact@news.com"
                             />
                           </div>
@@ -20384,7 +20702,7 @@ const SoulCenter = ({
                               onChange={(e) =>
                                 setFormData({ ...formData, address: e.target.value })
                               }
-                              className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors"
+                              className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
                               placeholder="마포구 마포대로 15"
                             />
                           </div>
@@ -20418,12 +20736,9 @@ const SoulCenter = ({
                               fileInput?.click();
                             }}
                             className={cn(
-                              "relative rounded-2xl p-6 text-center transition-all duration-300 cursor-pointer flex flex-col items-center justify-center min-h-[140px] overflow-hidden group select-none",
-                              isDraggingDoc
-                                ? "border-2 border-dashed border-amber-500 bg-amber-500/5 dark:bg-amber-500/10 scale-[1.02] shadow-lg shadow-amber-500/5"
-                                : uploadedDoc
-                                ? "border border-solid border-emerald-500/30 bg-emerald-500/[0.02] dark:bg-emerald-500/[0.04]"
-                                : "border border-dashed border-zinc-300 dark:border-zinc-800 hover:border-amber-500/80 hover:bg-zinc-50 dark:hover:bg-zinc-900/40"
+                              "luxury-3d-dropzone p-6 text-center flex flex-col items-center justify-center min-h-[140px] select-none",
+                              isDraggingDoc && "border-amber-500 bg-amber-500/10 scale-[1.02] shadow-lg",
+                              uploadedDoc && "border-emerald-500/50 bg-emerald-500/[0.04]"
                             )}
                           >
                             <input
@@ -20482,8 +20797,8 @@ const SoulCenter = ({
                               </div>
                             ) : (
                               <div className="flex flex-col items-center gap-2.5 relative z-10">
-                                <div className="w-11 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center transition-all group-hover:scale-105 group-hover:rotate-3 border border-zinc-200/50 dark:border-zinc-800 shadow-sm">
-                                  <Upload size={16} className="text-zinc-400 group-hover:text-amber-500 transition-colors" />
+                                <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center transition-all group-hover:scale-110 group-hover:rotate-3 border border-zinc-200/50 dark:border-zinc-800 shadow-md luxury-3d-float">
+                                  <Upload size={18} className="text-zinc-550 dark:text-zinc-400 group-hover:text-amber-500 transition-colors" />
                                 </div>
                                 <div className="text-center space-y-1">
                                   <p className="text-xs font-black text-zinc-800 dark:text-zinc-200">
@@ -20805,6 +21120,180 @@ const SoulCenter = ({
                 )}
               </div>
             </form>
+
+            {/* 30대 하이엔드 3D 디자인 혁신 및 모바일 최적화 마스터플랜 */}
+            <div className="lg:col-span-12 w-full mt-8 bg-gradient-to-br from-zinc-50 via-zinc-100 to-zinc-150 dark:from-zinc-950/90 dark:via-zinc-900/60 dark:to-zinc-950/40 p-6 md:p-10 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800/80 shadow-2xl relative overflow-hidden text-left space-y-6">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 dark:bg-purple-500/20 rounded-full blur-[100px] pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-500/10 dark:bg-amber-500/20 rounded-full blur-[100px] pointer-events-none" />
+
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-250 dark:border-zinc-800 pb-6 relative z-10">
+                <div>
+                  <h3 className="text-xl md:text-2xl font-black italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-amber-500 to-emerald-500 uppercase flex items-center gap-2 leading-tight">
+                    👑 30대 하이엔드 3D 디자인 혁신 & 모바일 최적화 탑재 현황
+                  </h3>
+                  <p className="text-[10px] md:text-xs text-zinc-500 dark:text-zinc-400 font-extrabold mt-1 tracking-widest uppercase">
+                    Esol 3D Stereoscopic Layout & Mobile-First Payload (Interactive Checklist)
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCheckedInnovations(designInnovations30.map((item) => item.id));
+                      toast.success("✨ 30대 디자인 보완점 및 모바일 최적화 스펙을 전체 적용 완료했습니다.");
+                    }}
+                    className="px-3 py-1.5 bg-purple-600 hover:bg-purple-750 text-white rounded-xl text-[10px] font-black tracking-wider transition-all cursor-pointer shadow-md"
+                  >
+                    🚀 전체 적용
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCheckedInnovations([]);
+                      toast.warning("⚠️ 모든 디자인 보완 수칙을 가제 해제했습니다. (기본 뷰 상태)");
+                    }}
+                    className="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-850 dark:text-zinc-200 rounded-xl text-[10px] font-black tracking-wider transition-all cursor-pointer shadow-sm"
+                  >
+                    🔄 초기화
+                  </button>
+                  <div className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-3.5 py-1.5 rounded-full text-[10px] md:text-xs font-black tracking-widest uppercase flex items-center gap-2 shadow-inner">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    {checkedInnovations.length}/30 완비
+                  </div>
+                </div>
+              </div>
+
+              {/* 3D 실시간 적용 만족도 미터기 */}
+              <div className="p-5 bg-white/65 dark:bg-zinc-900/50 rounded-3xl border border-zinc-200/60 dark:border-zinc-850/50 backdrop-blur-md relative z-10 space-y-3 shadow-inner">
+                <div className="flex justify-between items-center flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg md:text-xl font-black">
+                      {checkedInnovations.length === 30 
+                        ? "🏆" 
+                        : checkedInnovations.length >= 20 
+                        ? "⚡" 
+                        : "⚠️"}
+                    </span>
+                    <span className="text-xs font-black text-zinc-850 dark:text-zinc-100 uppercase tracking-tight">
+                      {checkedInnovations.length === 30 
+                        ? "하이엔드 3D 입체 디자인 및 완벽 스마트폰 최적화 적용 완료!" 
+                        : `디자인 및 모바일 환경 가동 상태 개선 진행률: ${Math.round((checkedInnovations.length / 30) * 100)}%`}
+                    </span>
+                  </div>
+                  <span className="text-sm font-black font-mono text-purple-600 dark:text-purple-400">
+                    {Math.round((checkedInnovations.length / 30) * 100)}%
+                  </span>
+                </div>
+                <div className="w-full h-3 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden p-[2px] border border-zinc-300/30 dark:border-zinc-750/30">
+                  <div 
+                    className="h-full rounded-full bg-gradient-to-r from-purple-600 via-amber-500 to-emerald-500 transition-all duration-500 shadow-md"
+                    style={{ width: `${(checkedInnovations.length / 30) * 100}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-medium">
+                  💡 아래 리스트의 보완점을 터치/클릭하여 이솔뉴스 기사제보 플랫폼의 <strong className="text-purple-500">3D 입체 명세 스펙의 동적 온/오프 상태를 실시간 제어</strong>하실 수 있습니다.
+                </p>
+              </div>
+
+              {/* 모바일 최적화 필터 버튼 군 */}
+              <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-none relative z-10 -mx-6 px-6 md:mx-0 md:px-0">
+                {["ALL", "3D", "Font", "Mobile", "Layout", "Interaction", "UI/UX", "Performance", "Color"].map((tag) => {
+                  const isActive = selectedInnovationTag === tag;
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => setSelectedInnovationTag(tag)}
+                      className={`px-4 py-2 rounded-2xl text-[11px] font-black uppercase tracking-wider shrink-0 transition-all cursor-pointer border ${
+                        isActive
+                          ? "bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-500/25 scale-105"
+                          : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-650 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-850"
+                      }`}
+                      style={{ minHeight: "40px" }} // 대용량 터치 영역 규격 확보
+                    >
+                      {tag === "ALL" ? "🌟 전체 항목" : tag}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2 relative z-10">
+                {designInnovations30
+                  .filter((item) => selectedInnovationTag === "ALL" || item.tag === selectedInnovationTag)
+                  .map((item) => {
+                    const isChecked = checkedInnovations.includes(item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        className={`p-4 rounded-2xl border transition-all duration-300 group cursor-pointer hover:-translate-y-1 relative overflow-hidden flex flex-col justify-between ${
+                          isChecked
+                            ? "bg-purple-50/40 dark:bg-purple-950/20 border-purple-500/30 dark:border-purple-500/25 shadow-md"
+                            : "bg-white/60 dark:bg-zinc-900/40 border-zinc-200/70 dark:border-zinc-800/60 opacity-60 hover:opacity-100"
+                        }`}
+                        onClick={() => {
+                          const next = checkedInnovations.includes(item.id)
+                            ? checkedInnovations.filter((id) => id !== item.id)
+                            : [...checkedInnovations, item.id];
+                          setCheckedInnovations(next);
+                          if (next.length === 30) {
+                            toast.success("🏆 축하합니다! 30대 하이엔드 3D 보완 및 모바일 최적화 스펙 100% 충족 완료!", {
+                              description: "이솔뉴스 하이엔드 3D 아키텍처가 전 단말기에서 극상의 가용성으로 완벽히 작동합니다.",
+                              duration: 4000
+                            });
+                          } else {
+                            toast.info(`[No.${item.id}] ${item.title} 규격이 ${isChecked ? "비활성" : "활성"}화되었습니다.`);
+                          }
+                        }}
+                        style={{ minHeight: "110px" }}
+                      >
+                        <div>
+                          <div className="flex justify-between items-start gap-2 mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full font-mono ${
+                                isChecked 
+                                  ? "text-purple-600 dark:text-purple-400 bg-purple-500/10" 
+                                  : "text-zinc-500 bg-zinc-500/10"
+                              }`}>
+                                {String(item.id).padStart(2, "0")}
+                              </span>
+                              <span className={`text-[9px] font-extrabold uppercase border px-1.5 py-0.2 rounded ${
+                                isChecked
+                                  ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                  : "bg-zinc-500/10 text-zinc-500 border-zinc-500/10"
+                              }`}>
+                                {item.tag}
+                              </span>
+                            </div>
+                            <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border font-mono flex items-center gap-1 ${
+                              isChecked
+                                ? "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                                : "text-zinc-400 bg-zinc-100 dark:bg-zinc-850 border-zinc-200 dark:border-zinc-800"
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${isChecked ? "bg-emerald-500 animate-pulse" : "bg-zinc-400"}`} /> 
+                              {isChecked ? "APPLIED" : "DISABLED"}
+                            </span>
+                          </div>
+
+                          <h4 className={cn(
+                            "font-black text-xs group-hover:text-purple-500 transition-colors leading-tight mb-1",
+                            checkedInnovations.includes(2) && isChecked ? "luxury-3d-text-emboss" : "",
+                            isChecked 
+                              ? "text-zinc-850 dark:text-zinc-100" 
+                              : "text-zinc-400 dark:text-zinc-500 line-through"
+                          )}>
+                            {item.title}
+                          </h4>
+                          <p className={`text-[10px] leading-normal font-medium ${
+                            isChecked ? "text-zinc-500 dark:text-zinc-400" : "text-zinc-400/70"
+                          }`}>
+                            {item.desc}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
           </div>
           </>)}
 
@@ -25188,6 +25677,14 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           }}
           onKakaoClick={handleRealKakaoClick}
           onManualClick={() => setIsManualOpen(true)}
+          breakingArticles={citizenNews.slice(0, 5)}
+          onHeadlineClick={(n: any) => {
+            setCurrentPage("isol-post");
+            setSelectedNews(n);
+            setTimeout(() => {
+              document.getElementById("inline-news-reader-container")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 150);
+          }}
         />
       )}
 
