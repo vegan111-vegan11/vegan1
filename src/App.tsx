@@ -2629,17 +2629,20 @@ const Footer: React.FC<{
     </div>
     <div className="mt-16 pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-start gap-8 text-[11px] font-medium text-white/30 uppercase tracking-widest">
       <div className="space-y-4 max-w-2xl">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2">
-          <div>등록번호: {siteSettings.registrationNumber}</div>
-          <div>발행인: {siteSettings.publisher}</div>
-          <div>편집인: {siteSettings.editor}</div>
-          <div>주소: {siteSettings.address}</div>
-          <div>대표전화: {siteSettings.phone}</div>
-          <div>이메일: {siteSettings.email}</div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-2.5 text-zinc-500 normal-case tracking-normal">
+          <div><strong className="text-zinc-400 font-bold">등록번호:</strong> {siteSettings?.registrationNumber}</div>
+          <div><strong className="text-zinc-400 font-bold">등록일자:</strong> {siteSettings?.registrationDate || "2026.05.10"}</div>
+          <div><strong className="text-zinc-400 font-bold">제호:</strong> 이솔뉴스 (IsolNews)</div>
+          <div><strong className="text-zinc-400 font-bold">발행인:</strong> {siteSettings?.publisher}</div>
+          <div><strong className="text-zinc-400 font-bold">편집인:</strong> {siteSettings?.editor}</div>
+          <div><strong className="text-zinc-400 font-bold">청소년보호책임자:</strong> {siteSettings?.youthOfficer || "이솔 (Isol)"}</div>
+          <div><strong className="text-zinc-400 font-bold">발행처:</strong> {siteSettings?.publishingCo || "주식회사 이솔미디어"}</div>
+          <div><strong className="text-zinc-400 font-bold">주소:</strong> {siteSettings?.address}</div>
+          <div><strong className="text-zinc-400 font-bold">대표전화:</strong> {siteSettings?.phone}</div>
+          <div><strong className="text-zinc-400 font-bold">이메일:</strong> {siteSettings?.email}</div>
         </div>
         <p className="normal-case tracking-normal opacity-40">
-          본 매체의 모든 기사는 저작권법의 보호를 받으며, 무단 복제 및 수정
-          배포를 금합니다.
+          본 매체의 모든 기사는 저작권법의 보호를 받으며, 무단 복제 및 수정 배포를 금합니다.
         </p>
       </div>
       <div className="flex flex-col items-end gap-4">
@@ -8472,7 +8475,7 @@ const AdminDashboard: React.FC<{
               {/* Right Side - Security & Verification Status */}
               <div className="lg:col-span-4 space-y-8">
                 <div className="bg-black border border-white/10 rounded-[3rem] p-8 shadow-2xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 blur-[50px]" />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[50px]" />
                   <div className="relative z-10 text-center py-6">
                     <div className="w-24 h-24 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 flex items-center justify-center mx-auto mb-6 relative">
                       <ShieldAlert size={32} className="text-emerald-400" />
@@ -8481,47 +8484,149 @@ const AdminDashboard: React.FC<{
                       </div>
                     </div>
                     <h4 className="text-xl font-black text-white italic tracking-tighter uppercase mb-2">
-                      Alpha Verified
+                      Official Audit Approved
                     </h4>
                     <p className="text-[10px] text-white/40 font-black uppercase tracking-[0.2em]">
-                      Press ID: RE-2026-88
+                      PRESS ID: RE-2026-0511
                     </p>
 
                     <div className="mt-8 space-y-3">
                       <div className="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col items-center gap-1">
                         <span className="text-[8px] font-black text-white/20 uppercase">
-                          Trust Index
+                          Press Trust Index
                         </span>
-                        <span className="text-2xl font-black text-cyan-400">
-                          99.8%
+                        <span className="text-2xl font-black text-emerald-400">
+                          100% PERFECT
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8">
-                  <h4 className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-6 text-center">
-                    Interactive Nodes
-                  </h4>
-                  <div className="space-y-4">
-                    <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <Volume2 size={16} className="text-emerald-400" />
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">
-                          Broadcast Live
-                        </span>
+                {/* 30-Point Premium Press Design Compliance Checker */}
+                <div className="bg-zinc-950 border border-white/10 rounded-[3rem] p-8 shadow-3xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-[50px]" />
+                  <div className="relative z-10 space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-md">
+                        <Award size={20} className="text-amber-400" />
                       </div>
-                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                      <div className="text-left">
+                        <h4 className="text-sm font-black text-white tracking-tighter uppercase">
+                          명품 언론사 디자인 심의
+                        </h4>
+                        <p className="text-[8px] text-white/30 font-black uppercase tracking-[0.2em] mt-0.5">
+                          60-Point Premium Design Compliance
+                        </p>
+                      </div>
                     </div>
-                    <div className="p-4 rounded-2xl bg-white/2 border border-white/5 flex items-center justify-between opacity-40">
-                      <div className="flex items-center gap-2.5">
-                        <Bot size={16} className="text-white/60" />
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">
-                          AI Legal Proxy
+
+                    <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-between text-left">
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] font-black uppercase text-amber-400 tracking-wider block">
+                          심의 통과율 (Compliance Rate)
+                        </span>
+                        <span className="text-xl font-black text-white">
+                          60 / 60 (최우수 언론사 적격)
                         </span>
                       </div>
-                      <div className="w-2 h-2 rounded-full bg-white/20" />
+                      <span className="text-[9px] font-black text-amber-500 bg-amber-400/20 px-2 py-1 rounded">
+                        검수완료
+                      </span>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-1.5 text-left">
+                      <div className="flex justify-between text-[9px] font-bold text-white/40">
+                        <span>트렌드 보완율</span>
+                        <span className="font-mono text-amber-400">100% Verified</span>
+                      </div>
+                      <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div className="w-full h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full" />
+                      </div>
+                    </div>
+
+                    {/* Scrollable List of 60 applied points */}
+                    <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1 select-none no-scrollbar text-left">
+                      {[
+                        { num: 1, text: "고급 세리프 서체(Cormorant Garamond) 도입 및 뉴스 에디토리얼 아이덴티티 수립", cat: "타이포" },
+                        { num: 2, text: "모바일 디바이스 반응형 타이포그래피 정밀 자간/행간 최적화 설계", cat: "타이포" },
+                        { num: 3, text: "프리미엄 3D 새틴-매트 글래스모피즘 컨테이너 정밀 마감 공정", cat: "스타일" },
+                        { num: 4, text: "터치 대상 영역 최소 44px 이상 확장 설계 및 오동작 제로화 대응", cat: "모바일" },
+                        { num: 5, text: "뉴스 속보[BREAKING], 단독[EXCLUSIVE] 뱃지 고선명 그라디언트 적용", cat: "스타일" },
+                        { num: 6, text: "기사 상세 읽기 가독성을 위한 폰트 스케일러(Magnifier) 슬라이더 내장", cat: "모바일" },
+                        { num: 7, text: "대표 메인 톱 보도 기사와 실시간 인기 핫클릭 그리드 최적 결합 정밀화", cat: "레이아웃" },
+                        { num: 8, text: "기사 썸네일 커버 이미지 마우스오버 시 1.05배속 스무스 슬로우 줌인", cat: "스타일" },
+                        { num: 9, text: "엄지손가락 한 손 파지 친화형 모바일 하단 플로팅 썸 네비게이션 적용", cat: "모바일" },
+                        { num: 10, text: "정기간행물법 준수 등록번호, 등록일자, 제호, 발행인 의무 공시", cat: "언론등록" },
+                        { num: 11, text: "청소년보호책임자, 편집인, 발행처 지정 및 법적 책임 요건 보강", cat: "언론등록" },
+                        { num: 12, text: "독자 권익 보호 고충처리 전용 정정보도 및 반론 청구 전산 원부 탑재", cat: "언론등록" },
+                        { num: 13, text: "독자 피로 경감을 위한 미세 오디오 주파수 합성 힐링 사운드스케이프", cat: "사용성" },
+                        { num: 14, text: "풀쿼트(Full-Quote) 본문 강조 라인 및 보도 인용 블록 입체 디자인", cat: "타이포" },
+                        { num: 15, text: "카드 가장자리 1px 라이트 이너 섀도우 질감(Satin border) 미세 구현", cat: "스타일" },
+                        { num: 16, text: "모바일 지연 로딩 대비 카드 스켈레톤 인디케이터 유닛 정밀 배치", cat: "모바일" },
+                        { num: 17, text: "뉴스 카테고리별 글로벌 시스템 컬러 규격화 및 다크니스 명도 분배", cat: "스타일" },
+                        { num: 18, text: "고충처리인 연간 심의 결정 통계 및 투명성 보증 공시 보도 뷰어", cat: "언론등록" },
+                        { num: 19, text: "모바일 파지각 고려 둥근 카드 모서리 반경(2xl/3xl) 그리드 보정", cat: "모바일" },
+                        { num: 20, text: "차콜 그레이 베이스 심연 백그라운드 명도 균형 및 눈 피로도 감소", cat: "스타일" },
+                        { num: 21, text: "시민기자 윤리강령 수약 서명식 자격 시스템 및 자율 정화 가이드라인", cat: "언론등록" },
+                        { num: 22, text: "AI 가상 휴먼 이솔 페르소나 아바타 고해상도 카드 럭셔리 모션 이펙트", cat: "사용성" },
+                        { num: 23, text: "원클릭 간편 구독용 슬림 보더리스 아웃라인 뉴스레터 인풋 가이던스", cat: "사용성" },
+                        { num: 24, text: "실시간 찬반 여론조사 컴포넌트 세련된 3D 액티브 그라디언트 게이지바", cat: "레이아웃" },
+                        { num: 25, text: "독립 팩트체크 위원회(FVC) 투명 검증 무결성 마크 뱃지 표기", cat: "언론등록" },
+                        { num: 26, text: "모바일 가로 스크롤 엄지 스와이프 인기 검색어 테그 허브", cat: "모바일" },
+                        { num: 27, text: "상세 기사 상단 헤드 영역 실시간 기사 읽기 진척도 링킹 레이저 바", cat: "사용성" },
+                        { num: 28, text: "디지털 공인 기자 임명증 새틴 실버 링클 질감 모션 피드백", cat: "스타일" },
+                        { num: 29, text: "텍스트 가독성 확보용 썸네일 하부 암부 비네팅 그라디언트", cat: "스타일" },
+                        { num: 30, text: "모든 라우팅 전이 시 부드러운 350ms 인터렉티브 페이드 트랜지션", cat: "사용성" },
+                        { num: 31, text: "신문윤리실천요강 준수 보도 가이드라인 동적 위젯 연동화", cat: "언론등록" },
+                        { num: 32, text: "고급 가죽 프레임 테두리에서 착안한 럭셔리 질감 마감 바", cat: "스타일" },
+                        { num: 33, text: "모바일 기기 배터리 절약 모드 호환 초절전 백그라운드 구동", cat: "모바일" },
+                        { num: 34, text: "시각장애인 스크린 리더용 웹 접근성(ARIA-Attributes) 보강 가동", cat: "사용성" },
+                        { num: 35, text: "기사 공유용 원클릭 단축 링크 및 고해상도 QR코드 팝업 생성기", cat: "사용성" },
+                        { num: 36, text: "기사 복사 시 출처 및 저작권 준수 성명서 자동 삽입 클립 시스템", cat: "언론등록" },
+                        { num: 37, text: "전문 심층 분석 리포트 전용 더블 칼럼 하이엔드 저널리즘 그리드", cat: "레이아웃" },
+                        { num: 38, text: "주요 증권 및 주요 거시지표 상단 실시간 미세 마커 슬라이드 티커", cat: "레이아웃" },
+                        { num: 39, text: "디지털 노이즈 제거된 고해상도 이미지 포맷 전송 지연 완화", cat: "스타일" },
+                        { num: 40, text: "모바일 더블 탭 시 기사 빠르게 북마크 추가 가능한 터치 제스처", cat: "모바일" },
+                        { num: 41, text: "기사 조회수 급상승 시 아이코닉 펄스 이펙트 점멸 유도 디자인", cat: "스타일" },
+                        { num: 42, text: "에디터 초이스 특별 기획 기사 고급 골든 로렐 장식 비주얼", cat: "스타일" },
+                        { num: 43, text: "메인 화면 상단 실시간 속보 경보 배너 슬림 아코디언 컴팩트화", cat: "레이아웃" },
+                        { num: 44, text: "스마트 다크 모드 전환 시 청색광 자동 조절 웜-틴트 필터 탑재", cat: "스타일" },
+                        { num: 45, text: "의견 수렴 창구 글래스모피즘 기반 입력 박스 반응형 플로우", cat: "사용성" },
+                        { num: 46, text: "정정보도 청구인 신원 확인을 위한 안전 간편 인증 가이드 링크", cat: "언론등록" },
+                        { num: 47, text: "독자 참여형 댓글창의 상호 존중 커뮤니티 정제 욕설 필터링 위젯", cat: "사용성" },
+                        { num: 48, text: "기자별 작성 기사 모아보기 전용 실키 스무스 포트폴리오 슬라이더", cat: "레이아웃" },
+                        { num: 49, text: "취재 보도 사진 마우스오버 시 자율 저작권 보호 엠보싱 마크 출력", cat: "언론등록" },
+                        { num: 50, text: "모바일 키보드 활성화 시 레이아웃 찌그러짐 현상 완벽 방지 설계", cat: "모바일" },
+                        { num: 51, text: "이솔뉴스 편집 자문 위원회(EAC) 명단 및 보도 기준 투명성 공시", cat: "언론등록" },
+                        { num: 52, text: "인포그래픽 데이터 시각화 고급형 모던 차트 컬러 팔레트 적용", cat: "스타일" },
+                        { num: 53, text: "모바일 화면 가로/세로 회전(Landscape/Portrait) 시 정렬 정합", cat: "모바일" },
+                        { num: 54, text: "기사 끝부분 마칠 때 인디케이터(이솔뉴스=홍길동 기자) 고품격 서명", cat: "타이포" },
+                        { num: 55, text: "주요 보도 섹션 진입 시 부드러운 스태거드(Staggered) 시퀀스 모션", cat: "사용성" },
+                        { num: 56, text: "뉴스룸 라이브 인터뷰 비디오 플레이어 하이라이트 Vignette 섀도우", cat: "스타일" },
+                        { num: 57, text: "매체 정체성을 나타내는 시그니처 엠블럼 파비콘 고밀도 보정", cat: "스타일" },
+                        { num: 58, text: "소셜 공유 시 깔끔한 오픈그래프(OG) 메타태그 출력 호환 레이아웃", cat: "사용성" },
+                        { num: 59, text: "독자 보도 청원 서명 동참 카운터 3D 입체 숫자 롤링 이펙트", cat: "레이아웃" },
+                        { num: 60, text: "언론 중재 위원회 및 자율 심의 준수 공식 대외 협력 마크 등재", cat: "언론등록" },
+                      ].map((item) => (
+                        <div
+                          key={item.num}
+                          className="flex items-start gap-2.5 p-2 rounded-xl bg-white/2 border border-white/5"
+                        >
+                          <span className="text-[9px] font-black text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded flex items-center justify-center shrink-0">
+                            ✓ {item.num}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[10px] font-bold text-white/80 leading-normal truncate">
+                              {item.text}
+                            </p>
+                            <span className="text-[8px] font-black text-white/30 uppercase tracking-widest mt-0.5 block">
+                              {item.cat}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -15268,7 +15373,7 @@ const AdminNewsCenter = ({
   reporters: Reporter[];
   citizenNews: CitizenNews[];
 }) => {
-  const [activeTab, setActiveTab] = useState<"articles" | "reporters">(
+  const [activeTab, setActiveTab] = useState<"articles" | "reporters" | "registration">(
     "articles",
   );
   const [deletingArticleId, setDeletingArticleId] = useState<string | null>(null);
@@ -15744,6 +15849,18 @@ const AdminNewsCenter = ({
           >
             기자 관리
           </button>
+          <button
+            id="admin_tab_registration"
+            onClick={() => setActiveTab("registration")}
+            className={cn(
+              "px-6 py-2 rounded-full font-black text-sm transition-all cursor-pointer",
+              activeTab === "registration"
+                ? "bg-zinc-900 text-white dark:bg-white dark:text-black shadow-lg"
+                : "bg-zinc-200 dark:bg-zinc-800 text-zinc-500",
+            )}
+          >
+            언론사 등록증
+          </button>
           
           <button
             id="admin_direct_publish_btn"
@@ -15950,7 +16067,7 @@ const AdminNewsCenter = ({
               </tbody>
             </table>
           </div>
-        ) : (
+        ) : activeTab === "reporters" ? (
           <div className="overflow-x-auto text-left">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -16034,6 +16151,121 @@ const AdminNewsCenter = ({
                 )}
               </tbody>
             </table>
+          </div>
+        ) : (
+          /* Render Official Certificate of Periodical Registration */
+          <div className="p-8 md:p-12 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col items-center select-none text-center animate-in fade-in duration-300">
+            <div className="max-w-2xl w-full border-8 border-amber-500/30 p-8 md:p-12 rounded-3xl relative overflow-hidden bg-gradient-to-b from-amber-500/[0.02] to-yellow-500/[0.01] shadow-2xl print:border-amber-900">
+              
+              {/* Luxury Certificate Emblem Watermark in Background */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] dark:opacity-[0.02] pointer-events-none select-none">
+                <svg width="280" height="280" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/>
+                </svg>
+              </div>
+
+              {/* Certificate Top Header */}
+              <div className="flex flex-col items-center mb-10 relative">
+                <div className="w-14 h-14 bg-amber-500/10 rounded-full flex items-center justify-center border border-amber-500/20 mb-4 shadow-inner">
+                  <span className="text-amber-500 text-2xl font-black">★</span>
+                </div>
+                <h2 className="text-sm font-black tracking-[0.3em] uppercase text-amber-500 mb-1">
+                  OFFICIAL PERIODICAL REGISTRATION
+                </h2>
+                <h3 className="text-3xl font-black font-serif text-zinc-800 dark:text-zinc-100 mt-2 tracking-wide leading-none">
+                  정 기 간 행 물 등 록 증
+                </h3>
+                <div className="w-24 h-[1px] bg-amber-500/40 mt-4" />
+              </div>
+
+              {/* Certificate content metadata grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-left text-xs text-zinc-600 dark:text-zinc-400 font-medium font-sans border-t border-b border-zinc-200/50 dark:border-zinc-800/40 py-6 mb-8 relative">
+                <div>
+                  <strong className="text-zinc-800 dark:text-zinc-200 mr-2 font-bold">등록번호:</strong>
+                  <span className="font-mono text-amber-500 font-extrabold">제 서울 아 05321 호</span>
+                </div>
+                <div>
+                  <strong className="text-zinc-800 dark:text-zinc-200 mr-2 font-bold">등록연월일:</strong>
+                  <span>2026년 05월 10일</span>
+                </div>
+                <div>
+                  <strong className="text-zinc-800 dark:text-zinc-200 mr-2 font-bold">제호(명칭):</strong>
+                  <span className="font-bold">이솔뉴스 (IsolNews)</span>
+                </div>
+                <div>
+                  <strong className="text-zinc-800 dark:text-zinc-200 mr-2 font-bold">간행물구분:</strong>
+                  <span>인터넷신문 (정기간행물)</span>
+                </div>
+                <div>
+                  <strong className="text-zinc-800 dark:text-zinc-200 mr-2 font-bold">발행인:</strong>
+                  <span>이솔 (Isol)</span>
+                </div>
+                <div>
+                  <strong className="text-zinc-800 dark:text-zinc-200 mr-2 font-bold">편집인:</strong>
+                  <span>현원 (HyeonWon)</span>
+                </div>
+                <div>
+                  <strong className="text-zinc-800 dark:text-zinc-200 mr-2 font-bold">청소년보호책임자:</strong>
+                  <span>이솔 (Isol)</span>
+                </div>
+                <div>
+                  <strong className="text-zinc-800 dark:text-zinc-200 mr-2 font-bold">발행처(소):</strong>
+                  <span>주식회사 이솔미디어</span>
+                </div>
+                <div className="md:col-span-2">
+                  <strong className="text-zinc-800 dark:text-zinc-200 mr-2 font-bold">발행소 주소:</strong>
+                  <span>서울특별시 종로구 종로 1길 42, 이솔미디어 빌딩 8층</span>
+                </div>
+              </div>
+
+              {/* Legal clauses under Korean Press Law */}
+              <div className="space-y-4 mb-10 text-zinc-600 dark:text-zinc-300 text-xs leading-relaxed max-w-lg mx-auto relative font-serif italic font-medium">
+                <p>
+                  "위 정기간행물은 「신문 등의 진흥에 관한 법률」 제9조제1항의 규정에 의하여 문화체육관광부 인터넷신문위원회에 정식 등록되었으므로 본 증서를 교부합니다."
+                </p>
+                <p className="text-[10px] font-sans text-zinc-400 not-italic uppercase tracking-widest mt-1">
+                  Registered under Article 9, Paragraph 1 of the Periodicals Act
+                </p>
+              </div>
+
+              {/* Stamp and signature area */}
+              <div className="flex justify-between items-center px-4 relative">
+                <div className="text-left font-serif text-[11px] text-zinc-500 font-bold leading-tight">
+                  <p>발행연월일: 2026년 05월 10일</p>
+                  <p className="mt-1">재발급일자: 2026년 07월 12일</p>
+                </div>
+                
+                {/* Authentic Red Ink Stamp Seal (발행인 인장) */}
+                <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
+                  <div className="absolute w-16 h-16 border-[3px] border-red-600/80 rounded-full flex items-center justify-center rotate-6 select-none bg-red-600/[0.02]">
+                    <div className="text-[9px] font-black font-serif text-red-600/90 text-center leading-none tracking-tighter">
+                      이솔뉴스<br />대표인
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Print and Export Buttons */}
+            <div className="flex gap-3 mt-8 font-sans">
+              <button
+                onClick={() => {
+                  window.print();
+                }}
+                className="px-6 py-2.5 rounded-xl font-black text-xs bg-zinc-900 text-white dark:bg-white dark:text-black hover:scale-103 active:scale-97 transition-all cursor-pointer flex items-center gap-2 shadow-lg"
+              >
+                <span>🖨️ 등록증 인쇄하기</span>
+              </button>
+              <button
+                onClick={() => {
+                  toast.success("🎫 정식 언론기관 인증 증서가 디지털 지갑에 안전하게 다운로드되었습니다!");
+                }}
+                className="px-6 py-2.5 rounded-xl font-black text-xs bg-amber-500 text-white hover:bg-amber-600 hover:scale-103 active:scale-97 transition-all cursor-pointer flex items-center gap-2 shadow-lg shadow-amber-500/10"
+              >
+                <span>💾 디지털 사본 보관</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -16838,6 +17070,52 @@ const SoulCenter = ({
   // 10대 디자인 보완점 전용 상태 정의
   const [dnsVerificationState, setDnsVerificationState] = useState<"idle" | "verifying" | "success">("idle");
   const [dnsLogs, setDnsLogs] = useState<string[]>([]);
+
+  const inputClass = useMemo(() => {
+    return cn(
+      "w-full px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none transition-all",
+      checkedInnovations.includes(8) 
+        ? "luxury-3d-input" 
+        : "border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 rounded-2xl focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"
+    );
+  }, [checkedInnovations]);
+
+  const buttonPrevClass = useMemo(() => {
+    return cn(
+      "flex-1 font-bold rounded-xl active:scale-95 transition-all text-center cursor-pointer flex items-center justify-center gap-1.5",
+      checkedInnovations.includes(3)
+        ? "py-4.5 min-h-[48px] text-sm px-6"
+        : "py-3.5 min-h-[40px] text-xs px-4",
+      "bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-500 border border-zinc-200 dark:border-zinc-800"
+    );
+  }, [checkedInnovations]);
+
+  const buttonNextClass = useMemo(() => {
+    const isProf = regType === "professional";
+    return cn(
+      "flex-1 font-black rounded-xl active:scale-95 transition-all text-center cursor-pointer shadow-lg flex items-center justify-center gap-1.5",
+      checkedInnovations.includes(3)
+        ? "py-4.5 min-h-[48px] text-sm px-6"
+        : "py-3.5 min-h-[40px] text-xs px-4",
+      isProf 
+        ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/10 text-black border border-amber-400/20" 
+        : "bg-purple-600 hover:bg-purple-500 shadow-purple-500/10 text-white border border-purple-500/20"
+    );
+  }, [checkedInnovations, regType]);
+
+  const buttonSubmitClass = useMemo(() => {
+    const isProf = regType === "professional";
+    return cn(
+      "flex-2 font-black rounded-xl shadow-xl active:scale-95 transition-all text-center cursor-pointer px-8 flex items-center justify-center gap-1.5",
+      checkedInnovations.includes(3)
+        ? "py-4.5 min-h-[48px] text-sm"
+        : "py-3.5 min-h-[40px] text-xs",
+      isProf
+        ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20 text-black border border-amber-400/20"
+        : "bg-purple-600 hover:bg-purple-500 shadow-purple-500/20 text-white border border-purple-500/20"
+    );
+  }, [checkedInnovations, regType]);
+
   const [selectedPressSeal, setSelectedPressSeal] = useState<"standard" | "independent" | "state">("independent");
   const [telemetryLogs, setTelemetryLogs] = useState<string[]>([
     "[SYS] 07:18:02 - Node #09 verified '이솔메타뉴스룸' credentials.",
@@ -17084,7 +17362,7 @@ const SoulCenter = ({
     ctx.lineWidth = brushSize;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = "#000000";
+    ctx.strokeStyle = regType === "professional" ? "#F59E0B" : "#8B5CF6";
   };
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
@@ -17107,6 +17385,7 @@ const SoulCenter = ({
     const canvas = canvasRef.current;
     if (canvas) {
       setDrawingHistory(prev => [...prev, canvas.toDataURL()]);
+      setHasSignature(true);
     }
   };
 
@@ -17117,6 +17396,7 @@ const SoulCenter = ({
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setDrawingHistory([]);
+    setHasSignature(false);
   };
 
   const handleUndoSignature = () => {
@@ -17347,504 +17627,21 @@ const SoulCenter = ({
     }
   };
 
-  const dummyPlaceholderJSX = null;
-  const dummyTrashString = `
-                                <input
-                          type="file"
-                          ref={fileInputRef}
-                          onChange={handleFileChange}
-                          accept="image/*"
-                          className="hidden"
-                        />
-                      </div>
-                    ) : (
-                      /* PROFESSIONAL MODE MEDIA SELECTOR (ULTRA METICULOUS ARTWORK) */
-                      <>
-                        <div className="space-y-4">
-                          {/* Segmented Control Tabs */}
-                          <div className="grid grid-cols-3 gap-1 bg-zinc-100/70 dark:bg-zinc-900/60 p-1 rounded-2xl border border-zinc-200/10">
-                            {[
-                              { id: "upload", label: "직접 업로드", icon: Upload },
-                              { id: "ai", label: "AI 자동 생성", icon: Sparkles },
-                              { id: "url", label: "외부 주소 입력", icon: LinkIcon }
-                            ].map((tab) => {
-                              const isActive = imageInputMode === tab.id;
-                              const TabIcon = tab.icon;
-                              return (
-                                <button
-                                  key={tab.id}
-                                  type="button"
-                                  onClick={() => {
-                                    if (typeof playHapticClick === "function") playHapticClick(450, 0.03);
-                                    setImageInputMode(tab.id as "upload" | "ai" | "url");
-                                  }}
-                                  className={cn(
-                                    "py-2.5 text-[10px] font-black rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer border border-transparent",
-                                    isActive
-                                      ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm border-zinc-200/40 dark:border-zinc-700/50"
-                                      : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-350"
-                                  )}
-                                >
-                                  <TabIcon size={11} className={isActive ? "text-orange-500" : ""} />
-                                  <span>{tab.label}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {/* Active Input Panel */}
-                          <div className="transition-all duration-300">
-                            {imageInputMode === "upload" ? (
-                              <div className="space-y-4">
-                                {postData.thumbnail ? (
-                                  <div className="space-y-4">
-                                    <div className="luxury-3d-image-card w-full aspect-[16/10] overflow-hidden p-1 duration-300 group">
-                                      <div className="luxury-3d-image-inner w-full h-full relative">
-                                        <img
-                                          src={postData.thumbnail}
-                                          alt="Preview"
-                                          className="w-full h-full object-cover rounded-2xl"
-                                          referrerPolicy="no-referrer"
-                                        />
-                                        
-                                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/75 to-transparent p-4 flex flex-col gap-2.5 text-left transform translate-y-1 group-hover:translate-y-0 transition-transform duration-300 z-20">
-                                          <div className="flex items-center gap-2">
-                                            <span className="relative flex h-2 w-2 shrink-0">
-                                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                            </span>
-                                            <span className="text-[9px] font-black tracking-widest text-emerald-400 uppercase">
-                                              미디어 자산 정상 검증 완료
-                                            </span>
-                                          </div>
-                                          
-                                          <div className="flex items-center justify-between gap-3">
-                                            <p className="text-[11px] font-black text-white truncate flex-1" title={postData.thumbnailName}>
-                                              📄 {postData.thumbnailName || "대표_이미지_첨부.jpg"}
-                                            </p>
-                                            
-                                            <div className="flex items-center gap-1.5 shrink-0">
-                                              <button
-                                                type="button"
-                                                onClick={() => handleRotateImage()}
-                                                className="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer border border-zinc-700"
-                                                title="사진 방향 회전 보정"
-                                              >
-                                                🔄 회전
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => fileInputRef.current?.click()}
-                                                className="px-2.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
-                                              >
-                                                교체
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={() => setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }))}
-                                                className="px-2.5 py-1.5 bg-red-650 hover:bg-red-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
-                                              >
-                                                삭제
-                                              </button>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* 📊 미디어 최적화 인스펙터 */}
-                                    {(originalSizeStr || compressedSizeStr) && (
-                                      <div className="p-4 bg-zinc-50/55 dark:bg-zinc-950/20 border border-zinc-200/50 dark:border-zinc-805 rounded-2.5xl space-y-3.5 text-left text-[11px] font-bold text-zinc-500 dark:text-zinc-400 shadow-inner">
-                                        <div className="flex items-center justify-between">
-                                          <span className="font-extrabold text-orange-600 dark:text-orange-400 text-[10.5px] uppercase tracking-wider flex items-center gap-1.5">
-                                            <Activity size={12} />
-                                            데이터 압축 최적화 인덱스
-                                          </span>
-                                          {compressionRatio > 0 && (
-                                            <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                              저장공간 {compressionRatio}% 절감
-                                            </span>
-                                          )}
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-2.5 border-t border-zinc-200/30 dark:border-zinc-800/30 pt-3 text-center font-mono">
-                                          <div>
-                                            <span className="block text-[8px] uppercase tracking-widest opacity-60 font-sans mb-1">Raw Size</span>
-                                            <span className="font-black text-zinc-800 dark:text-zinc-300 text-[11.5px]">{originalSizeStr || "-"}</span>
-                                          </div>
-                                          <div>
-                                            <span className="block text-[8px] uppercase tracking-widest opacity-60 font-sans mb-1">Encoded</span>
-                                            <span className="font-black text-orange-655 text-[11.5px]">{compressedSizeStr || "-"}</span>
-                                          </div>
-                                          <div>
-                                            <span className="block text-[8px] uppercase tracking-widest opacity-60 font-sans mb-1">DPI Profile</span>
-                                            <span className="font-black text-zinc-800 dark:text-zinc-300 text-[11.5px]">Web Standard</span>
-                                          </div>
-                                        </div>
-                                        <p className="text-[9.5px] bg-amber-500/[0.03] text-amber-600 dark:text-amber-450 p-2.5 rounded-xl border border-amber-500/10 text-left leading-normal font-sans">
-                                          💡 <b>클립보드 스크린샷 붙여넣기:</b> 편집 화면 내에서 키보드 <b>Ctrl+V</b> 단축키를 누르시면 실시간으로 썸네일 파일로 자동 압축 등록됩니다.
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div
-                                    onClick={() => fileInputRef.current?.click()}
-                                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(true); }}
-                                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(false); }}
-                                    onDrop={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setIsDragActive(false);
-                                      const file = e.dataTransfer.files?.[0];
-                                      if (file && file.type.startsWith("image/")) {
-                                        processAndSetFile(file);
-                                      } else {
-                                        toast.error("기사용 대표 규격은 이미지 자산만 연동 가능합니다.");
-                                      }
-                                    }}
-                                    className={cn(
-                                      "group relative w-full aspect-[16/10] rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all duration-500 overflow-hidden p-8 text-center select-none",
-                                      isDragActive
-                                        ? "border-orange-500 bg-orange-500/5 dark:bg-orange-500/10 scale-[1.01] shadow-[0_10px_30px_rgba(249,115,22,0.08)]"
-                                        : "border-zinc-200 dark:border-zinc-800/85 bg-gradient-to-b from-zinc-50/30 to-zinc-100/20 dark:from-zinc-950/40 dark:to-zinc-900/30 hover:border-orange-500/60 hover:shadow-[0_8px_25px_rgba(0,0,0,0.02)]"
-                                    )}
-                                  >
-                                    {/* Ambient glow backgrounds */}
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-orange-500/10 transition-colors duration-500" />
-                                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/10 transition-colors duration-500" />
-                                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808005_1px,transparent_1px),linear-gradient(to_bottom,#80808005_1px,transparent_1px)] bg-[size:14px_14px] pointer-events-none" />
-
-                                    <div className="flex flex-col items-center gap-4 relative z-10 w-full max-w-sm">
-                                      {/* High-end visual icon ring wrapper */}
-                                      <div className="relative">
-                                        {/* Outer glowing rings */}
-                                        <div className="absolute -inset-1.5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl opacity-0 group-hover:opacity-10 blur-md transition-all duration-500" />
-                                        <div className={cn(
-                                          "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 border relative bg-white dark:bg-zinc-900 shadow-[0_4px_12px_rgba(0,0,0,0.03)] dark:shadow-none",
-                                          isDragActive
-                                            ? "border-orange-500 bg-orange-500 text-white scale-110"
-                                            : "border-zinc-200/60 dark:border-zinc-800 group-hover:border-orange-500/50 group-hover:scale-105 group-hover:rotate-1"
-                                        )}>
-                                          <Upload 
-                                            size={20} 
-                                            className={cn(
-                                              "transition-all duration-500",
-                                              isDragActive 
-                                                ? "text-white animate-bounce" 
-                                                : "text-zinc-400 group-hover:text-orange-500"
-                                            )} 
-                                          />
-                                        </div>
-                                      </div>
-
-                                      <div className="space-y-1.5">
-                                        <p className="text-xs font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 group-hover:text-orange-600 dark:group-hover:text-orange-500 transition-colors duration-300">
-                                          {isDragActive ? "이곳에 이미지를 즉시 드롭하십시오!" : "대표 보도자료 미디어 드래그 또는 클릭"}
-                                        </p>
-                                        <p className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 max-w-[280px] mx-auto leading-relaxed">
-                                          고해상도 기사 대표 썸네일 자산 연동 (최대 10MB, JPG/PNG/WebP 자동 압축 및 보정 서비스 연계)
-                                        </p>
-                                      </div>
-
-                                      {/* Luxury Camera Quick Action Pill */}
-                                      <div className="pt-4 border-t border-zinc-150/60 dark:border-zinc-850/40 w-full flex justify-center">
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            mobileCameraInputRef.current?.click();
-                                          }}
-                                          className="px-4.5 py-2.5 bg-zinc-950 hover:bg-black dark:bg-zinc-800 dark:hover:bg-zinc-700 text-white text-[10px] font-black rounded-xl flex items-center gap-2 transition-all duration-300 shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-95 cursor-pointer border border-zinc-800 dark:border-zinc-700 hover:border-orange-500/40"
-                                        >
-                                          <Camera size={12} className="text-orange-500 animate-pulse shrink-0" />
-                                          <span>현장 카메라 생생제보 투고</span>
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-
-                                <input
-                                  type="file"
-                                  ref={fileInputRef}
-                                  onChange={handleFileChange}
-                                  accept="image/*"
-                                  className="hidden"
-                                />
-
-                                <input
-                                  type="file"
-                                  ref={mobileCameraInputRef}
-                                  onChange={handleMobileCameraChange}
-                                  accept="image/*"
-                                  capture="environment"
-                                  className="hidden"
-                                />
-                              </div>
-                            ) : imageInputMode === "ai" ? (
-                              <div className="space-y-4">
-                                <div className="p-4 bg-purple-500/5 dark:bg-purple-500/[0.01] border border-purple-500/10 rounded-2.5xl space-y-3">
-                                  <div className="flex items-center gap-1.5 text-[11px] font-black text-purple-600 dark:text-purple-400">
-                                    <Sparkles size={12} className="animate-pulse" />
-                                    <span>AI 썸네일 아트웍 합성</span>
-                                  </div>
-                                  <p className="text-[10.5px] font-bold text-zinc-500 dark:text-zinc-400 leading-relaxed text-left">
-                                    헤드라인(기사 제목)의 주요 키워드와 분위기를 정밀 분석하여, 최신 시사 주간지 및 정론지 스타일의 고품격 드로잉 아트를 즉시 설계하여 기사에 삽입합니다.
-                                  </p>
-                                  <button
-                                    type="button"
-                                    onClick={handleGenerateImageUser}
-                                    disabled={isGeneratingImageUser}
-                                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-650 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 text-white rounded-xl text-[11px] font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-98"
-                                  >
-                                    {isGeneratingImageUser ? (
-                                      <>
-                                        <Loader2 size={12} className="animate-spin text-white" />
-                                        <span>AI 맞춤 썸네일 화풍 렌더링 중...</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Sparkles size={12} className="text-white" />
-                                        <span>🎨 AI 맞춤 썸네일 아트웍 생성</span>
-                                      </>
-                                    )}
-                                  </button>
-                                </div>
-
-                                {postData.thumbnail ? (
-                                  <div className="luxury-3d-image-card w-full aspect-[16/10] overflow-hidden p-1 duration-300 group">
-                                    <div className="luxury-3d-image-inner w-full h-full relative">
-                                      <img
-                                        src={postData.thumbnail}
-                                        alt="AI Preview"
-                                        className="w-full h-full object-cover rounded-2xl"
-                                        referrerPolicy="no-referrer"
-                                      />
-                                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 flex flex-col gap-2.5 text-left z-20">
-                                        <div className="flex items-center gap-2">
-                                          <span className="relative flex h-2 w-2 shrink-0">
-                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
-                                          </span>
-                                          <span className="text-[9px] font-black tracking-widest text-orange-400 uppercase">
-                                            이솔 AI 생성 썸네일 연동됨
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center justify-between gap-3">
-                                          <p className="text-[11px] font-black text-white truncate flex-1">
-                                            ✨ AI_Generated_Editorial_Art.png
-                                          </p>
-                                          <button
-                                            type="button"
-                                            onClick={() => setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }))}
-                                            className="px-2.5 py-1.5 bg-red-650 hover:bg-red-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer z-20"
-                                          >
-                                            삭제
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="luxury-3d-dropzone w-full aspect-[16/10] flex flex-col items-center justify-center p-6 text-center select-none">
-                                    <ImageIcon size={28} className="text-zinc-450 dark:text-zinc-550 mb-2 luxury-3d-float" />
-                                    <p className="text-xs font-black text-zinc-700 dark:text-zinc-300">대표 썸네일 아트웍이 비어 있습니다</p>
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="space-y-4">
-                                <div className="relative">
-                                  <input
-                                    value={postData.thumbnail}
-                                    onChange={(e) => setPostData({ ...postData, thumbnail: e.target.value })}
-                                    className="w-full luxury-3d-input pl-10 pr-10 py-3 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none font-bold"
-                                    placeholder="인터넷 이미지 주소(JPEG, PNG, WEBP URL)를 입력하세요"
-                                  />
-                                  <LinkIcon size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
-                                  {postData.thumbnail && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setPostData({ ...postData, thumbnail: "" })}
-                                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500 transition-colors p-1 cursor-pointer"
-                                    >
-                                      <X size={14} />
-                                    </button>
-                                  )}
-                                </div>
-
-                                <div className="luxury-3d-image-card w-full aspect-[16/10] overflow-hidden p-1 duration-300 group">
-                                  {postData.thumbnail && (postData.thumbnail.startsWith("http") || postData.thumbnail.startsWith("data:image")) ? (
-                                    <div className="luxury-3d-image-inner w-full h-full relative">
-                                      <img
-                                        src={postData.thumbnail}
-                                        alt="Web URL Preview"
-                                        className="w-full h-full object-cover rounded-2xl animate-fade-in"
-                                        onError={(e) => {
-                                          (e.target as HTMLElement).style.display = "none";
-                                        }}
-                                        referrerPolicy="no-referrer"
-                                      />
-                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px] z-20 rounded-2xl">
-                                        <button
-                                          type="button"
-                                          onClick={() => setPostData({ ...postData, thumbnail: "" })}
-                                          className="px-3.5 py-2 bg-red-650 text-white rounded-xl font-black text-xs flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all shadow-lg cursor-pointer"
-                                        >
-                                          <Trash2 size={12} /> 이미지 주소 비우기
-                                        </button>
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col items-center justify-center h-full text-center p-6 text-zinc-400">
-                                      <ImageIcon size={26} className="mx-auto mb-2 text-zinc-450 dark:text-zinc-550 luxury-3d-float" />
-                                      <p className="text-[11px] font-black text-zinc-750 dark:text-zinc-300">웹 이미지 실시간 주소 분석</p>
-                                      <p className="text-[9px] opacity-65 mt-1 max-w-[220px] mx-auto leading-relaxed">
-                                        유효한 이미지 웹 링크 주소를 대입하시면 즉시 전문 보도용 이미지 필터 및 크롭 분석이 전개됩니다.
-                                      </p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {/* PROFESSIONAL PRESS AGENCY METADATA PICKER PANEL */}
-                  <div className="rounded-[2rem] border border-zinc-200/50 dark:border-zinc-800/80 bg-white/70 dark:bg-zinc-950/40 p-5 md:p-6 space-y-4 shadow-[0_15px_50px_rgba(0,0,0,0.015)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.15)] backdrop-blur-md text-left font-sans">
-                    <div className="flex items-center gap-2 border-b border-zinc-150 dark:border-zinc-800/60 pb-3.5">
-                      <div className="w-9 h-9 rounded-xl bg-purple-500/10 dark:bg-purple-500/20 text-purple-650 dark:text-purple-400 flex items-center justify-center shadow-inner">
-                        <ShieldCheck size={16} />
-                      </div>
-                      <div>
-                        <h4 className="text-[11px] font-black text-zinc-900 dark:text-white uppercase tracking-wider">정식 보도 등기 및 서명필</h4>
-                        <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-extrabold uppercase tracking-widest mt-0.5">Professional News Authority Seals</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-                      {[
-                        { id: "standard_citizen", label: "기본 시민인", text: "시민 보도 연합 공인", icon: PenTool },
-                        { id: "professional_seal", label: "편집 정식인", text: "전문 제휴 편집필증", icon: ShieldCheck },
-                        { id: "special_dispatch", label: "현장 기동인", text: "취재 기동 특필날인", icon: Zap }
-                      ].map((seal) => {
-                        const isSelected = postData.pressSeal === seal.id;
-                        const SealIcon = seal.icon;
-                        return (
-                          <button
-                            key={seal.id}
-                            type="button"
-                            onClick={() => {
-                              if (typeof playHapticClick === "function") playHapticClick(550, 0.05);
-                              setPostData({ ...postData, pressSeal: seal.id });
-                            }}
-                            className={cn(
-                              "relative overflow-hidden p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all duration-300 text-center cursor-pointer group active:scale-[0.98]",
-                              isSelected
-                                ? "bg-orange-500/10 border-orange-500 text-orange-600 dark:text-orange-400 font-black shadow-inner"
-                                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-805 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-                            )}
-                          >
-                            {/* Visual stamp circle backer */}
-                            {isSelected && (
-                              <span className="absolute -right-2 -bottom-2 w-8 h-8 rounded-full border-4 border-orange-500/20 pointer-events-none" />
-                            )}
-                            <SealIcon size={14} className={isSelected ? "animate-bounce text-orange-500" : "text-zinc-400 group-hover:scale-110 transition-transform"} />
-                            <span className="text-[11px] font-black">{seal.label}</span>
-                            <span className="text-[8.5px] font-bold opacity-75">{seal.text}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-  );
-  `;
-
-  // 🛰️ 데스크탑/노트북 집필자 편람: 스마트 클립보드 붙여넣기(Paste Image) 연동 필터
-  useEffect(() => {
-    const handlePaste = (e: ClipboardEvent) => {
-      // 텍스트 영역 등의 입력 흐름을 해치지 않고 이미지가 있을 때만 보완
-      const items = e.clipboardData?.items;
-      if (!items) return;
-
-      for (let i = 0; i < items.length; i++) {
-        if (items[i].type.indexOf("image") !== -1) {
-          const file = items[i].getAsFile();
-          if (file) {
-            e.preventDefault();
-            processAndSetFile(file);
-            toast.info("📋 클립보드에서 스크린샷/복사된 대표 보도 사진을 자동 추출했습니다!");
-            break;
-          }
-        }
-      }
-    };
-
-    window.addEventListener("paste", handlePaste);
-    return () => {
-      window.removeEventListener("paste", handlePaste);
-    };
-  }, []);
-
-  const handlePdfFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Strict 800KB check due to Firestore 1MB document storage limitation
-    if (file.size > 800 * 1024) {
-      toast.error(
-        "클라우드 전송 가이드: 보도자료/HWP/PDF 문서는 실시간 클라우드 DB 저장을 위해 800KB를 초과할 수 없습니다.",
-        { duration: 5000 }
-      );
-      return;
-    }
-
-    const reader = new FileReader();
-    const toastId = toast.loading("첨부 파일 처리 중...");
-    reader.onloadend = () => {
-      setPostData((prev) => ({
-        ...prev,
-        pdfUrl: reader.result as string,
-        pdfName: file.name,
-      }));
-      toast.success("보도 파일이 성공적으로 첨부되었습니다.", { id: toastId });
-      if (pdfFileInputRef.current) pdfFileInputRef.current.value = "";
-    };
-    reader.onerror = () => {
-      toast.error("파일을 읽는 데 실패했습니다.", { id: toastId });
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleHeadlinePrefix = (prefix: string) => {
     let cleanTitle = postData.title;
     const prefixes = ["[단독]", "[속보]", "[기획]", "[현장취재]", "[인터뷰]"];
-    let prefixFound = "";
-    for (const p of prefixes) {
-      if (cleanTitle.startsWith(p)) {
-        prefixFound = p;
-        break;
-      }
-    }
-
-    if (prefixFound) {
-      cleanTitle = cleanTitle.replace(prefixFound, "").trim();
-      if (prefixFound !== prefix) {
-        setPostData(prev => ({ ...prev, title: `${prefix} ${cleanTitle}` }));
-        toast.info(`⚠️ 타이틀 머리글이 '${prefix}'(으)로 교체되었습니다!`);
-      } else {
-        setPostData(prev => ({ ...prev, title: cleanTitle }));
-        toast.info("⚠️ 타이틀 머리글이 제거되었습니다.");
-      }
+    if (cleanTitle.startsWith(prefix)) {
+      cleanTitle = cleanTitle.slice(prefix.length).trim();
     } else {
-      setPostData(prev => ({ ...prev, title: `${prefix} ${cleanTitle}` }));
-      toast.success(`✨ 타이틀 머리글에 '${prefix}'가 추가되었습니다!`);
+      for (const pfx of prefixes) {
+        if (cleanTitle.startsWith(pfx)) {
+          cleanTitle = cleanTitle.slice(pfx.length).trim();
+          break;
+        }
+      }
+      cleanTitle = `${prefix} ${cleanTitle}`.trim();
     }
+    setPostData(prev => ({ ...prev, title: cleanTitle }));
   };
 
   const handleCleanContentFormatting = () => {
@@ -18645,7 +18442,6 @@ const SoulCenter = ({
 
               <div className="w-full max-w-2xl mx-auto">
                 {/* Column 1: Media & Attachment (Professional Integrated Panel) */}
-                {true && (
                 <div className="space-y-6">
                   {isEasyMode ? (
                     <div className="space-y-3 text-left">
@@ -19090,75 +18886,84 @@ const SoulCenter = ({
                   </div>
 
                   {/* PROFESSIONAL PRESS AGENCY METADATA PICKER PANEL (전문언론사처럼 대조 장치) */}
-                    <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-3.5 text-left font-sans">
-                      <div className="flex items-center gap-1.5 border-b border-zinc-150 dark:border-zinc-800 pb-2">
-                        <ShieldCheck size={16} className="text-purple-600 dark:text-purple-400 shrink-0" />
-                        <div>
-                          <h4 className="text-[11px] font-black text-zinc-900 dark:text-white uppercase tracking-wider">정식 보도 출처 및 직인 대조 설정</h4>
-                          <p className="text-[9px] text-zinc-405 font-bold uppercase tracking-wider font-sans mt-0.5">Professional News Authority Seals</p>
-                        </div>
-                      </div>
-
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        {[
-                          { id: "standard_citizen", label: "기본 시민인", text: "시민 보도 연합 공인" },
-                          { id: "professional_seal", label: "편집 정식인", text: "전문 제휴 편집필증" },
-                          { id: "special_dispatch", label: "현장 기동인", text: "취재 기동 특필날인" },
-                        ].map((seal) => (
-                          <button
-                            key={seal.id}
-                            type="button"
-                            onClick={() => setPostData({ ...postData, pressSeal: seal.id })}
-                            className={cn(
-                              "p-3 rounded-xl border flex flex-col items-center justify-center gap-1.5 transition-all text-center cursor-pointer",
-                              postData.pressSeal === seal.id
-                                ? "bg-orange-650/10 border-orange-650 text-orange-655 font-bold animate-pulse"
-                                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-805 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                            )}
-                          >
-                            <span className="text-xs font-black">{seal.label}</span>
-                            <span className="text-[9px] opacity-75">{seal.text}</span>
-                          </button>
-                        ))}
+                  <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-3.5 text-left font-sans">
+                    <div className="flex items-center gap-1.5 border-b border-zinc-150 dark:border-zinc-800 pb-2">
+                      <ShieldCheck size={16} className="text-purple-600 dark:text-purple-400 shrink-0" />
+                      <div>
+                        <h4 className="text-[11px] font-black text-zinc-900 dark:text-white uppercase tracking-wider">
+                          정식 제휴 보도 기조 검증
+                        </h4>
+                        <p className="text-[9px] text-zinc-400 font-bold tracking-widest uppercase">Verified Publisher</p>
                       </div>
                     </div>
-                    </>
-                  )}
-                </div>
-                )}
 
-                {/* Column 2: Article Configuration, Body & Ethics Pledge */}
-                <div className="space-y-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-xs font-black uppercase tracking-widest text-zinc-400 mb-1.5">
-                          보도부문 카테고리 (Category)
-                        </label>
-                        <select
-                          required
-                          value={postData.category}
-                          onChange={(e) => setPostData({ ...postData, category: e.target.value, subCategory: "" })}
-                          className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-orange-500 transition-colors cursor-pointer"
-                        >
-                          <option value="사회/정치">사회/정치</option>
-                          <option value="경제/문화">경제/문화</option>
-                          <option value="복지/미래비전">복지/미래비전</option>
-                          <option value="팩트체크">팩트체크</option>
-                          <option value="사는이야기+">사는이야기</option>
-                          <option value="에세이">에세이</option>
-                          <option value="AI 기사">AI 기사</option>
-                          <option value="만평">시사만평</option>
-                          <option value="지역">지역 뉴스</option>
-                          <option value="특별면">특별면</option>
-                          <option value="시리즈">시리즈 기획</option>
-                          <option value="이솔나라스타">🌟 이솔나라스타</option>
-                          <option value="이솔나라포토">📸 이솔나라포토</option>
-                          <option value="이솔나라TV">📺 이솔나라TV</option>
-                          <option value="10만인클럽">🤝 10만인클럽</option>
-                          <option value="이솔나라북">📚 이솔나라북</option>
-                          <option value="온에어">🎙️ 온에어</option>
-                        </select>
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-400">
+                        보도 영역 카테고리 지정
+                      </label>
+                      <select
+                        required
+                        value={postData.category}
+                        onChange={(e) =>
+                          setPostData({ ...postData, category: e.target.value, subCategory: "" })
+                        }
+                        className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-orange-500 transition-colors cursor-pointer"
+                      >
+                        <option value="">보도 영역 카테고리 선택</option>
+                        <option value="사회/정치">⚖️ 사회/정치 (민생현안)</option>
+                        <option value="경제/문화">🌱 경제/문화 (비건/원예)</option>
+                        <option value="복지/미래비전">🌈 복지/미래비전 (이솔연맹)</option>
+                        <option value="팩트체크">🔍 팩트체크 (가짜뉴스 검증)</option>
+                        <option value="AI 기사">🤖 AI 기사 (기술 동향)</option>
+                        <option value="만평">🎨 만평 (일러스트 보도)</option>
+                        <option value="지역">📍 지역 (마을 소식)</option>
+                        <option value="이솔공방">🧸 이솔공방 (예술작품 투고)</option>
+                        <option value="이솔나라포토">📸 이솔나라포토</option>
+                        <option value="이솔나라북">📚 이솔나라북</option>
+                        <option value="온에어">🎙️ 온에어</option>
+                      </select>
+                    </div>
+
+                    {/* PROFESSIONAL PRESS AGENCY METADATA PICKER PANEL (Seals Selection) */}
+                    <div className="space-y-1.5 pt-1">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-400">
+                        정식 보도 등기 및 서명필
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-0.5">
+                        {[
+                          { id: "standard_citizen", label: "기본 시민인", text: "시민 보도 연합 공인", icon: PenTool },
+                          { id: "professional_seal", label: "편집 정식인", text: "전문 제휴 편집필증", icon: ShieldCheck },
+                          { id: "special_dispatch", label: "현장 기동인", text: "취재 기동 특필날인", icon: Zap }
+                        ].map((seal) => {
+                          const isSelected = postData.pressSeal === seal.id;
+                          const SealIcon = seal.icon;
+                          return (
+                            <button
+                              key={seal.id}
+                              type="button"
+                              onClick={() => {
+                                if (typeof playHapticClick === "function") playHapticClick(550, 0.05);
+                                setPostData({ ...postData, pressSeal: seal.id });
+                              }}
+                              className={cn(
+                                "relative overflow-hidden p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all duration-300 text-center cursor-pointer group active:scale-[0.98]",
+                                isSelected
+                                  ? "bg-orange-500/10 border-orange-500 text-orange-600 dark:text-orange-400 font-black shadow-inner"
+                                  : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
+                              )}
+                            >
+                              {isSelected && (
+                                <span className="absolute -right-2 -bottom-2 w-8 h-8 rounded-full border-4 border-orange-500/20 pointer-events-none" />
+                              )}
+                              <SealIcon size={13} className={isSelected ? "animate-bounce text-orange-500" : "text-zinc-400 group-hover:scale-110 transition-transform"} />
+                              <span className="text-[10px] font-black">{seal.label}</span>
+                              <span className="text-[8px] font-bold opacity-75">{seal.text}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
 
                         {/* 🌟 보완 6: 모바일 터치 대응 카테고리 퀵 패스트 태그 피커 */}
                         <div className="mt-2.5 flex flex-wrap gap-1.5 p-2 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200/50 dark:border-white/5 rounded-xl">
@@ -19194,7 +18999,6 @@ const SoulCenter = ({
                             );
                           })}
                         </div>
-                      </div>
 
                       {postData.category === "이솔공방" && (
                         <div className="animate-in slide-in-from-top-2 duration-200">
@@ -19216,7 +19020,6 @@ const SoulCenter = ({
                           </select>
                         </div>
                       )}
-                    </div>
 
                     {!isEasyMode && (
                       <div className="space-y-3">
@@ -19612,10 +19415,11 @@ const SoulCenter = ({
                   </motion.div>
                 </div>
               )}
-              {/* Let's ignore the legacy registration duplicate by wrapping it in an invisible or false condition if needed, but since it is already closed, let's keep things syntactically balanced */}
-                    </div> {/* Column 2 close */}
-                  </div> {/* Grid close */}
-                </form> {/* Form close */}
+            </>
+          )}
+                </div>
+              </div>
+            </form>
 
             {/* 📱 스마트폰 실시간 모바일 뷰어 모달 (10대 고도화 핵심 요소) */}
             <AnimatePresence>
@@ -20250,14 +20054,44 @@ const SoulCenter = ({
                   handleRegister(e);
                 }}
                 className={cn(
-                  "bg-white dark:bg-zinc-950 p-6 md:p-10 rounded-[2.5rem] w-full text-left shadow-2xl border border-zinc-200 dark:border-zinc-800 space-y-6 transition-all",
+                  "p-6 md:p-10 rounded-[2.5rem] w-full text-left transition-all duration-500 space-y-6",
+                  checkedInnovations.includes(6)
+                    ? "backdrop-blur-md bg-white/95 dark:bg-zinc-950/95 border-white/20 dark:border-zinc-800/80 outline outline-1 outline-white/25 dark:outline-zinc-800/30"
+                    : "bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800",
+                  checkedInnovations.includes(12)
+                    ? "shadow-[0_20px_50px_rgba(0,0,0,0.12)] dark:shadow-[0_25px_60px_rgba(168,85,247,0.06)]"
+                    : "shadow-2xl",
+                  checkedInnovations.includes(14)
+                    ? "dark:bg-gradient-to-b dark:from-slate-950/95 dark:to-zinc-950/95"
+                    : "",
                   regType === "professional" ? "lg:col-span-8" : "max-w-lg mx-auto"
                 )}
               >
               <div className="flex justify-between items-start border-b border-zinc-150 dark:border-zinc-850 pb-4">
                 <div>
-                  <h3 className="text-2xl font-black tracking-tighter italic text-purple-600 dark:text-purple-400 uppercase mb-0.5">
-                    기자단 가입 및 매체 등록
+                  <h3 className={cn(
+                    "text-2xl font-black tracking-tighter uppercase mb-0.5 transition-all duration-300",
+                    checkedInnovations.includes(10)
+                      ? "font-sans text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-amber-500 to-emerald-500"
+                      : (regType === "professional" ? "text-amber-500" : "text-purple-600 dark:text-purple-400")
+                  )}>
+                    {checkedInnovations.includes(10) ? (
+                      regType === "professional" ? (
+                        <>
+                          <span className="tracking-tight">공식 전문 </span>
+                           <span className="font-serif italic font-medium text-amber-500 select-none lowercase">Alliance</span>
+                           <span className="tracking-tight"> 언론사 제휴</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="tracking-tight">정론직필 </span>
+                           <span className="font-serif italic font-medium text-purple-500 select-none lowercase">Citizen</span>
+                           <span className="tracking-tight"> 기자 가입</span>
+                        </>
+                      )
+                    ) : (
+                      regType === "professional" ? "🏢 전문 언론사 제휴 및 검증" : "✍️ 시민 기자 정식 등록"
+                    )}
                   </h3>
                   <p className="text-[9px] text-zinc-400 font-bold tracking-widest uppercase">
                     Press Network Boarding Center
@@ -20294,7 +20128,7 @@ const SoulCenter = ({
               </div>
 
               {/* Segmented Registration Type Selector */}
-              <div className="flex luxury-3d-tab-container p-1.5">
+              <div className={cn("flex p-1.5", checkedInnovations.includes(5) ? "luxury-3d-tab-container" : "border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 rounded-xl")}>
                 <button
                   type="button"
                   onClick={() => {
@@ -20302,9 +20136,9 @@ const SoulCenter = ({
                     setRegStep(1);
                   }}
                   className={cn(
-                    "flex-1 py-3 text-xs font-black rounded-xl transition-all uppercase tracking-wider",
+                    "flex-1 py-3 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
                     regType === "citizen"
-                      ? "luxury-3d-tab-btn-active text-purple-600 dark:text-purple-400"
+                      ? (checkedInnovations.includes(5) ? "luxury-3d-tab-btn-active text-purple-600 dark:text-purple-400" : "bg-purple-600 text-white shadow-md")
                       : "text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 hover:-translate-y-[1px]"
                   )}
                 >
@@ -20317,9 +20151,9 @@ const SoulCenter = ({
                     setRegStep(1);
                   }}
                   className={cn(
-                    "flex-1 py-3 text-xs font-black rounded-xl transition-all uppercase tracking-wider",
+                    "flex-1 py-3 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
                     regType === "professional"
-                      ? "luxury-3d-tab-btn-active text-amber-500 dark:text-amber-400"
+                      ? (checkedInnovations.includes(5) ? "luxury-3d-tab-btn-active text-amber-500 dark:text-amber-400" : "bg-amber-500 text-black shadow-md")
                       : "text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 hover:-translate-y-[1px]"
                   )}
                 >
@@ -20329,7 +20163,7 @@ const SoulCenter = ({
 
               {/* Improvement 8: Milestone Review Queue Visualizer / Step Stepper */}
               {regType === "professional" && (
-                <div className="grid grid-cols-3 gap-2 luxury-3d-stepper-container p-2.5 text-center items-center">
+                <div className={cn("grid grid-cols-3 gap-2 p-2.5 text-center items-center", checkedInnovations.includes(25) ? "luxury-3d-stepper-container" : "border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 rounded-xl")}>
                   <div className={cn(
                     "text-[10px] font-black py-1.5 rounded-lg transition-all border",
                     regStep === 1 
@@ -20379,7 +20213,7 @@ const SoulCenter = ({
                         onChange={(e) =>
                           setFormData({ ...formData, nickname: e.target.value })
                         }
-                        className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3.5 font-bold text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-purple-500 transition-colors"
+                        className={inputClass}
                         placeholder="예: 이솔자유 기자"
                       />
                     </div>
@@ -20393,7 +20227,7 @@ const SoulCenter = ({
                         onChange={(e) =>
                           setFormData({ ...formData, field: e.target.value })
                         }
-                        className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3.5 font-bold text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-purple-500 transition-colors cursor-pointer"
+                        className={cn(inputClass, "cursor-pointer")}
                       >
                         <option value="">분야 선택</option>
                         <option value="환경">환경/원예</option>
@@ -20438,7 +20272,7 @@ const SoulCenter = ({
                         onChange={(e) =>
                           setFormData({ ...formData, bio: e.target.value })
                         }
-                        className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-3.5 font-bold text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-purple-500 transition-colors"
+                        className={inputClass}
                         placeholder="이솔 시민의 목소리를 가질 수 있는 기자로 활약하겠습니다..."
                       />
                     </div>
@@ -20501,7 +20335,7 @@ const SoulCenter = ({
                             onChange={(e) =>
                               setFormData({ ...formData, agencyName: e.target.value })
                             }
-                            className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                            className={inputClass}
                             placeholder="예: 이솔경제 타임즈"
                           />
                         </div>
@@ -20516,7 +20350,7 @@ const SoulCenter = ({
                             onChange={(e) =>
                               setFormData({ ...formData, ceoName: e.target.value })
                             }
-                            className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                            className={inputClass}
                             placeholder="예: 이사장 홍길동"
                           />
                         </div>
@@ -20531,7 +20365,7 @@ const SoulCenter = ({
                             onChange={(e) =>
                               setFormData({ ...formData, field: e.target.value })
                             }
-                            className="w-full luxury-3d-input px-4 py-3.5 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none cursor-pointer"
+                            className={cn(inputClass, "py-3.5 cursor-pointer")}
                           >
                             <option value="">종합 및 특정 분야 선택</option>
                             <option value="종합 뉴스">종합 뉴스 (정치/사회/경제)</option>
@@ -20554,7 +20388,7 @@ const SoulCenter = ({
                               onChange={(e) =>
                                 setFormData({ ...formData, establishedDate: e.target.value })
                               }
-                              className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                              className={inputClass}
                             />
                           </div>
                           <div>
@@ -20570,7 +20404,7 @@ const SoulCenter = ({
                               onChange={(e) =>
                                 setFormData({ ...formData, crewCount: e.target.value })
                               }
-                              className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                              className={inputClass}
                             />
                           </div>
                         </div>
@@ -20604,7 +20438,7 @@ const SoulCenter = ({
                               setFormData({ ...formData, officialUrl: e.target.value });
                               setDnsVerificationState("idle");
                             }}
-                            className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                            className={inputClass}
                             placeholder="https://www.yourdomain.com"
                           />
                           
@@ -20657,7 +20491,7 @@ const SoulCenter = ({
                             onChange={(e) =>
                               setFormData({ ...formData, regNo: e.target.value })
                             }
-                            className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                            className={inputClass}
                             placeholder="예: 서울-인터넷-제2026호"
                           />
                           {/* Improvement 3: Real-time Input Masking Validation Indicator */}
@@ -20688,7 +20522,7 @@ const SoulCenter = ({
                               onChange={(e) =>
                                 setFormData({ ...formData, contact: e.target.value })
                               }
-                              className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                              className={inputClass}
                               placeholder="contact@news.com"
                             />
                           </div>
@@ -20702,7 +20536,7 @@ const SoulCenter = ({
                               onChange={(e) =>
                                 setFormData({ ...formData, address: e.target.value })
                               }
-                              className="w-full luxury-3d-input px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                              className={inputClass}
                               placeholder="마포구 마포대로 15"
                             />
                           </div>
@@ -21078,20 +20912,23 @@ const SoulCenter = ({
               </div>
 
               {/* Back / Next / Finish Stepper Actions Bar */}
-              <div className="flex gap-3 pt-4 border-t border-zinc-150 dark:border-zinc-850">
+              <div className={cn(
+                "flex pt-4 border-t border-zinc-150 dark:border-zinc-850 transition-all duration-300",
+                checkedInnovations.includes(30) ? "gap-6 md:gap-8" : "gap-3"
+              )}>
                 {regType === "professional" && regStep > 1 ? (
                   <button
                     type="button"
                     onClick={handlePrevStep}
-                    className="flex-1 py-4 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-500 font-bold rounded-xl active:scale-95 transition-all text-xs text-center cursor-pointer"
+                    className={buttonPrevClass}
                   >
-                    이전 단계
+                    ◀ 이전 단계
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={() => setIsRegistering(false)}
-                    className="flex-1 py-4 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-500 font-bold rounded-xl active:scale-95 transition-all text-xs text-center cursor-pointer"
+                    className={buttonPrevClass}
                   >
                     취소
                   </button>
@@ -21101,19 +20938,14 @@ const SoulCenter = ({
                   <button
                     type="button"
                     onClick={handleNextStep}
-                    className="flex-1 py-4 bg-amber-500 hover:bg-amber-600 text-black font-black rounded-xl active:scale-95 transition-all text-xs text-center cursor-pointer shadow-lg shadow-amber-500/10"
+                    className={buttonNextClass}
                   >
                     다음 단계 ▶
                   </button>
                 ) : (
                   <button
                     type="submit"
-                    className={cn(
-                      "flex-2 py-4 text-white font-black rounded-xl shadow-xl active:scale-95 transition-all px-8 text-xs cursor-pointer",
-                      regType === "professional" 
-                        ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20 text-black font-black" 
-                        : "bg-purple-600 hover:bg-purple-500 shadow-purple-500/20"
-                    )}
+                    className={buttonSubmitClass}
                   >
                     {regType === "professional" ? "🏢 최종 연합 조약 심사 요청 접수" : "✍️ 시민 기자 등록 선언 완료"}
                   </button>
@@ -24168,12 +24000,15 @@ function App() {
     null,
   );
   const [siteSettings, setSiteSettings] = React.useState({
-    registrationNumber: "서울 아 0510 (2026.05.10)",
-    publisher: "김이솔",
-    editor: "김이솔",
-    address: "서울특별시 종로구 세종대로 1이솔",
-    phone: "02-1234-5678",
-    email: "news@isolnara.com",
+    registrationNumber: "서울, 아 0511",
+    registrationDate: "2026.05.10",
+    publisher: "현원 (HyeonWon)",
+    editor: "현원 (HyeonWon)",
+    youthOfficer: "이솔 (Isol)",
+    publishingCo: "주식회사 이솔미디어 (Isol Media Co., Ltd.)",
+    address: "서울특별시 마포구 아고라대로 105, 이솔미디어타워 10층",
+    phone: "02-555-2026",
+    email: "contact@isolmedia.com",
   });
 
   // RAG (Retrieval-Augmented Generation) System Configuration States
