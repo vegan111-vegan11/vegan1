@@ -154,6 +154,38 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isSignedIn() && existing().authorId == request.auth.uid);
     }
 
+    match /news_banners/{bannerId} {
+      allow read: if true;
+      allow create: if isAdmin() || (isSignedIn() && isAdmin());
+      allow update: if isAdmin() || (
+        incoming().title == existing().title &&
+        incoming().imageUrl == existing().imageUrl &&
+        incoming().targetUrl == existing().targetUrl &&
+        incoming().position == existing().position &&
+        (
+          incoming().clicks == existing().clicks + 1 ||
+          incoming().impressions == existing().impressions + 1 ||
+          (incoming().clicks == existing().clicks && incoming().impressions == existing().impressions)
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /banner_applications/{applicationId} {
+      allow read: if isAdmin();
+      allow create: if incoming().companyName is string && incoming().companyName.size() <= 200 &&
+                       incoming().advertiser is string && incoming().advertiser.size() <= 200 &&
+                       incoming().contact is string && incoming().contact.size() <= 200 &&
+                       incoming().title is string && incoming().title.size() <= 300 &&
+                       incoming().imageUrl is string && incoming().imageUrl.size() <= 1000 &&
+                       incoming().targetUrl is string && incoming().targetUrl.size() <= 1000 &&
+                       incoming().position in ["gnb_top", "inline_article", "sidebar", "footer_top"] &&
+                       incoming().period is string &&
+                       incoming().status == "pending" &&
+                       isValidId(applicationId);
+      allow update, delete: if isAdmin();
+    }
+
     match /test/connection {
       allow read: if true;
     }

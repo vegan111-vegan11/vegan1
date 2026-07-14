@@ -113,6 +113,45 @@
         "commentsCount": { "type": "integer" }
       },
       "required": ["title", "content", "author", "authorId", "category"]
+    },
+    "NewsBanner": {
+      "title": "NewsBanner",
+      "description": "Advertisement banner with tracking.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "targetUrl": { "type": "string" },
+        "position": { "type": "string", "enum": ["gnb_top", "inline_article", "sidebar", "footer_top"] },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "impressions": { "type": "integer" },
+        "clicks": { "type": "integer" },
+        "advertiser": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "paused", "expired"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "imageUrl", "targetUrl", "position", "advertiser", "status"]
+    },
+    "BannerApplication": {
+      "title": "BannerApplication",
+      "description": "Corporate or government advertisement banner placement application.",
+      "type": "object",
+      "properties": {
+        "companyName": { "type": "string" },
+        "advertiser": { "type": "string" },
+        "contact": { "type": "string" },
+        "title": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "targetUrl": { "type": "string" },
+        "position": { "type": "string", "enum": ["gnb_top", "inline_article", "sidebar", "footer_top"] },
+        "period": { "type": "string" },
+        "budget": { "type": "integer" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["companyName", "advertiser", "contact", "title", "imageUrl", "targetUrl", "position", "period", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -143,6 +182,14 @@
     "agora_threads": {
       "schema": "AgoraThread",
       "description": "Collection of Citizen Agora discussion forum threads."
+    },
+    "news_banners": {
+      "schema": "NewsBanner",
+      "description": "Collection of advertisement banners in GNB, sidebar, inline, and footer."
+    },
+    "banner_applications": {
+      "schema": "BannerApplication",
+      "description": "Collection of corporate/government advertisement banner applications."
     }
   }
 }

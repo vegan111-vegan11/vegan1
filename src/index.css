@@ -1,14 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@100..900&family=JetBrains+Mono:wght@400;700&family=Nanum+Gothic:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Noto+Serif+KR:wght@300;400;500;600;700;900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css");
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Cormorant Garamond", Georgia, serif;
-}
-
-@theme {
-  --font-sans: "Inter", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Pretendard", "Plus Jakarta Sans", "Inter", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", "Cormorant Garamond", "Noto Serif KR", Georgia, serif;
   --font-mono: "JetBrains Mono", monospace;
   --font-webtoon: "Nanum Gothic", "Noto Sans KR", sans-serif;
 
@@ -1297,6 +1293,87 @@ html, body {
   from { width: 0; }
   to { width: 100%; }
 }
+
+/* ==========================================
+   📱 MOBILE-FORCE & GOOGLE DEVICE MOCKUP STYLES
+   ========================================== */
+
+/* Overrides to strictly force mobile layout under .mobile-force container regardless of media queries */
+.mobile-force {
+  --scrollbar-width: 0px;
+}
+
+.mobile-force .lg\:hidden {
+  display: block !important;
+}
+
+.mobile-force div.lg\:hidden,
+.mobile-force section.lg\:hidden {
+  display: block !important;
+}
+
+.mobile-force button.lg\:hidden,
+.mobile-force a.lg\:hidden {
+  display: inline-flex !important;
+}
+
+.mobile-force .flex.lg\:hidden {
+  display: flex !important;
+}
+
+.mobile-force .grid.lg\:hidden {
+  display: grid !important;
+}
+
+/* Hide all desktop-specific modules and sidebars */
+.mobile-force .lg\:block,
+.mobile-force .lg\:flex,
+.mobile-force .lg\:grid,
+.mobile-force #home_right_aside,
+.mobile-force aside.hidden.lg\:block {
+  display: none !important;
+}
+
+/* Force 12-column grids down to single-column blocks */
+.mobile-force .lg\:grid-cols-12,
+.mobile-force .grid-cols-12 {
+  grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+}
+
+.mobile-force .lg\:col-span-9,
+.mobile-force .lg\:col-span-3,
+.mobile-force .lg\:col-span-12 {
+  grid-column: span 12 / span 12 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Streamline spacing and margins inside the phone frame */
+.mobile-force .max-w-7xl {
+  max-width: 100% !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+.mobile-force main {
+  padding-bottom: 5.5rem !important; /* Space for sticky bottom tab bar */
+}
+
+/* Custom subtle scrollbar inside mobile sandbox */
+.mobile-force::-webkit-scrollbar {
+  width: 4px;
+}
+.mobile-force::-webkit-scrollbar-track {
+  background: transparent;
+}
+.mobile-force::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 9999px;
+}
+.mobile-force::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
 
 
 
