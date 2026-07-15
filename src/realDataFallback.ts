@@ -446,6 +446,19 @@ export const PREMIUM_CITIZEN_NEWS = [
 
   // 16. 이솔공방
   {
+    id: "cosmic_masterpiece",
+    title: "[이솔공방 특별전시] 우주의 살아있는 생명 나무 (Cosmic Tree of Life) - 초현실주의 걸작 오일 아트",
+    author: "이솔공방 중앙 아티스트",
+    reporterId: "admin",
+    content: "이솔공방 화백단과 최첨단 AI 기법이 유기적으로 결합하여 완성한 기념비적 오일 페인팅 걸작입니다. 하늘하늘 뻗어 나가는 신성한 가지들은 찬란하게 빛나는 성운과 행성계로 이어지며, 영원의 지혜를 품은 빛나는 우주 과실을 맺습니다. stardust(성단 먼지)와 액체광(liquid light)으로 짜여진 빛나는 뿌리는 대지 깊은 곳의 정신 생명력과 우주 전체를 긴밀히 연결하며, 감상자에게 우주적 연대와 깊은 사유, 형언할 수 없는 영성적 경외감을 선사합니다. 이솔나라가 제안하는 기술 인문학적 미학의 정수이자 한 편의 대서사시입니다.",
+    thumbnail: "/src/assets/images/cosmic_masterpiece_1784129393714.jpg",
+    date: "2026-07-15",
+    likes: 999,
+    category: "이솔공방",
+    isApproved: true,
+    isFeatured: true,
+  },
+  {
     id: "wshop1",
     title: "[이솔공방] 한지 직조 공예: 우리의 한지가 자아내는 천연 가구 가치 재발견",
     author: "이지은 화백",

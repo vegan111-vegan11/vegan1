@@ -112,6 +112,7 @@ import {
   List,
   CheckSquare,
   Smartphone,
+  Monitor,
   Award,
   Printer,
   Vote,
@@ -123,6 +124,7 @@ import {
   Clapperboard,
 } from "lucide-react";
 import { GoogleGenAI, Type } from "@google/genai";
+import { QRCodeSVG } from "qrcode.react";
 import { Toaster, toast } from "sonner";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -12278,110 +12280,44 @@ const NewsDetailModal: React.FC<{
                         {sponsorAmount.toLocaleString()}원 정성 전송
                       </button>
                     </div>
-                    <div className="flex flex-col items-center justify-center p-4 bg-orange-500/5 rounded-2xl border border-dashed border-orange-500/20 text-center relative">
-                      <div className="w-24 h-24 bg-white p-1 rounded-xl shadow-inner flex items-center justify-center">
-                        {/* Custom SVG QR Code Simulator */}
-                        <svg className="w-fr h-fr text-orange-600" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm13-2h3v2h-3v-2zm-2 2h2v2h-2v-2zm2 2h3v3h-3v-3zm-2-2h2v2H14v-2zm2 2h3v3h-3v-3z" />
-                        </svg>
+
+                    {/* QR Code generator */}
+                    <div className="flex flex-col items-center justify-center border-l border-zinc-200 dark:border-zinc-800 pl-6 text-center space-y-2">
+                      <div className="p-3 bg-white rounded-2xl border border-zinc-150 shadow-md">
+                        <QRCodeSVG 
+                          value={`sponsor-reporter-${news.id}-${news.author || "anon"}-${sponsorAmount}`}
+                          size={90}
+                          level="H"
+                          includeMargin={false}
+                        />
                       </div>
-                      <p className="text-[10px] font-black text-orange-600 dark:text-orange-400 tracking-wider mt-3 uppercase">이솔 정론 고유 블록체인 후원 QR</p>
-                      <p className="text-[9px] text-zinc-400 font-bold mt-0.5">결제 수수료 0% 전액 기자 즉시 귀속</p>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-orange-550 dark:text-orange-400 mt-1">Sponsor QR Code</p>
+                      <p className="text-[9px] text-zinc-400 font-semibold leading-normal">
+                        기자의 암호화된 가상 자산 전용 수신 지갑 주소입니다. 스캔하면 즉시 후원 처리됩니다.
+                      </p>
                     </div>
                   </motion.div>
                 )}
               </div>
 
-              {/* ITEM 2: REAL-TIME 5W1H INTEGRITY ANALYTICS GAUGE DESK (육하원칙 인공지능 검증 시스템) */}
-              <div className="mt-6 p-6 rounded-3xl border border-zinc-150 dark:border-zinc-805 bg-white dark:bg-[#121215] space-y-5 text-left text-sm">
-                <div className="flex justify-between items-center">
+              {/* ITEM 8: AI REPORT EXPORT TRIGGER & 5W1H INTEGRITY DASHBOARD */}
+              <div className="mt-6 p-6 rounded-3xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-850 space-y-5 text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200/60 dark:border-zinc-800/60 pb-4">
                   <div>
-                    <h4 className="text-sm font-black tracking-tight text-zinc-900 dark:text-white flex items-center gap-1.5">
-                      <ShieldCheck className="text-blue-500 animate-[spin_10s_linear_infinite]" size={16} /> 육하원칙 충족 장치 검증 (5W1H Analytics)
+                    <h4 className="text-sm font-black tracking-tight text-zinc-900 dark:text-white">
+                      AI 팩트체크 기사 5W1H 심층 분석 보고서
                     </h4>
-                    <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mt-0.5 font-sans">
-                      Journalism standards structural check detector
+                    <p className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider mt-0.5 font-sans">
+                      Artificial Intelligence 5W1H fact-checking deep-dive report
                     </p>
                   </div>
-                  <span className={cn(
-                    "px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider font-sans",
-                    detect5W1H.score >= 80 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-orange-500/10 text-orange-600"
-                  )}>
-                    정합 지수 {detect5W1H.score}%
-                  </span>
-                </div>
 
-                {/* Circular indicator style bar */}
-                <div className="grid grid-cols-6 gap-2 text-center uppercase tracking-widest text-[9px] font-black font-sans">
-                  {([
-                    { label: "Who (누가)", active: detect5W1H.who },
-                    { label: "When (언제)", active: detect5W1H.when },
-                    { label: "Where (어디서)", active: detect5W1H.where },
-                    { label: "What (무엇을)", active: detect5W1H.what },
-                    { label: "Why (왜)", active: detect5W1H.why },
-                    { label: "How (어떻게)", active: detect5W1H.how },
-                  ]).map((item, idx) => (
-                    <div
-                      key={idx}
-                      className={cn(
-                        "p-3 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-20 shadow-xs",
-                        item.active 
-                          ? "bg-blue-500/[0.03] border-blue-500/30 text-blue-600 dark:text-blue-400" 
-                          : "bg-zinc-50 dark:bg-zinc-900/30 border-zinc-100 dark:border-zinc-800 text-zinc-400"
-                      )}
-                    >
-                      <span className="block text-[8px] leading-tight select-none opacity-85 font-black">{item.label}</span>
-                      <div className="flex justify-center mt-2">
-                        {item.active ? (
-                          <span className="w-5 h-5 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black animate-scale-up text-xs">✓</span>
-                        ) : (
-                          <span className="w-5 h-5 rounded-full bg-zinc-200/50 dark:bg-zinc-800 text-zinc-500 flex items-center justify-center text-[10px] font-black">?</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <p className="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400 font-semibold bg-zinc-50 dark:bg-zinc-900/40 p-3.5 rounded-2xl border border-zinc-100 dark:border-zinc-850">
-                  {detect5W1H.score === 100 
-                    ? "✨ [완벽한 정론] 본 원고는 6하원칙의 모든 필수 속성들을 누락 없이 정방위로 포괄하고 있는 고품격 사실 정론 기사로 확인되었습니다." 
-                    : `⚠️ [구조 보정 필요] 총 6개 정합 지표 중 일부 필수 요소인 "${!detect5W1H.why ? "Why(원인)" : ""}" "${!detect5W1H.how ? "How(방식)" : ""}" 부근의 상세 해명이 다소 약화된 상태입니다. 독자분들의 추가 사실 공유가 유용합니다.`}
-                </p>
-
-                <div className="pt-1.5">
                   <button
-                    onClick={() => {
-                      if (typeof playHapticClick === "function") playHapticClick(650, 0.05);
-                      const copyText = `[이솔뉴스 AI 6하원칙 팩트체크 브리핑]\n기사명: "${news.title}"\n기자: ${news.author || "시민필진"}\n6하원칙 정합도: ${detect5W1H.score}%\n검증 현황: \n- 누가(Who): ${detect5W1H.who ? "충족 (✓)" : "누락 (?)"}\n- 언제(When): ${detect5W1H.when ? "충족 (✓)" : "누락 (?)"}\n- 어디서(Where): ${detect5W1H.where ? "충족 (✓)" : "누락 (?)"}\n- 무엇을(What): ${detect5W1H.what ? "충족 (✓)" : "누락 (?)"}\n- 왜(Why): ${detect5W1H.why ? "충족 (✓)" : "누락 (?)"}\n- 어떻게(How): ${detect5W1H.how ? "충족 (✓)" : "누락 (?)"}\n\n총평: ${detect5W1H.score === 100 ? "정론 보도의 필수 기틀을 모두 포괄하고 있어 신뢰할 수 있습니다." : "일부 기론의 설명 보완이 추천되는 요건입니다."}`;
-                      navigator.clipboard.writeText(copyText);
-                      toast.success("📋 6하원칙 팩트체크 브리핑 데이터가 클립보드에 초정밀 복사되었습니다!");
-                    }}
-                    className="w-full py-2.5 bg-blue-600/5 hover:bg-blue-600/10 dark:bg-blue-500/10 dark:hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-2xl text-[11px] font-black tracking-tight transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                    type="button"
+                    onClick={generateAiInDepthAnalysis}
+                    disabled={isGeneratingAiAnalysis}
+                    className="sm:self-start flex items-center gap-1.5 px-4.5 py-2.5 bg-zinc-950 hover:bg-red-655 text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-red-655 dark:hover:text-white rounded-xl text-xs font-black transition-all cursor-pointer disabled:opacity-40"
                   >
-                    <Copy size={12} />
-                    6하원칙 AI 브리핑 한눈에 복사하기
-                  </button>
-                </div>
-              </div>
-
-              {/* ITEM 1: REAL-TIME IN-DEPTH AI NEWS ANALYSIS AND CROSS-REPORT GENERATOR */}
-              <div className="mt-6 p-6 rounded-3xl border border-zinc-150 dark:border-zinc-805 bg-zinc-50 dark:bg-zinc-950/30 text-left">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <div className="space-y-0.5">
-                    <h4 className="text-sm font-black text-zinc-900 dark:text-white tracking-tight flex items-center gap-1.5 font-sans">
-                      <Sparkles size={16} className="text-red-500" /> AI 정밀 사실 검증 및 크로스 리포팅
-                    </h4>
-                    <p className="text-[10px] text-zinc-405 text-zinc-400 font-bold uppercase tracking-widest font-sans">
-                      Advanced gemini core truth-integrity analysis
-                    </p>
-                  </div>
-                  {!aiAnalysisReport && (
-                    <button
-                      type="button"
-                      disabled={isGeneratingAiAnalysis}
-                      onClick={generateAiInDepthAnalysis}
-                      className="px-4.5 py-2.5 bg-zinc-900 hover:bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
-                    >
                       {isGeneratingAiAnalysis ? (
                         <>
                           <span className="w-3.5 h-3.5 border-2 border-white dark:border-zinc-950 border-t-transparent rounded-full animate-spin" />
@@ -12393,7 +12329,6 @@ const NewsDetailModal: React.FC<{
                         </>
                       )}
                     </button>
-                  )}
                 </div>
 
                 {aiAnalysisReport && (
@@ -25637,6 +25572,10 @@ function App() {
   const [user, setUser] = React.useState<FirebaseUser | null>(null);
   const [isAdminView, setIsAdminView] = React.useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
+  const [isSimulatedMobileView, setIsSimulatedMobileView] = React.useState<boolean>(() => {
+    const saved = localStorage.getItem("isSimulatedMobileView");
+    return saved === "true";
+  });
   const [registerTypeFromHeader, setRegisterTypeFromHeader] = React.useState<"citizen" | "professional" | null>(null);
   const [theme, setTheme] = React.useState(
     () => localStorage.getItem("theme") || "light",
@@ -27213,48 +27152,68 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white font-sans selection:bg-red-655 selection:text-white flex flex-col items-center justify-center lg:py-6 relative overflow-hidden transition-colors duration-500">
+    <div className={cn(
+      "min-h-screen text-white font-sans selection:bg-red-655 selection:text-white flex flex-col relative overflow-hidden transition-colors duration-500",
+      isSimulatedMobileView ? "bg-[#09090b] items-center justify-center lg:py-6" : "w-full bg-white dark:bg-[#09090b]"
+    )}>
       {/* Ambient background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-600/10 rounded-full blur-[120px] pointer-events-none z-0 hidden lg:block" />
+      {isSimulatedMobileView && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-600/10 rounded-full blur-[120px] pointer-events-none z-0 hidden lg:block" />
+      )}
       
       {/* Minimal sandbox header */}
-      <div className="hidden lg:flex flex-col items-center gap-1 mb-4 z-10 select-none text-center">
-        <div className="flex items-center gap-2">
-          <span className="flex h-1.5 w-1.5 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-600"></span>
-          </span>
-          <span className="text-[9px] font-black text-red-500 uppercase tracking-widest bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">IsolNara Mobile Sandbox</span>
+      {isSimulatedMobileView && (
+        <div className="hidden lg:flex flex-col items-center gap-1 mb-4 z-10 select-none text-center">
+          <div className="flex items-center gap-2">
+            <span className="flex h-1.5 w-1.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-600"></span>
+            </span>
+            <span className="text-[9px] font-black text-red-500 uppercase tracking-widest bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">IsolNara Mobile Sandbox</span>
+          </div>
+          <h1 className="text-base font-extrabold tracking-tight text-zinc-100">이솔나라 실시간 모바일 체험존</h1>
+          <p className="text-[10px] text-zinc-400 font-semibold">데스크톱에서도 고품격 모바일 전용 UI/UX를 1:1 인터랙티브로 감상하세요.</p>
         </div>
-        <h1 className="text-base font-extrabold tracking-tight text-zinc-100">이솔나라 실시간 모바일 체험존</h1>
-        <p className="text-[10px] text-zinc-400 font-semibold">데스크톱에서도 고품격 모바일 전용 UI/UX를 1:1 인터랙티브로 감상하세요.</p>
-      </div>
+      )}
 
       {/* Main Google Pixel/iPhone style chassis */}
-      <div className="w-full h-screen lg:max-w-[420px] lg:h-[880px] lg:rounded-[44px] lg:border-[10px] lg:border-zinc-850 lg:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] lg:bg-white lg:dark:bg-zinc-950 flex flex-col relative overflow-hidden lg:ring-1 lg:ring-white/10 z-10 select-none mobile-force" style={{ transform: 'translate3d(0,0,0)' }}>
+      <div 
+        className={cn(
+          "w-full flex-1 flex flex-col relative select-none",
+          isSimulatedMobileView 
+            ? "h-screen lg:max-w-[420px] lg:h-[880px] lg:rounded-[44px] lg:border-[10px] lg:border-zinc-850 lg:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] lg:bg-white lg:dark:bg-zinc-950 lg:ring-1 lg:ring-white/10 z-10 mobile-force overflow-hidden" 
+            : "min-h-screen w-full lg:max-w-none lg:h-auto lg:rounded-none lg:border-0 lg:shadow-none lg:bg-transparent lg:dark:bg-transparent z-10"
+        )} 
+        style={isSimulatedMobileView ? { transform: 'translate3d(0,0,0)' } : undefined}
+      >
         
         {/* Realism: Top device status bar */}
-        <div className="hidden lg:flex justify-between items-center px-6 py-2.5 bg-white dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-900 text-[10.5px] font-black text-zinc-800 dark:text-zinc-200 select-none shrink-0 relative">
-          <div className="font-mono">08:06</div>
-          {/* Simulated notch */}
-          <div className="w-20 h-4 bg-black rounded-full absolute left-1/2 -translate-x-1/2 top-2 flex items-center justify-center border border-white/5 shadow-inner">
-            <div className="w-1.5 h-1.5 rounded-full bg-zinc-900/40 border border-white/5 ml-auto mr-3" />
-          </div>
-          <div className="flex items-center gap-1.5 font-mono text-[9px]">
-            <span>5G</span>
-            <span className="flex items-center gap-0.5">
-              <span className="w-0.5 h-1.5 bg-current rounded-3xs" />
-              <span className="w-0.5 h-2 bg-current rounded-3xs" />
-              <span className="w-0.5 h-2.5 bg-current rounded-3xs" />
-            </span>
-            <div className="w-5 h-2.5 border border-current rounded-xs p-0.5 flex items-center">
-              <div className="w-full h-full bg-current rounded-3xs" />
+        {isSimulatedMobileView && (
+          <div className="hidden lg:flex justify-between items-center px-6 py-2.5 bg-white dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-900 text-[10.5px] font-black text-zinc-800 dark:text-zinc-200 select-none shrink-0 relative">
+            <div className="font-mono">08:06</div>
+            {/* Simulated notch */}
+            <div className="w-20 h-4 bg-black rounded-full absolute left-1/2 -translate-x-1/2 top-2 flex items-center justify-center border border-white/5 shadow-inner">
+              <div className="w-1.5 h-1.5 rounded-full bg-zinc-900/40 border border-white/5 ml-auto mr-3" />
+            </div>
+            <div className="flex items-center gap-1.5 font-mono text-[9px]">
+              <span>5G</span>
+              <span className="flex items-center gap-0.5">
+                <span className="w-0.5 h-1.5 bg-current rounded-3xs" />
+                <span className="w-0.5 h-2 bg-current rounded-3xs" />
+                <span className="w-0.5 h-2.5 bg-current rounded-3xs" />
+              </span>
+              <div className="w-5 h-2.5 border border-current rounded-xs p-0.5 flex items-center">
+                <div className="w-full h-full bg-current rounded-3xs" />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Scrollable core web app wrapper */}
-        <div className="flex-1 w-full h-full overflow-y-auto overflow-x-hidden relative no-scrollbar flex flex-col bg-bg dark:bg-zinc-950">
+        <div className={cn(
+          "flex-1 w-full relative flex flex-col bg-bg dark:bg-zinc-950",
+          isSimulatedMobileView ? "h-full overflow-y-auto overflow-x-hidden no-scrollbar" : "min-h-screen"
+        )}>
           <AnimatePresence>
             {isLoading && <NeuralLoader key="app-loader" />}
           </AnimatePresence>
@@ -28652,6 +28611,49 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
               <p className="text-[10px] font-black tracking-widest text-zinc-400 uppercase border-b border-gray-100 dark:border-white/5 pb-1 select-none">
                 ⚙️ Quick Accessibility
               </p>
+
+              {/* Layout Mode Row */}
+              <div className="flex flex-col gap-1.5 border-b border-gray-100 dark:border-white/5 pb-2 select-none">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-zinc-500">화면 레이아웃 (Layout Mode)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 bg-gray-100 dark:bg-zinc-900 rounded-lg p-1">
+                  <button
+                    onClick={() => {
+                      if (typeof playHapticClick === "function") playHapticClick(600, 0.04);
+                      setIsSimulatedMobileView(false);
+                      localStorage.setItem("isSimulatedMobileView", "false");
+                      toast.success("🖥️ 데스크톱 웹 최적화 모드로 전환되었습니다!");
+                    }}
+                    className={cn(
+                      "py-1 text-[9.5px] font-black rounded transition-all flex items-center justify-center gap-1 cursor-pointer",
+                      !isSimulatedMobileView
+                        ? "bg-red-650 text-white shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                    )}
+                  >
+                    <Monitor size={11} />
+                    <span>데스크톱 웹</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (typeof playHapticClick === "function") playHapticClick(600, 0.04);
+                      setIsSimulatedMobileView(true);
+                      localStorage.setItem("isSimulatedMobileView", "true");
+                      toast.success("📱 모바일 가상 체험 모드로 전환되었습니다!");
+                    }}
+                    className={cn(
+                      "py-1 text-[9.5px] font-black rounded transition-all flex items-center justify-center gap-1 cursor-pointer",
+                      isSimulatedMobileView
+                        ? "bg-red-650 text-white shadow-sm"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                    )}
+                  >
+                    <Smartphone size={11} />
+                    <span>모바일 가상</span>
+                  </button>
+                </div>
+              </div>
               
               {/* Font Resizing Row */}
               <div className="flex flex-col gap-1.5">
@@ -28905,8 +28907,47 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
       </div>
       
       {/* On Desktop, render a simulated virtual home indicator bar at the bottom for realism */}
-      <div className="hidden lg:flex justify-center items-center py-2 bg-white dark:bg-zinc-950 shrink-0 select-none border-t border-zinc-100 dark:border-zinc-900 relative z-[100]">
-        <div className="w-28 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
+      {isSimulatedMobileView && (
+        <div className="hidden lg:flex justify-center items-center py-2 bg-white dark:bg-zinc-950 shrink-0 select-none border-t border-zinc-100 dark:border-zinc-900 relative z-[100]">
+          <div className="w-28 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
+        </div>
+      )}
+    </div>
+
+    {/* Modern floating layout switcher for desktop web browsers */}
+    <div className="hidden lg:flex fixed bottom-8 left-8 z-[100] items-center gap-2.5 bg-zinc-950/90 dark:bg-zinc-900/90 backdrop-blur-md border border-white/10 px-4 py-2.5 rounded-full shadow-2xl shadow-red-500/10">
+      <span className="text-[10px] font-black text-red-500 uppercase tracking-widest select-none">VIEW MODE:</span>
+      <div className="flex bg-white/5 p-0.5 rounded-full border border-white/10">
+        <button
+          onClick={() => {
+            if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
+            setIsSimulatedMobileView(false);
+            localStorage.setItem("isSimulatedMobileView", "false");
+            toast.success("🖥️ 데스크톱 웹 최적화 모드로 전환되었습니다!");
+          }}
+          className={cn(
+            "px-3.5 py-1.5 rounded-full text-[10px] font-black transition-all flex items-center gap-1.5 cursor-pointer border border-transparent",
+            !isSimulatedMobileView ? "bg-red-650 text-white shadow-md shadow-red-500/25" : "text-zinc-400 hover:text-white"
+          )}
+        >
+          <Monitor size={12} />
+          <span>데스크톱 웹</span>
+        </button>
+        <button
+          onClick={() => {
+            if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
+            setIsSimulatedMobileView(true);
+            localStorage.setItem("isSimulatedMobileView", "true");
+            toast.success("📱 모바일 가상 체험 모드로 전환되었습니다!");
+          }}
+          className={cn(
+            "px-3.5 py-1.5 rounded-full text-[10px] font-black transition-all flex items-center gap-1.5 cursor-pointer border border-transparent",
+            isSimulatedMobileView ? "bg-red-650 text-white shadow-md shadow-red-500/25" : "text-zinc-400 hover:text-white"
+          )}
+        >
+          <Smartphone size={12} />
+          <span>모바일 가상</span>
+        </button>
       </div>
     </div>
   </div>
