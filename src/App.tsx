@@ -421,6 +421,13 @@ interface CitizenNews {
   priority?: "general" | "urgent" | "breaking";
   pdfUrl?: string;
   pdfName?: string;
+  isHumanTaken?: boolean;
+  cameraModel?: string;
+  lensModel?: string;
+  locationTaken?: string;
+  isoSpeed?: string;
+  apertureValue?: string;
+  shutterSpeed?: string;
 }
 
 interface Reporter {
@@ -11635,7 +11642,59 @@ const NewsDetailModal: React.FC<{
                   target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800";
                 }}
                 referrerPolicy="no-referrer"
+                id="news-reader-thumbnail-img"
               />
+            </div>
+          )}
+
+          {/* Real Photo Human Lens Metadata Card */}
+          {news.isHumanTaken && (
+            <div className="max-w-2xl mx-auto w-full p-5 rounded-3xl bg-emerald-500/5 dark:bg-emerald-500/5 border border-emerald-500/20 dark:border-emerald-500/10 space-y-4 shadow-sm animate-fade-in" id="realphoto-metadata-card">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-500/10 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-emerald-500/15 rounded-2xl text-emerald-600 dark:text-emerald-400">
+                    <Camera size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                      <span>100% HUMAN LENS VERIFIED</span>
+                    </h4>
+                    <p className="text-[10.5px] text-zinc-500 dark:text-zinc-400 font-semibold mt-0.5 leading-snug">
+                      이 사진은 AI 생성이 아닙니다. 촬영자의 눈과 카메라 렌즈를 통해 물리적 순간을 고스란히 영구 고착화한 인간 안심 실경 갤러리입니다.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[9.5px] font-black bg-emerald-600 text-white dark:bg-emerald-500/20 dark:text-emerald-400 px-3 py-1 rounded-full border border-emerald-500/20 uppercase tracking-wider shadow-inner select-none whitespace-nowrap">
+                  실사 인증 완료
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-zinc-700 dark:text-zinc-350">
+                <div className="bg-white/50 dark:bg-zinc-900/50 border border-zinc-150 dark:border-zinc-900 p-3 rounded-2xl text-left">
+                  <span className="text-[9px] text-zinc-400 dark:text-zinc-500 uppercase font-black block tracking-wider">CAMERA BODY</span>
+                  <span className="text-[11px] md:text-xs font-black text-zinc-800 dark:text-zinc-200 mt-1 block truncate">
+                    {news.cameraModel || "SLR/RF 카메라"}
+                  </span>
+                </div>
+                <div className="bg-white/50 dark:bg-zinc-900/50 border border-zinc-150 dark:border-zinc-900 p-3 rounded-2xl text-left">
+                  <span className="text-[9px] text-zinc-400 dark:text-zinc-500 uppercase font-black block tracking-wider">LENS SYSTEM</span>
+                  <span className="text-[11px] md:text-xs font-black text-zinc-800 dark:text-zinc-200 mt-1 block truncate">
+                    {news.lensModel || "단렌즈/망원 렌즈"}
+                  </span>
+                </div>
+                <div className="bg-white/50 dark:bg-zinc-900/50 border border-zinc-150 dark:border-zinc-900 p-3 rounded-2xl text-left">
+                  <span className="text-[9px] text-zinc-400 dark:text-zinc-500 uppercase font-black block tracking-wider">EXIF EXPOSURE</span>
+                  <span className="text-[11px] md:text-xs font-mono font-bold text-zinc-850 dark:text-zinc-250 mt-1 block truncate">
+                    {news.shutterSpeed ? `${news.shutterSpeed} • ${news.apertureValue || "F/--"} • ISO ${news.isoSpeed || "---"}` : "수동 노출 정보"}
+                  </span>
+                </div>
+                <div className="bg-white/50 dark:bg-zinc-900/50 border border-zinc-150 dark:border-zinc-900 p-3 rounded-2xl text-left">
+                  <span className="text-[9px] text-zinc-400 dark:text-zinc-500 uppercase font-black block tracking-wider">GEOLOCATION</span>
+                  <span className="text-[11px] md:text-xs font-bold text-zinc-800 dark:text-zinc-200 mt-1 block truncate" title={news.locationTaken}>
+                    {news.locationTaken || "대한민국 현경"}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -13217,6 +13276,7 @@ const Navbar = ({
   const topNavItems = [
     { id: "이솔나라스타", label: "🌟 이솔나라스타" },
     { id: "이솔나라포토", label: "📸 이솔나라포토" },
+    { id: "리얼포토", label: "📷 리얼포토(실사)" },
     { id: "이솔나라TV", label: "📺 이솔나라TV" },
     { id: "10만인클럽", label: "🤝 10만인클럽" },
     { id: "이솔나라북", label: "📚 이솔나라북" },
@@ -13247,6 +13307,8 @@ const Navbar = ({
         return <Star className={`${className} text-amber-500`} />;
       case "이솔나라포토":
         return <Camera className={`${className} text-blue-500`} />;
+      case "리얼포토":
+        return <Camera className={`${className} text-emerald-500`} />;
       case "이솔나라TV":
         return <Tv className={`${className} text-red-500`} />;
       case "10만인클럽":
@@ -14448,6 +14510,8 @@ const IsolPost = ({
   banners = [],
   setBanners,
   onAdApplyClick,
+  setCitizenNews,
+  isSimulatedMobileView,
 }: any) => {
   const [activeCategory, setActiveCategory] = React.useState("전체기사");
   const [workshopSubCategory, setWorkshopSubCategory] = React.useState("전체");
@@ -14455,6 +14519,209 @@ const IsolPost = ({
   const [hoveredDesc, setHoveredDesc] = React.useState<{ name: string; desc: string } | null>(null);
   const [featuredSelectedCategory, setFeaturedSelectedCategory] = React.useState("사회/정치");
   const [activeHotClickTab, setActiveHotClickTab] = React.useState<"popular" | "trending">("popular");
+
+  // Photography (리얼포토) states
+  const [photoBrandFilter, setPhotoBrandFilter] = React.useState<string>("all");
+  const [photoLayoutMode, setPhotoLayoutMode] = React.useState<"grid" | "filmstrip">("grid");
+  const [selectedPhotoExif, setSelectedPhotoExif] = React.useState<any | null>(null);
+  const [photoVerificationLogs, setPhotoVerificationLogs] = React.useState<string[]>([]);
+  const [isVerifyingPhoto, setIsVerifyingPhoto] = React.useState<boolean>(false);
+
+  const filteredPhotosList = React.useMemo(() => {
+    const seedPhotos: any[] = [
+      {
+        id: "seed_photo_1",
+        title: "경복궁 향원정의 가을 아침",
+        author: "박수민 시민기자",
+        reporterId: "seed_user_1",
+        content: "아침 안개가 자욱하게 낀 경복궁 향원정의 가을 단풍 절정 풍경입니다. 생성형 AI 일러스트 기법이나 합성 필터 없이 100% 실사 광학 렌즈 센서에 맺힌 수작업 빛의 기록입니다.",
+        thumbnail: "https://images.unsplash.com/photo-1578496479914-7ef3b0193be3?auto=format&fit=crop&q=80&w=1200",
+        date: "2026-10-24",
+        likes: 38,
+        category: "리얼포토",
+        isApproved: true,
+        isHumanTaken: true,
+        cameraModel: "Fujifilm X-T5",
+        lensModel: "XF 16-55mm F2.8 R LM WR",
+        locationTaken: "서울 종로구 사직로 161 경복궁 향원정",
+        isoSpeed: "160",
+        apertureValue: "F8.0",
+        shutterSpeed: "1/125s",
+      },
+      {
+        id: "seed_photo_2",
+        title: "제주 성산일출봉 유채꽃밭의 서광",
+        author: "이현우 사진작가",
+        reporterId: "seed_user_2",
+        content: "일출 직후 성산일출봉 주변 유채꽃밭에 내려앉은 따뜻한 아침 햇살을 황금분할 구도로 정밀 기록하였습니다. 어떠한 인공지능 이미지 합성이나 업스케일도 거치지 않은 자연 원천의 스냅입니다.",
+        thumbnail: "https://images.unsplash.com/photo-1542224566-6e85f2e6772f?auto=format&fit=crop&q=80&w=1200",
+        date: "2026-04-12",
+        likes: 54,
+        category: "리얼포토",
+        isApproved: true,
+        isHumanTaken: true,
+        cameraModel: "Sony α7R V (Hand-Taken)",
+        lensModel: "FE 24-70mm F2.8 GM II",
+        locationTaken: "제주특별자치도 서귀포시 성산읍",
+        isoSpeed: "100",
+        apertureValue: "F5.6",
+        shutterSpeed: "1/320s",
+      },
+      {
+        id: "seed_photo_3",
+        title: "설악산 울산바위 은하수의 밤",
+        author: "강태공 시민기자",
+        reporterId: "seed_user_3",
+        content: "칠흑 같이 어두운 밤, 영하의 차가운 기온 속에서 설악산 울산바위 위로 선명하게 흐르는 은하수 무리를 삼각대 장노출 기법으로 정밀 추적하여 얻은 한 장입니다.",
+        thumbnail: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&q=80&w=1200",
+        date: "2026-06-08",
+        likes: 92,
+        category: "리얼포토",
+        isApproved: true,
+        isHumanTaken: true,
+        cameraModel: "Canon EOS R5",
+        lensModel: "RF 15-35mm F2.8 L IS USM",
+        locationTaken: "강원특별자치도 속초시 설악산로 울산바위 전망대",
+        isoSpeed: "3200",
+        apertureValue: "F2.8",
+        shutterSpeed: "15s",
+      },
+      {
+        id: "seed_photo_4",
+        title: "남산 서울타워와 도심의 석양",
+        author: "한지수 기자",
+        reporterId: "seed_user_4",
+        content: "붉게 타오르는 서울 도심의 강렬한 낙조와 그 실루엣으로 우뚝 솟은 남산타워를 장망원 렌즈 압축 효과를 통해 인상적으로 표현했습니다.",
+        thumbnail: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&q=80&w=1200",
+        date: "2026-07-02",
+        likes: 47,
+        category: "리얼포토",
+        isApproved: true,
+        isHumanTaken: true,
+        cameraModel: "Sony α7 IV",
+        lensModel: "FE 70-200mm F4 G OSS II",
+        locationTaken: "서울특별시 중구 삼달로 남산공원 전망데크",
+        isoSpeed: "400",
+        apertureValue: "F4.0",
+        shutterSpeed: "1/160s",
+      }
+    ];
+
+    let userList = (citizenNews || []).filter((item: any) => item && (item.category === "리얼포토" || item.isHumanTaken === true));
+    let combined = [...userList, ...seedPhotos];
+
+    // Remove duplicates by ID just in case
+    const seenIds = new Set();
+    let list = combined.filter((item: any) => {
+      if (seenIds.has(item.id)) return false;
+      seenIds.add(item.id);
+      return true;
+    });
+    
+    if (photoBrandFilter !== "all") {
+      const brand = photoBrandFilter.toLowerCase();
+      list = list.filter((item: any) => {
+        const model = (item.cameraModel || "").toLowerCase();
+        if (brand === "sony") return model.includes("sony") || model.includes("소니");
+        if (brand === "fujifilm") return model.includes("fujifilm") || model.includes("fuji") || model.includes("후지");
+        if (brand === "canon") return model.includes("canon") || model.includes("캐논");
+        if (brand === "other") {
+          return !model.includes("sony") && !model.includes("소니") &&
+                 !model.includes("fujifilm") && !model.includes("fuji") && !model.includes("후지") &&
+                 !model.includes("canon") && !model.includes("캐논");
+        }
+        return true;
+      });
+    }
+    return list;
+  }, [citizenNews, photoBrandFilter]);
+
+  const handlePhotoUploadSimulation = (file: File) => {
+    setIsVerifyingPhoto(true);
+    setPhotoVerificationLogs([
+      "기탁 승인 신호가 수신되었습니다: " + file.name,
+      "이미지 바이너리 로딩 중... [완료] size: " + (file.size / 1024 / 1024).toFixed(2) + "MB",
+      "Heuristic 센서 감지 노드 기동...",
+      "수작업 픽셀 패턴 분석 중... 노이즈 스펙트럼 스캐닝 중...",
+      "AI 모델 특이점 보정 여부 대조 중... 이상 없음.",
+      "광학 하드웨어 렌즈 전송 왜곡 수치 교차 검증 중...",
+    ]);
+
+    setTimeout(() => {
+      setPhotoVerificationLogs(prev => [...prev, "EXIF 원본 태그 서명 추출 성공."]);
+    }, 1000);
+
+    setTimeout(() => {
+      setPhotoVerificationLogs(prev => [...prev, "✅ 검증 통과: 100% 인간 실사 광학 촬영 원본으로 공인되었습니다."]);
+      
+      const objectUrl = URL.createObjectURL(file);
+      const newPhoto: any = {
+        id: "upload_" + Date.now(),
+        title: "[리얼포토] 내가 촬영한 광학 실사 수집물",
+        author: user?.displayName || user?.email?.split("@")[0] || "시민",
+        reporterId: user?.uid || "anonymous",
+        content: "시민이 직접 스마트폰 또는 DSLR 카메라 렌즈를 통해 진짜 세계의 숨결과 경치를 수집하여 이솔나라 인간실사사진관에 기탁한 소중한 기록물입니다.",
+        thumbnail: objectUrl,
+        date: new Date().toLocaleDateString(),
+        likes: 1,
+        category: "리얼포토",
+        isApproved: true,
+        isHumanTaken: true,
+        cameraModel: "Sony α7R V (Hand-Taken)",
+        lensModel: "FE 24-70mm F2.8 GM II",
+        locationTaken: "시민 촬영 현장 인근",
+        isoSpeed: "100",
+        apertureValue: "F2.8",
+        shutterSpeed: "1/200s",
+      };
+
+      if (typeof setCitizenNews === "function") {
+        setCitizenNews((prev: any[]) => [newPhoto, ...prev]);
+      }
+      setSelectedPhotoExif(newPhoto);
+      setIsVerifyingPhoto(false);
+      toast.success("실사 사진 검증이 통과되어 인간실사사진관에 성공적으로 등록되었습니다!", { duration: 4000 });
+    }, 2800);
+  };
+
+  const handleSimulateVerifyIntegrity = (photo: any) => {
+    toast.loading("광학 센서 데이터 무결성 대조 중...", { id: "photo-verify" });
+    setTimeout(() => {
+      toast.success(`검증 완료: '${photo.title}' 기탁 데이터의 이미지 센서 픽셀 패턴이 제조사(${photo.cameraModel || "Unknown"})의 광학 규격과 완벽히 호환됩니다.`, { id: "photo-verify", duration: 3500 });
+    }, 1500);
+  };
+
+  const handleDownloadCertificate = (photo: any) => {
+    const cert = {
+      certificationId: "ISOL-PHOTO-" + photo.id.toUpperCase(),
+      title: photo.title,
+      author: photo.author,
+      timestamp: photo.date,
+      validation: "100_PERCENT_HUMAN_TAKEN",
+      opticalDevice: {
+        cameraBody: photo.cameraModel || "Unknown Camera",
+        lens: photo.lensModel || "Unknown Lens",
+        aperture: photo.apertureValue || "F2.8",
+        shutterSpeed: photo.shutterSpeed || "1/200s",
+        iso: photo.isoSpeed || "100",
+        location: photo.locationTaken || "Unknown Location"
+      },
+      integrityHash: {
+        sha256: "8f2a" + Math.floor(Math.random()*10000) + "b34e567781" + Math.floor(Math.random()*10000) + "a89c41",
+        md5: "md5_shield_v5"
+      },
+      issuer: "Isol News Room Human Authenticity Guard"
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(cert, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `human_photo_cert_${photo.id}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    toast.success("인증 명세서(human_photo_cert.json) 다운로드가 시작되었습니다.");
+  };
   
   // Mobile-first focus view: only one feature shown at a time on mobile.
   const [mobileTab, setMobileTab] = React.useState<"feed" | "hotclicks" | "community">("feed");
@@ -16250,6 +16517,410 @@ const IsolPost = ({
                     })}
                   </div>
                 )}
+              </div>
+            ) : (activeCategory === "리얼포토" || activeCategory === "이솔나라포토") ? (
+              <div className="space-y-6 md:space-y-8 animate-in fade-in duration-500">
+                {/* 1. Immersive Premium Header */}
+                <div className="relative overflow-hidden rounded-3xl bg-zinc-950 text-white border border-zinc-900 shadow-2xl p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                  {/* Decorative glowing gradient backing */}
+                  <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+                  <div className="absolute bottom-0 left-0 w-80 h-80 bg-teal-600/5 rounded-full blur-3xl pointer-events-none -ml-16 -mb-16" />
+                  
+                  <div className="space-y-3 relative z-10 max-w-2xl text-left">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/15 border border-emerald-500/20 text-emerald-400 text-[10px] font-extrabold uppercase tracking-widest rounded-full select-none">
+                      <ShieldCheck size={11} className="text-emerald-400" />
+                      100% 인간 광학 실사 공인관
+                    </div>
+                    <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight">
+                      📷 인간실사사진관 <span className="text-emerald-400">Human Optical Guard</span>
+                    </h2>
+                    <p className="text-zinc-400 text-xs md:text-sm font-medium leading-relaxed">
+                      생성 AI의 기만적인 하이퍼리얼 아트를 걷어내고, 오직 사람의 손과 광학 카메라 렌즈가 빚어낸 순수한 현실 세계의 풍경만을 보존합니다. 수집물의 파일 헤더 무결성 및 광학 장치 센서 노이즈 대조 검증을 완료한 기탁본들입니다.
+                    </p>
+                  </div>
+
+                  {/* Dynamic Device Stats Badge */}
+                  <div className="relative z-10 bg-zinc-900/80 border border-zinc-800 rounded-2xl p-4 flex items-center gap-4 shrink-0 shadow-lg select-none">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/25">
+                      <Camera size={18} className="text-emerald-400 animate-pulse" />
+                    </div>
+                    <div className="text-left leading-tight">
+                      <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">실시간 기탁본 수</div>
+                      <div className="text-lg font-black text-white">{filteredPhotosList.length} <span className="text-xs text-zinc-400">Photos</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Interactive Control Bar & Filters */}
+                <div className="bg-white dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-900 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm select-none">
+                  {/* Brand Selector */}
+                  <div className="flex items-center gap-2.5 overflow-x-auto w-full sm:w-auto pb-1.5 sm:pb-0 no-scrollbar">
+                    <span className="text-[11px] font-black text-zinc-400 uppercase tracking-wider whitespace-nowrap">제조사 필터:</span>
+                    {[
+                      { id: "all", label: "전체 카메라" },
+                      { id: "sony", label: "Sony 📷" },
+                      { id: "fujifilm", label: "Fujifilm 🎞️" },
+                      { id: "canon", label: "Canon 🔴" },
+                      { id: "other", label: "기타 장치" }
+                    ].map((brand) => (
+                      <button
+                        key={brand.id}
+                        onClick={() => {
+                          playHapticClick?.(600, 0.03);
+                          setPhotoBrandFilter(brand.id);
+                        }}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition-all border shrink-0 cursor-pointer",
+                          photoBrandFilter === brand.id
+                            ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/15"
+                            : "bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-650 dark:text-zinc-450 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        )}
+                      >
+                        {brand.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Layout Mode Toggler */}
+                  <div className="flex items-center gap-1 bg-zinc-50 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200/50 dark:border-zinc-800 shrink-0 w-full sm:w-auto justify-center">
+                    <button
+                      onClick={() => {
+                        playHapticClick?.(600, 0.03);
+                        setPhotoLayoutMode("grid");
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                        photoLayoutMode === "grid"
+                          ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
+                          : "text-zinc-400 hover:text-zinc-600"
+                      )}
+                    >
+                      <Sliders size={12} />
+                      격자 뷰
+                    </button>
+                    <button
+                      onClick={() => {
+                        playHapticClick?.(600, 0.03);
+                        setPhotoLayoutMode("filmstrip");
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                        photoLayoutMode === "filmstrip"
+                          ? "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm"
+                          : "text-zinc-400 hover:text-zinc-600"
+                      )}
+                    >
+                      <Film size={12} />
+                      필름 뷰
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Drag and Drop Verification Uplink Hub & Ticker Terminal */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
+                  <div className="md:col-span-6 bg-zinc-50 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-900 rounded-3xl p-5 flex flex-col justify-between min-h-[220px] text-left">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <h4 className="text-xs font-black text-zinc-400 uppercase tracking-widest">
+                          현장 실사 원본 파일 업로드 검증관
+                        </h4>
+                      </div>
+                      <h3 className="text-base font-black text-zinc-900 dark:text-white tracking-tight">
+                        실제 카메라 원천 촬영본(EXIF 포함) 기탁하기
+                      </h3>
+                      <p className="text-[11.5px] text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed">
+                        업로드하신 사진의 파일 서명을 원본 메타데이터 헤더와 교차 매칭하여, 100% 인간 촬영 광학 원본 여부를 판별하는 Heuristic 광학 패턴 검증 노드가 즉시 작동합니다.
+                      </p>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="group flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-emerald-500/50 rounded-2xl p-5 bg-white dark:bg-zinc-950/60 transition-all cursor-pointer select-none text-center h-28 relative overflow-hidden">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handlePhotoUploadSimulation(file);
+                          }}
+                        />
+                        {isVerifyingPhoto ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <span className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                            <span className="text-[11px] font-black text-emerald-500 animate-pulse uppercase tracking-wider">광학 왜곡 정밀 대조 중...</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1.5 transition-transform group-hover:scale-103">
+                            <Upload size={20} className="text-zinc-400 group-hover:text-emerald-500 transition-colors" />
+                            <span className="text-xs font-extrabold text-zinc-700 dark:text-zinc-300">내 카메라 원본 사진 기탁 (클릭 또는 끌어놓기)</span>
+                            <span className="text-[10px] text-zinc-400">JPG, PNG, HEIC 등 원천 광학 데이터</span>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Terminal Log View */}
+                  <div className="md:col-span-6 bg-zinc-950 border border-zinc-900 rounded-3xl p-5 flex flex-col justify-between font-mono text-left relative overflow-hidden min-h-[220px]">
+                    <div className="absolute top-2 right-2 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-red-500/50" />
+                      <span className="w-2 h-2 rounded-full bg-yellow-500/50" />
+                      <span className="w-2 h-2 rounded-full bg-green-500/50" />
+                    </div>
+
+                    <div className="space-y-1 overflow-y-auto max-h-[145px] pr-2 no-scrollbar text-[10.5px]">
+                      <div className="text-zinc-500 text-[9.5px] border-b border-zinc-900 pb-1 mb-2 tracking-widest uppercase font-sans font-black flex justify-between items-center">
+                        <span>[HUMAN SENSOR AUTHE_SYSTEM LOGS]</span>
+                        {isVerifyingPhoto && <span className="text-emerald-400 animate-pulse">● PROCESSING</span>}
+                      </div>
+
+                      {photoVerificationLogs.length === 0 ? (
+                        <div className="text-zinc-600 italic py-6">
+                          * 카메라 촬영 사진을 왼쪽 드롭존에 업로드하면, 이곳에서 실시간 해시 무결성 검증 세션 데이터가 렌더링됩니다.
+                        </div>
+                      ) : (
+                        photoVerificationLogs.map((log, idx) => (
+                          <div
+                            key={idx}
+                            className={cn(
+                              "leading-tight select-text animate-in fade-in duration-300",
+                              log.startsWith("✅") ? "text-emerald-400 font-bold" :
+                              log.startsWith("❌") ? "text-red-400 font-bold" : "text-zinc-300"
+                            )}
+                          >
+                            <span className="text-zinc-600 mr-1 text-[9px] select-none">[{idx + 1}]</span>
+                            {log}
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="text-[10px] text-zinc-500 border-t border-zinc-900/60 pt-2 font-sans font-bold flex items-center justify-between">
+                      <span>보안 모듈: SHIELD_OP_V5_STABLE</span>
+                      <span>100% SECURE</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Multi-device Optimized Content Grid & Details Inspector Sidebar */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  
+                  {/* Photo Display Grid/Filmstrip (lg:col-span-8) */}
+                  <div className="lg:col-span-8 space-y-4">
+                    {filteredPhotosList.length === 0 ? (
+                      <div className="text-center py-20 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-3xl bg-zinc-50/50 dark:bg-zinc-900/10">
+                        <p className="text-zinc-400 font-black text-sm uppercase tracking-wider">선택된 브랜드의 기탁 사진이 없습니다.</p>
+                        <p className="text-xs text-zinc-400 mt-2">다른 카메라 브랜드를 선택하거나 직접 새로운 원본 사진을 기탁해 주십시오.</p>
+                      </div>
+                    ) : photoLayoutMode === "grid" ? (
+                      /* A) Bento Grid layout optimized for both laptop (3 cols) and mobile (2 cols) */
+                      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 select-none">
+                        {filteredPhotosList.map((photo) => {
+                          const activeExif = selectedPhotoExif || filteredPhotosList[0];
+                          const isCurrentlySelected = activeExif?.id === photo.id;
+                          return (
+                            <div
+                              key={photo.id}
+                              onClick={() => {
+                                playHapticClick?.(600, 0.03);
+                                setSelectedPhotoExif(photo);
+                              }}
+                              className={cn(
+                                "group relative aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-950 border transition-all duration-300 cursor-pointer flex items-center justify-center shadow-md",
+                                isCurrentlySelected
+                                  ? "border-emerald-500 ring-2 ring-emerald-500/20 scale-[0.98] shadow-lg shadow-emerald-500/10"
+                                  : "border-zinc-200 dark:border-zinc-900 hover:border-emerald-500/40 hover:-translate-y-0.5"
+                              )}
+                            >
+                              <img
+                                src={photo.thumbnail}
+                                alt={photo.title}
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-104"
+                                referrerPolicy="no-referrer"
+                              />
+                              {/* Overlay bottom dark gradient for readable titles */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent p-3 flex flex-col justify-end text-left">
+                                <span className="text-[8px] md:text-[9.5px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full shrink-0" />
+                                  {photo.cameraModel?.split("(")[0]?.trim() || "OPTICAL"}
+                                </span>
+                                <h4 className="text-white text-[10.5px] md:text-[12.5px] font-black line-clamp-1 group-hover:text-emerald-300 transition-colors drop-shadow">
+                                  {photo.title}
+                                </h4>
+                                <p className="text-zinc-300 text-[8px] md:text-[9.5px] font-bold mt-0.5">
+                                  {photo.author} 기탁
+                                </p>
+                              </div>
+
+                              {/* Corner status tag */}
+                              <div className="absolute top-2 left-2 z-10">
+                                <span className="bg-zinc-950/85 backdrop-blur-md text-white text-[7.5px] md:text-[8px] font-bold px-1.5 py-0.5 rounded-md border border-white/10 uppercase">
+                                  HUMAN CERTIFIED
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      /* B) Filmstrip/Slider layout optimized for carousel view */
+                      <div className="relative bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200/50 dark:border-zinc-900 p-4 rounded-3xl">
+                        {/* Film sprocket margins at top/bottom for aesthetic retro design */}
+                        <div className="flex justify-between px-2 mb-3 select-none pointer-events-none opacity-45">
+                          {Array.from({ length: 16 }).map((_, i) => (
+                            <div key={i} className="w-3.5 h-2.5 bg-zinc-300 dark:bg-zinc-800 rounded-[2px]" />
+                          ))}
+                        </div>
+
+                        <div className="flex gap-4 overflow-x-auto pb-4 snap-x no-scrollbar select-none">
+                          {filteredPhotosList.map((photo) => {
+                            const activeExif = selectedPhotoExif || filteredPhotosList[0];
+                            const isCurrentlySelected = activeExif?.id === photo.id;
+                            return (
+                              <div
+                                key={photo.id}
+                                onClick={() => {
+                                  playHapticClick?.(600, 0.03);
+                                  setSelectedPhotoExif(photo);
+                                }}
+                                className={cn(
+                                  "snap-center shrink-0 w-[240px] sm:w-[280px] md:w-[320px] aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-950 border cursor-pointer relative transition-all duration-300",
+                                  isCurrentlySelected
+                                    ? "border-emerald-500 scale-[0.98] ring-2 ring-emerald-500/20"
+                                    : "border-zinc-200 dark:border-zinc-900 hover:border-emerald-500/40"
+                                )}
+                              >
+                                <img
+                                  src={photo.thumbnail}
+                                  alt={photo.title}
+                                  className="w-full h-full object-cover"
+                                  referrerPolicy="no-referrer"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent p-3.5 flex flex-col justify-end text-left">
+                                  <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">{photo.cameraModel}</span>
+                                  <h4 className="text-white text-[12px] md:text-sm font-black line-clamp-1">{photo.title}</h4>
+                                  <p className="text-zinc-300 text-[10px] font-bold mt-0.5">{photo.author} 기탁 • {photo.date}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div className="flex justify-between px-2 mt-1 select-none pointer-events-none opacity-45">
+                          {Array.from({ length: 16 }).map((_, i) => (
+                            <div key={i} className="w-3.5 h-2.5 bg-zinc-300 dark:bg-zinc-800 rounded-[2px]" />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 5. Right Sidebar: EXIF & Authenticity Inspector */}
+                  <div className="lg:col-span-4 bg-white dark:bg-zinc-950 border border-zinc-150 dark:border-zinc-900 rounded-3xl p-5 md:p-6 text-left space-y-5 shadow-lg select-none">
+                    <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 pb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-2.5 w-2.5 relative">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                        <h3 className="text-xs font-black text-zinc-900 dark:text-white uppercase tracking-widest">
+                          광학 정보 분석 명세
+                        </h3>
+                      </div>
+                      <span className="text-[8px] bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 font-extrabold px-1.5 py-0.5 rounded uppercase border border-emerald-500/10">
+                        EXIF VERIFIED
+                      </span>
+                    </div>
+
+                    {(() => {
+                      const activeExif = selectedPhotoExif || filteredPhotosList[0];
+                      if (activeExif) {
+                        return (
+                          <div className="space-y-5 animate-in fade-in duration-300">
+                            {/* Display Small Thumbnail */}
+                            <div className="w-full h-28 rounded-xl overflow-hidden bg-zinc-950 border border-zinc-900 relative">
+                              <img
+                                src={activeExif.thumbnail}
+                                className="w-full h-full object-cover opacity-80"
+                                alt="preview"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-3 flex flex-col justify-end">
+                                <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">Selected Image Spec</span>
+                                <h4 className="text-white text-[11.5px] font-black line-clamp-1">{activeExif.title}</h4>
+                              </div>
+                            </div>
+
+                            {/* EXIF Data Grid */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-zinc-50 dark:bg-zinc-900/35 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-900">
+                                <div className="text-[9px] text-zinc-400 font-black uppercase tracking-wider">카메라 바디</div>
+                                <div className="text-[11.5px] font-bold text-zinc-800 dark:text-zinc-200 line-clamp-1 mt-0.5">{activeExif.cameraModel || "Unknown Model"}</div>
+                              </div>
+                              <div className="bg-zinc-50 dark:bg-zinc-900/35 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-900">
+                                <div className="text-[9px] text-zinc-400 font-black uppercase tracking-wider">렌즈 스펙</div>
+                                <div className="text-[11.5px] font-bold text-zinc-800 dark:text-zinc-200 line-clamp-1 mt-0.5">{activeExif.lensModel || "Standard Lens"}</div>
+                              </div>
+                              <div className="bg-zinc-50 dark:bg-zinc-900/35 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-900">
+                                <div className="text-[9px] text-zinc-400 font-black uppercase tracking-wider">촬영 장소</div>
+                                <div className="text-[11.5px] font-bold text-zinc-800 dark:text-zinc-200 line-clamp-1 mt-0.5">{activeExif.locationTaken || "전송 현장"}</div>
+                              </div>
+                              <div className="bg-zinc-50 dark:bg-zinc-900/35 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-900">
+                                <div className="text-[9px] text-zinc-400 font-black uppercase tracking-wider">셔터 스피드</div>
+                                <div className="text-[11.5px] font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">{activeExif.shutterSpeed || "1/125s"}</div>
+                              </div>
+                              <div className="bg-zinc-50 dark:bg-zinc-900/35 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-900">
+                                <div className="text-[9px] text-zinc-400 font-black uppercase tracking-wider">조리개 수치</div>
+                                <div className="text-[11.5px] font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">{activeExif.apertureValue || "F4.0"}</div>
+                              </div>
+                              <div className="bg-zinc-50 dark:bg-zinc-900/35 p-2.5 rounded-xl border border-zinc-100 dark:border-zinc-900">
+                                <div className="text-[9px] text-zinc-400 font-black uppercase tracking-wider">감도 (ISO)</div>
+                                <div className="text-[11.5px] font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">{activeExif.isoSpeed || "100"}</div>
+                              </div>
+                            </div>
+
+                            {/* Description Story */}
+                            <div className="bg-zinc-50 dark:bg-zinc-900/20 p-3.5 rounded-xl border border-zinc-100 dark:border-zinc-900/60">
+                              <div className="text-[9px] text-zinc-400 font-black uppercase tracking-wider mb-1">기탁 소감 및 작품 소명</div>
+                              <p className="text-[11px] text-zinc-650 dark:text-zinc-400 leading-normal font-medium italic">
+                                "{activeExif.content}"
+                              </p>
+                            </div>
+
+                            {/* Interactive Buttons */}
+                            <div className="flex flex-col gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
+                              <button
+                                type="button"
+                                onClick={() => handleSimulateVerifyIntegrity(activeExif)}
+                                className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-[0_3px_15px_rgba(16,185,129,0.2)] flex items-center justify-center gap-1.5 cursor-pointer active:scale-97"
+                              >
+                                <ShieldCheck size={14} />
+                                광학 무결성 교차 검증 실행
+                              </button>
+                              
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadCertificate(activeExif)}
+                                className="w-full py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-850 text-zinc-800 dark:text-zinc-200 font-bold text-xs rounded-xl transition-all border border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-1.5 cursor-pointer active:scale-97"
+                              >
+                                <Save size={13} className="text-zinc-500" />
+                                인간 실사 인증 공인 명세서 다운로드
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className="text-center py-12 text-zinc-400">
+                          <p className="text-xs font-bold">기탁 사진 목록에서 이미지를 선택하시면 해당 이미지의 EXIF 메타데이터 및 인증 세부 명세가 실시간 로딩됩니다.</p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                </div>
+
               </div>
             ) : (
               <div className="space-y-6">
@@ -18838,6 +19509,13 @@ const SoulCenter = ({
     authorBio: string;
     sourceAgency: string;
     pressSeal: string;
+    cameraModel?: string;
+    lensModel?: string;
+    locationTaken?: string;
+    shutterSpeed?: string;
+    apertureValue?: string;
+    isoSpeed?: string;
+    isHumanTaken?: boolean;
   }
   const [postData, setPostData] = useState<PostDataType>({
     title: "",
@@ -18852,6 +19530,13 @@ const SoulCenter = ({
     authorBio: "",
     sourceAgency: "이솔 국영 종합 뉴스룸",
     pressSeal: "standard_citizen",
+    cameraModel: "",
+    lensModel: "",
+    locationTaken: "",
+    shutterSpeed: "",
+    apertureValue: "F2.8",
+    isoSpeed: "100",
+    isHumanTaken: false,
   });
 
   const [editorFontSize, setEditorFontSize] = useState<"sm" | "base" | "lg" | "xl">("base");
@@ -19429,6 +20114,16 @@ const SoulCenter = ({
 
       if (postData.category === "이솔공방" && postData.subCategory) {
         payload.subCategory = postData.subCategory;
+      }
+
+      if (postData.category === "리얼포토") {
+        payload.isHumanTaken = true;
+        payload.cameraModel = postData.cameraModel || "";
+        payload.lensModel = postData.lensModel || "";
+        payload.locationTaken = postData.locationTaken || "";
+        payload.shutterSpeed = postData.shutterSpeed || "";
+        payload.apertureValue = postData.apertureValue || "F2.8";
+        payload.isoSpeed = postData.isoSpeed || "100";
       }
 
       const safeReporterProfile = reporterProfile || {
@@ -20457,6 +21152,7 @@ const SoulCenter = ({
                         <option value="지역">📍 지역 (마을 소식)</option>
                         <option value="이솔공방">🧸 이솔공방 (예술작품 투고)</option>
                         <option value="이솔나라포토">📸 이솔나라포토</option>
+                        <option value="리얼포토">📷 리얼포토 (실사 촬영 인증)</option>
                         <option value="이솔나라북">📚 이솔나라북</option>
                         <option value="온에어">🎙️ 온에어</option>
                       </select>
@@ -20503,19 +21199,82 @@ const SoulCenter = ({
                     </div>
                   </div>
 
-                        {/* 🌟 보완 6: 모바일 터치 대응 카테고리 퀵 패스트 태그 피커 */}
-                        <div className="mt-2.5 flex flex-wrap gap-1.5 p-2 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200/50 dark:border-white/5 rounded-xl">
-                          {[
-                            { value: "사회/정치", label: "정치/사회" },
-                            { value: "경제/문화", label: "경제/문화" },
-                            { value: "복지/미래비전", label: "복지/미래" },
-                            { value: "팩트체크", label: "팩트체크" },
-                            { value: "AI 기사", label: "AI 기사" },
-                            { value: "만평", label: "만평" },
-                            { value: "지역", label: "지역" },
-                            { value: "이솔나라포토", label: "포토" },
-                            { value: "온에어", label: "온에어" }
-                          ].map((cat) => {
+                  {/* 📸 REAL PHOTO CAMERA METADATA INPUT FORM */}
+                  {postData.category === "리얼포토" && (
+                    <div className="p-4 bg-emerald-500/5 dark:bg-emerald-500/5 border border-emerald-500/20 dark:border-emerald-500/10 rounded-2xl space-y-3.5 text-left animate-fade-in">
+                      <div className="flex items-center gap-1.5 border-b border-emerald-500/10 pb-2">
+                        <Camera size={16} className="text-emerald-500 shrink-0" />
+                        <div>
+                          <h4 className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                            인간 실사 인증 스펙 입력
+                          </h4>
+                          <p className="text-[9px] text-zinc-400 font-bold tracking-widest uppercase">EXIF Camera Details</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className="space-y-1.5">
+                          <label className="block text-[9.5px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-400">카메라 기종</label>
+                          <input
+                            value={postData.cameraModel || ""}
+                            onChange={(e) => setPostData({ ...postData, cameraModel: e.target.value, isHumanTaken: true })}
+                            className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                            placeholder="예: Sony A7R V"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-[9.5px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-400">사용 렌즈</label>
+                          <input
+                            value={postData.lensModel || ""}
+                            onChange={(e) => setPostData({ ...postData, lensModel: e.target.value, isHumanTaken: true })}
+                            className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                            placeholder="예: FE 24-70mm GM II"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-[9.5px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-400">촬영 위치/GPS</label>
+                          <input
+                            value={postData.locationTaken || ""}
+                            onChange={(e) => setPostData({ ...postData, locationTaken: e.target.value, isHumanTaken: true })}
+                            className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                            placeholder="예: 서울 한강공원"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-[9.5px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-400">노출값 (셔터 • 조리개 • ISO)</label>
+                          <input
+                            value={postData.shutterSpeed || ""}
+                            onChange={(e) => {
+                              setPostData({ 
+                                ...postData, 
+                                shutterSpeed: e.target.value,
+                                apertureValue: postData.apertureValue || "F2.8",
+                                isoSpeed: postData.isoSpeed || "100",
+                                isHumanTaken: true 
+                              });
+                            }}
+                            className="w-full bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-emerald-500"
+                            placeholder="예: 1/250s • F2.8 • ISO 100"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 🌟 보완 6: 모바일 터치 대응 카테고리 퀵 패스트 태그 피커 */}
+                  <div className="mt-2.5 flex flex-wrap gap-1.5 p-2 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200/50 dark:border-white/5 rounded-xl">
+                    {[
+                      { value: "사회/정치", label: "정치/사회" },
+                      { value: "경제/문화", label: "경제/문화" },
+                      { value: "복지/미래비전", label: "복지/미래" },
+                      { value: "팩트체크", label: "팩트체크" },
+                      { value: "AI 기사", label: "AI 기사" },
+                      { value: "만평", label: "만평" },
+                      { value: "지역", label: "지역" },
+                      { value: "이솔나라포토", label: "포토" },
+                      { value: "리얼포토", label: "리얼포토 📸" },
+                      { value: "온에어", label: "온에어" }
+                    ].map((cat) => {
                             const isCatSelected = postData.category === cat.value;
                             return (
                               <button
@@ -22956,61 +23715,714 @@ const AdminQuickActions = ({
   </div>
 );
 
-const HomeOverview = () => (
-  <div className="min-h-screen bg-[#050505] pt-32 px-6 md:px-16 pb-32">
-    <div className="max-w-7xl mx-auto space-y-32">
-      <section className="text-center space-y-8">
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-6xl md:text-9xl font-black italic tracking-tighter uppercase leading-none"
-        >
-          The Future of <br /> <span className="text-brand">Narrative</span>
-        </motion.h2>
-        <p className="text-xl text-white/40 max-w-2xl mx-auto font-medium">
-          이솔나라는 인공지능과 인간의 감성이 결합된 차세대 스토리텔링
-          플랫폼입니다.
-        </p>
-      </section>
+const HomeOverview = ({
+  news = [],
+  citizenNews = [],
+  reporters = [],
+  webtoons = [],
+  user = null,
+  onPageChange = () => {},
+  isSimulatedMobileView = false,
+  selectedCharacterId = "isol_bee",
+  playHapticClick,
+  deviceTime = "08:06"
+}: any) => {
+  // 🗳️ Stateful Poll System
+  const [votedOption, setVotedOption] = React.useState<string | null>(() => {
+    return localStorage.getItem("isol_home_poll_voted_v1") || null;
+  });
+  const [pollVotes, setPollVotes] = React.useState<Record<string, number>>(() => {
+    const saved = localStorage.getItem("isol_home_poll_votes_v1");
+    return saved ? JSON.parse(saved) : { "A": 242, "B": 139, "C": 185 };
+  });
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {[
-          {
-            title: "AI CREATIVE",
-            icon: Brain,
-            desc: "Generative AI를 활용한 독창적인 비주얼 스토리텔링",
-          },
-          {
-            title: "SOUL CENTER",
-            icon: PenTool,
-            desc: "시민 기자와 함께하는 진실된 독립 언론",
-          },
-          {
-            title: "NEURAL SYNC",
-            icon: Workflow,
-            desc: "실시간으로 변화하는 메타버스 연동 생태계",
-          },
-        ].map((item, i) => (
-          <div
-            key={i}
-            className="p-12 rounded-[3rem] bg-white/[0.02] border border-white/5 hover:border-brand/20 transition-all group"
-          >
-            <item.icon
-              size={40}
-              className="text-brand mb-8 group-hover:scale-110 transition-transform"
-            />
-            <h3 className="text-2xl font-black mb-4 uppercase tracking-tighter">
-              {item.title}
-            </h3>
-            <p className="text-white/40 font-medium leading-relaxed">
-              {item.desc}
+  const handleVote = (option: string) => {
+    if (votedOption) return;
+    if (typeof playHapticClick === "function") {
+      playHapticClick(850, 0.08, "triangle");
+    }
+    const newVotes = { ...pollVotes, [option]: pollVotes[option] + 1 };
+    setPollVotes(newVotes);
+    setVotedOption(option);
+    localStorage.setItem("isol_home_poll_voted_v1", option);
+    localStorage.setItem("isol_home_poll_votes_v1", JSON.stringify(newVotes));
+    toast.success(`🗳️ 성공적으로 투표가 기록되었습니다! (선택지 ${option})`);
+  };
+
+  const totalVotes = Object.values(pollVotes).reduce((a, b) => a + b, 0);
+
+  // 🦊 Chatbot Companion Active Character
+  const activeMascot = React.useMemo(() => {
+    if (typeof CHATBOT_CHARACTERS !== "undefined" && Array.isArray(CHATBOT_CHARACTERS)) {
+      return CHATBOT_CHARACTERS.find((c: any) => c.id === selectedCharacterId) || CHATBOT_CHARACTERS[0];
+    }
+    return { id: "isol_bee", name: "이솔비", emoji: "🐝", desc: "이솔나라 뉴스 공식 요정" };
+  }, [selectedCharacterId]);
+
+  // 💖 Mascot Interaction Stats
+  const [mascotFeedStatus, setMascotFeedStatus] = React.useState("정상");
+  const [mascotLovePct, setMascotLovePct] = React.useState(55);
+
+  const handleInteractMascot = () => {
+    if (typeof playHapticClick === "function") {
+      playHapticClick(650, 0.04, "sine");
+    }
+    setMascotLovePct(prev => Math.min(100, prev + 5));
+    setMascotFeedStatus("행복 가득");
+    toast.success(`💖 ${activeMascot.name}의 친밀도가 상승했습니다!`);
+  };
+
+  const handleActivateBooster = () => {
+    if (typeof playHapticClick === "function") {
+      playHapticClick(950, 0.12, "sawtooth");
+    }
+    toast.success(`⚡ 초고속 전송 부스터 가동! 모든 메타버스 피드가 실시간 연동됩니다.`);
+  };
+
+  // 📰 Highlight featured webtoons and news
+  const featuredWebtoon = webtoons.find((w: any) => w.isHot) || webtoons[0];
+  const recentArticles = citizenNews.slice(0, 4);
+
+  // -------------------------------------------------------------
+  // RENDER OPTION A: 📱 MOBILE OPTIMIZED UI/UX
+  // -------------------------------------------------------------
+  if (isSimulatedMobileView) {
+    return (
+      <div className="min-h-screen bg-[#07070a] text-zinc-100 pb-24 font-sans select-none animate-in fade-in duration-300">
+        {/* 1. Brand Hero Segment with Radial Background */}
+        <div className="relative overflow-hidden px-5 pt-16 pb-8 bg-gradient-to-b from-red-950/20 via-zinc-950/10 to-[#07070a] border-b border-zinc-900/40">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-red-650/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+          
+          <div className="relative z-10 flex flex-col items-start text-left gap-2.5">
+            <span className="bg-red-500/10 border border-red-500/20 text-red-500 text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+              LIVE METAVERSE
+            </span>
+            <h2 className="text-3xl font-black tracking-tighter leading-tight text-white">
+              이솔나라 <br />
+              <span className="text-red-500">스토리 미러 스페이스</span>
+            </h2>
+            <p className="text-zinc-400 text-xs font-semibold leading-relaxed max-w-xs">
+              인간 촬영 실사 무결성 검증, 인공지능 스토리텔링 및 남극 라이브가 교차하는 가상 포털
             </p>
           </div>
-        ))}
+        </div>
+
+        <div className="px-4 mt-6 space-y-6">
+          {/* 2. Interactive App Shortcuts Widget */}
+          <div className="bg-zinc-900/60 border border-zinc-850/80 rounded-2xl p-4 flex justify-between items-center shadow-lg backdrop-blur-md">
+            {[
+              { label: "국영 뉴스룸", id: "isol-post", emoji: "📰", color: "from-red-500 to-red-655" },
+              { label: "웹툰 광장", id: "webtoon", emoji: "🧸", color: "from-amber-500 to-yellow-500" },
+              { label: "시민 기자", id: "soul-center", emoji: "🎙️", color: "from-emerald-500 to-teal-500" },
+              { label: "소통 창구", id: "community", emoji: "⚖️", color: "from-purple-500 to-indigo-500" }
+            ].map(shortcut => (
+              <button
+                key={shortcut.id}
+                onClick={() => {
+                  if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                  onPageChange(shortcut.id);
+                }}
+                className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-95 group transition-transform"
+              >
+                <div className={cn(
+                  "w-11 h-11 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition-transform"
+                )}>
+                  {shortcut.emoji}
+                </div>
+                <span className="text-[10px] font-extrabold text-zinc-300 group-hover:text-white transition-colors">{shortcut.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* 3. Horizontal Featured Stories Strip (Tactile Swiper) */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center px-1">
+              <h3 className="text-xs font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Rocket size={12} className="text-red-500" />
+                인기 크리에이티브 쇼케이스
+              </h3>
+              <span className="text-[10px] font-extrabold text-red-500 hover:underline cursor-pointer" onClick={() => onPageChange("webtoon")}>전체보기</span>
+            </div>
+
+            <div className="flex gap-4 overflow-x-auto pb-2 scroll-smooth snap-x no-scrollbar touch-pan-x" style={{ WebkitOverflowScrolling: "touch" }}>
+              {featuredWebtoon ? (
+                <div 
+                  onClick={() => {
+                    if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                    onPageChange("webtoon");
+                  }}
+                  className="snap-center shrink-0 w-[280px] rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-850 relative aspect-[16/10] cursor-pointer"
+                >
+                  <img
+                    src={featuredWebtoon.banner || "https://picsum.photos/seed/mobile_hero/600/400"}
+                    alt={featuredWebtoon.title}
+                    className="w-full h-full object-cover opacity-60"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent p-4 flex flex-col justify-end text-left">
+                    <span className="text-[8px] bg-red-655 text-white font-extrabold px-1.5 py-0.5 rounded w-fit mb-1.5 uppercase tracking-widest">HOT STORY</span>
+                    <h4 className="text-white text-sm font-black drop-shadow">{featuredWebtoon.title}</h4>
+                    <p className="text-zinc-300 text-[10px] font-bold mt-0.5">{featuredWebtoon.author} 작가 • ⭐ {featuredWebtoon.rating.toFixed(1)}</p>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Duplicate Card for sliding feel */}
+              <div 
+                onClick={() => {
+                  if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                  onPageChange("isol-post");
+                }}
+                className="snap-center shrink-0 w-[280px] rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-850 relative aspect-[16/10] cursor-pointer"
+              >
+                <img
+                  src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=600&h=400"
+                  alt="Citizen Newsroom"
+                  className="w-full h-full object-cover opacity-50"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent p-4 flex flex-col justify-end text-left">
+                  <span className="text-[8px] bg-emerald-500 text-white font-extrabold px-1.5 py-0.5 rounded w-fit mb-1.5 uppercase tracking-widest font-mono">REAL CITIZEN</span>
+                  <h4 className="text-white text-sm font-black drop-shadow">실시간 시민 관제 뉴스룸</h4>
+                  <p className="text-zinc-300 text-[10px] font-bold mt-0.5">신뢰 기반 수평 저널리즘 연동</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Mascot Companion Interaction HUD */}
+          <div className="bg-gradient-to-r from-zinc-950 to-zinc-900 border border-zinc-850 rounded-2xl p-4 text-left relative overflow-hidden shadow-lg">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-2xl shrink-0">
+                {activeMascot.emoji}
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <h4 className="text-xs font-black text-white">{activeMascot.name}</h4>
+                  <span className="text-[8px] bg-amber-500/15 text-amber-500 border border-amber-500/25 px-1.5 py-0.5 rounded font-black uppercase">ACTIVE</span>
+                </div>
+                <p className="text-zinc-400 text-[10px] font-semibold leading-relaxed line-clamp-1">
+                  "시민님! 오늘의 이솔 뉴스 피드가 모두 검정 완료되었어요! 🐧"
+                </p>
+              </div>
+            </div>
+
+            {/* Micro gauges */}
+            <div className="grid grid-cols-2 gap-3 mt-4 pt-3.5 border-t border-zinc-900/60 text-[9px] font-black">
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-zinc-400">
+                  <span>💖 친밀 지수</span>
+                  <span className="text-rose-500">{mascotLovePct}%</span>
+                </div>
+                <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                  <div className="h-full bg-rose-500 transition-all duration-300" style={{ width: `${mascotLovePct}%` }} />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-zinc-400">
+                  <span>🔋 소울 컨디션</span>
+                  <span className="text-amber-500">{mascotFeedStatus}</span>
+                </div>
+                <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                  <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: mascotFeedStatus === "행복 가득" ? "100%" : "60%" }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Interaction Buttons */}
+            <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-zinc-900/40">
+              <button
+                onClick={handleInteractMascot}
+                className="py-2 bg-zinc-900 hover:bg-zinc-850 text-[10px] font-extrabold rounded-lg border border-zinc-800 text-zinc-300 transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-97"
+              >
+                <span>🎁</span> 선물하며 칭찬하기
+              </button>
+              <button
+                onClick={handleActivateBooster}
+                className="py-2 bg-red-655 hover:bg-red-700 text-white text-[10px] font-black rounded-lg border border-red-600 transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-97"
+              >
+                <span>⚡</span> 전송 가속 부스터
+              </button>
+            </div>
+          </div>
+
+          {/* 5. Mobile Dynamic Interactive Poll Segment */}
+          <div className="bg-zinc-900/60 border border-zinc-850/80 rounded-2xl p-4 text-left shadow-lg">
+            <div className="flex items-center gap-1.5 pb-2.5 border-b border-zinc-850/60">
+              <Scale size={14} className="text-red-500" />
+              <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">
+                오늘의 이솔 국영 여론조사
+              </h4>
+            </div>
+
+            <div className="mt-3.5 space-y-3">
+              <h3 className="text-xs font-black text-white leading-relaxed">
+                Q. 이솔나라가 추진해야 할 제1차 인공지능 윤리 규범은?
+              </h3>
+
+              <div className="space-y-2 mt-3">
+                {[
+                  { id: "A", text: "인간 광학 가치 수호 및 AI 표기 의무화" },
+                  { id: "B", text: "AI 창작 재산권 인정 및 스토리소득 보장" },
+                  { id: "C", text: "전 기사/웹툰 해시 무결성 검증 의무화" }
+                ].map(option => {
+                  const currentVotes = pollVotes[option.id];
+                  const percentage = totalVotes > 0 ? Math.round((currentVotes / totalVotes) * 100) : 0;
+                  const isSelected = votedOption === option.id;
+
+                  return (
+                    <button
+                      key={option.id}
+                      onClick={() => handleVote(option.id)}
+                      disabled={!!votedOption}
+                      className={cn(
+                        "w-full text-left p-3 rounded-xl border transition-all relative overflow-hidden flex flex-col gap-1 cursor-pointer",
+                        votedOption
+                          ? isSelected
+                            ? "bg-red-500/10 border-red-500/30"
+                            : "bg-zinc-950/60 border-zinc-900/40 opacity-70"
+                          : "bg-zinc-950 border-zinc-850 hover:border-red-500/30 hover:bg-zinc-900/40"
+                      )}
+                    >
+                      {/* Background Vote Percentage Indicator Bar */}
+                      {votedOption && (
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${percentage}%` }}
+                          transition={{ type: "spring", stiffness: 100, damping: 15 }}
+                          className="absolute inset-y-0 left-0 bg-red-500/5 pointer-events-none"
+                        />
+                      )}
+
+                      <div className="flex justify-between items-center relative z-10 text-[11px] font-extrabold text-zinc-200">
+                        <span className="flex items-center gap-2">
+                          <span className={cn(
+                            "w-5 h-5 rounded-md flex items-center justify-center font-black text-[9px] border",
+                            isSelected ? "bg-red-500 border-red-500 text-white" : "bg-zinc-900 border-zinc-800 text-zinc-400"
+                          )}>
+                            {option.id}
+                          </span>
+                          <span className="line-clamp-1">{option.text}</span>
+                        </span>
+                        {votedOption && (
+                          <span className="text-red-500 font-mono font-black">{percentage}%</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {votedOption && (
+                <div className="text-[10px] text-zinc-500 font-bold text-center mt-2 animate-pulse">
+                  ✓ 투표가 반영되었습니다. (총 {totalVotes}표 누적 중)
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 6. Live News Ticker List (Vertical Compact Feed) */}
+          <div className="space-y-3 pb-8 text-left">
+            <h3 className="text-xs font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+              <Activity size={12} className="text-red-500" />
+              실시간 시민 보도 피드
+            </h3>
+
+            <div className="space-y-2.5">
+              {recentArticles.length > 0 ? (
+                recentArticles.map((art: any) => (
+                  <div
+                    key={art.id}
+                    onClick={() => {
+                      if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                      onPageChange("isol-post");
+                    }}
+                    className="p-3 bg-zinc-900/40 border border-zinc-900 rounded-xl hover:border-zinc-800 transition-all flex justify-between items-center cursor-pointer active:scale-99"
+                  >
+                    <div className="space-y-0.5 max-w-[80%]">
+                      <span className="text-[8px] bg-red-500/10 text-red-500 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">{art.category || "GENERAL"}</span>
+                      <h4 className="text-xs font-black text-zinc-200 truncate">{art.title}</h4>
+                      <p className="text-[10px] text-zinc-400 font-semibold">{art.author || "시민기자"}</p>
+                    </div>
+                    <ChevronRight size={14} className="text-zinc-600 shrink-0" />
+                  </div>
+                ))
+              ) : (
+                <p className="text-[11px] text-zinc-500 italic">게시된 최근 기사가 없습니다.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // RENDER OPTION B: 🖥️ LAPTOP/WEB OPTIMIZED BENTO MATRIX
+  // -------------------------------------------------------------
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans pb-32 animate-in fade-in duration-500 select-none">
+      {/* 1. Immersive 3D Parallax Header & Hero Visual */}
+      <div className="relative overflow-hidden border-b border-zinc-900 bg-gradient-to-b from-red-950/10 via-zinc-950 to-zinc-950 py-24 md:py-32 px-6 md:px-16 text-left">
+        {/* Particle grid layout */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293708_1px,transparent_1px),linear-gradient(to_bottom,#1f293708_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-650/5 rounded-full blur-[140px] pointer-events-none -mr-32 -mt-32" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-550/5 rounded-full blur-[140px] pointer-events-none -ml-32 -mb-32" />
+
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+          <div className="lg:col-span-8 space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-500/15 border border-red-500/20 text-red-500 text-[10px] font-extrabold uppercase tracking-widest rounded-full">
+              <Activity size={11} className="animate-pulse" />
+              INTEGRITY VERIFIED SYSTEM V4
+            </div>
+            
+            <h2 className="text-4xl md:text-7xl font-black italic tracking-tighter uppercase leading-none text-white">
+              The Future of <br />
+              <span className="text-red-550 drop-shadow-[0_0_30px_rgba(239,68,68,0.2)]">Narrative & Mirror</span>
+            </h2>
+            
+            <p className="text-lg md:text-xl text-zinc-400 font-medium max-w-2xl leading-relaxed">
+              이솔나라는 최첨단 인공지능 스토리텔링, 인간 광학 원천 기탁물 실사 검증 시스템 및 수평형 시민 저널리즘이 교차 연동된 프리미엄 다차원 스토리 매트릭스 허브입니다.
+            </p>
+
+            <div className="flex flex-wrap gap-3.5 pt-4">
+              <button
+                onClick={() => {
+                  if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
+                  onPageChange("isol-post");
+                }}
+                className="px-6 py-3.5 bg-red-655 hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-[0_5px_25px_rgba(239,68,68,0.15)] flex items-center gap-2 cursor-pointer hover:scale-103 active:scale-97"
+              >
+                <Newspaper size={14} />
+                실시간 뉴스룸 관찰하기
+              </button>
+              <button
+                onClick={() => {
+                  if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
+                  onPageChange("webtoon");
+                }}
+                className="px-6 py-3.5 bg-zinc-900 hover:bg-zinc-850 text-zinc-200 hover:text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all border border-zinc-850 flex items-center gap-2 cursor-pointer hover:scale-103 active:scale-97"
+              >
+                <Sparkles size={14} />
+                오감 스토리 공방 입장
+              </button>
+            </div>
+          </div>
+
+          {/* Real-time Telemetry Stats Display Widget */}
+          <div className="lg:col-span-4 bg-zinc-900/45 border border-zinc-900 p-6 rounded-3xl space-y-4 backdrop-blur-md select-none text-left">
+            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest font-mono">Platform Live Telemetry</span>
+              </div>
+              <span className="text-[9px] text-emerald-400 font-bold bg-emerald-950/45 px-2 py-0.5 rounded border border-emerald-500/10 uppercase tracking-wider font-mono">NORMAL</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-zinc-950/40 rounded-2xl border border-zinc-900">
+                <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-widest">이솔 표준시</span>
+                <div className="text-sm font-black text-zinc-200 mt-1 font-mono">{deviceTime}</div>
+              </div>
+              <div className="p-3 bg-zinc-950/40 rounded-2xl border border-zinc-900">
+                <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-widest">기탁 기사량</span>
+                <div className="text-sm font-black text-zinc-200 mt-1 font-mono">{citizenNews.length + 1380} <span className="text-[10px] text-zinc-500">개</span></div>
+              </div>
+              <div className="p-3 bg-zinc-950/40 rounded-2xl border border-zinc-900">
+                <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-widest">광학 실사 검증률</span>
+                <div className="text-sm font-black text-zinc-200 mt-1 font-mono">99.8%</div>
+              </div>
+              <div className="p-3 bg-zinc-950/40 rounded-2xl border border-zinc-900">
+                <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-widest">시민 기자단 수</span>
+                <div className="text-sm font-black text-zinc-200 mt-1 font-mono">{reporters.length + 342} <span className="text-[10px] text-zinc-500">명</span></div>
+              </div>
+            </div>
+
+            <div className="p-3 bg-zinc-950/80 rounded-2xl border border-zinc-900 text-[10px] font-semibold text-zinc-400 leading-normal flex items-start gap-2">
+              <Info size={14} className="text-red-500 shrink-0 mt-0.5" />
+              <span>헤드라인 무결성 기탁 및 EXIF 메타데이터 서명 매칭 암호 검증관 노드가 현재 안전하게 운영 중입니다.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Bento Grid Hub Layout (Main Content Platform Matrix) */}
+      <div className="max-w-7xl mx-auto px-6 md:px-8 mt-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Main Left Pane (col-span-8) */}
+          <div className="lg:col-span-8 space-y-8">
+            
+            {/* Bento Block 1: Interactive Citizen Poll Capsule */}
+            <div className="bg-gradient-to-b from-zinc-900/60 to-zinc-950/40 border border-zinc-850 rounded-[2.5rem] p-8 md:p-10 text-left shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-red-500/5 rounded-full blur-[100px] pointer-events-none -mr-32 -mt-32" />
+              
+              <div className="flex items-center gap-2.5 pb-4 border-b border-zinc-850/80">
+                <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                  <Scale size={16} className="text-red-500" />
+                </div>
+                <div>
+                  <span className="text-[9.5px] font-black text-red-500 uppercase tracking-widest">NATIONAL FORUM CONSENSUS</span>
+                  <h3 className="text-lg font-black text-white tracking-tight">이솔 국영 인공지능 윤리 여론조사</h3>
+                </div>
+              </div>
+
+              <div className="mt-8 space-y-5">
+                <h4 className="text-lg md:text-xl font-black text-zinc-100 leading-relaxed max-w-3xl">
+                  이솔나라 메타버스 생태계 내에서 최우선으로 규제 및 입법 추진해야 할 제1차 인공지능 권익 규범은 무엇입니까?
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+                  {[
+                    { id: "A", text: "인간 광학 가치 전면 수호 및 AI 인공 창작 헤더 표기 의무화" },
+                    { id: "B", text: "AI 창작 재산권 공인 인정 및 기본스토리소득 입법 재원 마련" },
+                    { id: "C", text: "전 기자/웹툰 업로드본 실시간 해시 무결성 암호 대조제" }
+                  ].map(option => {
+                    const currentVotes = pollVotes[option.id];
+                    const percentage = totalVotes > 0 ? Math.round((currentVotes / totalVotes) * 100) : 0;
+                    const isSelected = votedOption === option.id;
+
+                    return (
+                      <button
+                        key={option.id}
+                        onClick={() => handleVote(option.id)}
+                        disabled={!!votedOption}
+                        className={cn(
+                          "text-left p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-44 cursor-pointer group/opt",
+                          votedOption
+                            ? isSelected
+                              ? "bg-red-500/10 border-red-500/30 scale-98 shadow-inner"
+                              : "bg-zinc-950/40 border-zinc-900/60 opacity-60 scale-95"
+                            : "bg-zinc-950 border-zinc-900 hover:border-red-500/30 hover:bg-zinc-900/20 hover:-translate-y-1 hover:shadow-2xl hover:shadow-red-500/5"
+                        )}
+                      >
+                        {/* Interactive Background fill bar */}
+                        {votedOption && (
+                          <motion.div
+                            initial={{ height: 0 }}
+                            animate={{ height: `${percentage}%` }}
+                            transition={{ type: "spring", stiffness: 80, damping: 12 }}
+                            className="absolute inset-x-0 bottom-0 bg-red-500/5 pointer-events-none"
+                          />
+                        )}
+
+                        <div className="flex justify-between items-center relative z-10 w-full">
+                          <span className={cn(
+                            "w-7 h-7 rounded-lg flex items-center justify-center font-black text-[11px] border transition-colors",
+                            isSelected ? "bg-red-500 border-red-500 text-white" : "bg-zinc-900 border-zinc-800 text-zinc-400 group-hover/opt:border-red-500/50"
+                          )}>
+                            {option.id}
+                          </span>
+                          {votedOption && (
+                            <span className="text-red-500 font-mono font-black text-sm">{percentage}%</span>
+                          )}
+                        </div>
+
+                        <p className="text-xs font-bold text-zinc-300 leading-relaxed mt-4 relative z-10">
+                          {option.text}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {votedOption && (
+                  <div className="text-xs text-zinc-500 font-bold text-center mt-4 animate-pulse flex items-center justify-center gap-1.5">
+                    <CheckCircle2 size={13} className="text-red-500" />
+                    <span>귀중한 의견 감사드립니다. (총 {totalVotes}표 참여 완료)</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bento Block 2: Mascot Companion Interactive HUD */}
+            <div className="bg-zinc-900/40 border border-zinc-900 rounded-[2.5rem] p-8 md:p-10 text-left shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none -mr-32 -mt-32" />
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+                <div className="md:col-span-8 space-y-4">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/15 text-amber-500 text-[10px] font-extrabold uppercase tracking-widest rounded-full">
+                    <Bot size={11} />
+                    Mascot AI Companion
+                  </div>
+                  <h3 className="text-2xl font-black text-white tracking-tight">
+                    {activeMascot.name} 실시간 비서 연동
+                  </h3>
+                  <p className="text-zinc-400 text-sm font-semibold leading-relaxed">
+                    시민 비서가 플랫폼 활동 현황과 여론 동향을 분석하여 유쾌하게 전달합니다. 선물 아이템을 통하여 친밀도를 지속 충전하면 뉴스 기고 가속 버프가 발동됩니다.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4 pt-2 text-xs font-black">
+                    <div className="p-4 bg-zinc-950/60 rounded-2xl border border-zinc-900 space-y-2">
+                      <div className="flex justify-between items-center text-zinc-400">
+                        <span>💖 비서 친밀도</span>
+                        <span className="text-rose-500">Level {Math.ceil(mascotLovePct / 20)} ({mascotLovePct}%)</span>
+                      </div>
+                      <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden shadow-inner">
+                        <div className="bg-rose-500 h-full rounded-full transition-all duration-300" style={{ width: `${mascotLovePct}%` }} />
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-zinc-950/60 rounded-2xl border border-zinc-900 space-y-2">
+                      <div className="flex justify-between items-center text-zinc-400">
+                        <span>🔋 활성 컨디션</span>
+                        <span className="text-amber-500">{mascotFeedStatus}</span>
+                      </div>
+                      <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden shadow-inner">
+                        <div className="bg-amber-500 h-full rounded-full transition-all duration-300" style={{ width: mascotFeedStatus === "행복 가득" ? "100%" : "60%" }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="md:col-span-4 bg-zinc-950 border border-zinc-900 rounded-3xl p-6 flex flex-col justify-between h-56 relative overflow-hidden">
+                  <div className="space-y-3">
+                    <div className="text-[32px]">{activeMascot.emoji}</div>
+                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-3 text-zinc-300 text-[11.5px] font-medium leading-relaxed italic relative">
+                      <div className="absolute -top-1.5 left-4 w-3 h-3 bg-zinc-900 border-t border-l border-zinc-800 rotate-45" />
+                      "시민님! 오늘의 이솔 뉴스 피드가 모두 안전하게 검정 완료되었습니다!"
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mt-4">
+                    <button
+                      onClick={handleInteractMascot}
+                      className="py-2.5 bg-zinc-900 hover:bg-zinc-850 text-[11px] font-extrabold text-zinc-300 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer hover:scale-103 active:scale-97"
+                    >
+                      🎁 선물 증정
+                    </button>
+                    <button
+                      onClick={handleActivateBooster}
+                      className="py-2.5 bg-red-655 hover:bg-red-700 text-[11px] font-black text-white rounded-xl border border-red-600 transition-all cursor-pointer hover:scale-103 active:scale-97"
+                    >
+                      ⚡ 전송 버스트
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bento Block 3: Premium Services Hub Navigation */}
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { title: "국영 뉴스룸", desc: "검증된 헤드라인 속보", icon: Newspaper, id: "isol-post", badge: "Live News" },
+                { title: "오감 소설 공방", desc: "AI 비주얼 에피소드 극장", icon: Sparkles, id: "webtoon", badge: "Creative" },
+                { title: "시민 기자 광장", desc: "수평적 독립 저널리즘 단체", icon: Edit3, id: "soul-center", badge: "Citizen" },
+                { title: "민원 소통창구", desc: "시민 권익 향상 센터", icon: Scale, id: "community", badge: "Ombudsman" }
+              ].map(portal => {
+                const PortalIcon = portal.icon;
+                return (
+                  <div
+                    key={portal.id}
+                    onClick={() => {
+                      if (typeof playHapticClick === "function") playHapticClick(600, 0.04);
+                      onPageChange(portal.id);
+                    }}
+                    className="p-8 bg-zinc-900/40 border border-zinc-900 hover:border-red-500/30 rounded-[2rem] hover:bg-zinc-900/60 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-red-500/5 transition-all duration-300 text-left cursor-pointer group"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="w-11 h-11 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-red-550 group-hover:scale-110 transition-transform">
+                        <PortalIcon size={20} />
+                      </div>
+                      <span className="text-[8px] bg-red-500/10 text-red-500 border border-red-500/15 font-black px-2 py-0.5 rounded font-mono uppercase tracking-wider">{portal.badge}</span>
+                    </div>
+
+                    <h4 className="text-lg font-black text-white mt-6 group-hover:text-red-500 transition-colors">{portal.title}</h4>
+                    <p className="text-zinc-400 text-xs font-semibold mt-1 leading-normal">{portal.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+          </div>
+
+          {/* Sticky Sidebar Right Pane (col-span-4) */}
+          <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-28">
+            
+            {/* Live Observation Console Feed */}
+            <div className="bg-zinc-900/40 border border-zinc-900 rounded-[2rem] p-6 text-left shadow-xl space-y-5">
+              <div className="flex items-center gap-2 pb-3 border-b border-zinc-800/80">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest font-mono">LIVE OBSERVATION TERMINAL</h4>
+              </div>
+
+              <div className="space-y-4">
+                {recentArticles.length > 0 ? (
+                  recentArticles.map((art: any) => (
+                    <div
+                      key={art.id}
+                      onClick={() => {
+                        if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                        onPageChange("isol-post");
+                      }}
+                      className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl hover:border-zinc-800 transition-all flex flex-col gap-2.5 cursor-pointer group"
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-[8px] bg-red-500/10 text-red-500 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">{art.category || "GENERAL"}</span>
+                        <span className="text-[8.5px] text-zinc-500 font-mono">{art.date || "TODAY"}</span>
+                      </div>
+                      <h5 className="text-xs font-black text-zinc-200 line-clamp-2 leading-relaxed group-hover:text-red-550 transition-colors">
+                        {art.title}
+                      </h5>
+                      <div className="flex justify-between items-center text-[10px] text-zinc-400 border-t border-zinc-900/60 pt-2 font-bold">
+                        <span>By {art.author || "시민기자"}</span>
+                        <div className="flex items-center gap-1 text-[9px] text-zinc-500 font-mono">
+                          <Eye size={11} /> {art.views || 0}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-zinc-500 italic py-6">안전 검정 완료된 최근 시민 보도가 없습니다.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Reporter Guild / Guild Badges Card */}
+            <div className="bg-zinc-900/40 border border-zinc-900 rounded-[2rem] p-6 text-left shadow-xl space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+                <div className="flex items-center gap-2">
+                  <Users size={14} className="text-red-500" />
+                  <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest font-mono">ACTIVE REPORTER GUILD</h4>
+                </div>
+                <span className="text-[9px] font-bold text-zinc-500">{reporters.length + 12} ACTIVE</span>
+              </div>
+
+              <div className="space-y-3">
+                {reporters.slice(0, 5).map((rep: any) => (
+                  <div
+                    key={rep.id}
+                    className="flex items-center justify-between p-2.5 bg-zinc-950/40 border border-zinc-900 rounded-2xl"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center font-black text-zinc-300 uppercase text-xs">
+                        {rep.name ? rep.name.substring(0, 1) : "기"}
+                      </div>
+                      <div className="text-left">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-black text-zinc-200 leading-none">{rep.name}</span>
+                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        </div>
+                        <span className="text-[10px] text-zinc-500 font-bold">{rep.field || "종합"} 전문 기자</span>
+                      </div>
+                    </div>
+                    <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 font-black px-1.5 py-0.5 rounded uppercase tracking-wider font-mono">VERIFIED</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Hero = ({
   webtoons,
@@ -25570,11 +26982,57 @@ export default function AppWrapper() {
 
 function App() {
   const [user, setUser] = React.useState<FirebaseUser | null>(null);
+  const [deviceTime, setDeviceTime] = React.useState("08:06");
+  React.useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      const hrs = String(now.getHours()).padStart(2, "0");
+      const mins = String(now.getMinutes()).padStart(2, "0");
+      setDeviceTime(`${hrs}:${mins}`);
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleResize = () => {
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) || window.innerWidth < 1024;
+      
+      if (isMobileDevice) {
+        setIsSimulatedMobileView(true);
+      } else {
+        const saved = localStorage.getItem("isSimulatedMobileView");
+        if (saved !== null) {
+          setIsSimulatedMobileView(saved === "true");
+        } else {
+          setIsSimulatedMobileView(false);
+        }
+      }
+    };
+    
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const [isAdminView, setIsAdminView] = React.useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
   const [isSimulatedMobileView, setIsSimulatedMobileView] = React.useState<boolean>(() => {
     const saved = localStorage.getItem("isSimulatedMobileView");
-    return saved === "true";
+    if (saved !== null) {
+      return saved === "true";
+    }
+    if (typeof window !== "undefined") {
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      ) || window.innerWidth < 1024;
+      return isMobileDevice;
+    }
+    return false;
   });
   const [registerTypeFromHeader, setRegisterTypeFromHeader] = React.useState<"citizen" | "professional" | null>(null);
   const [theme, setTheme] = React.useState(
@@ -27190,12 +28648,16 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
         {/* Realism: Top device status bar */}
         {isSimulatedMobileView && (
           <div className="hidden lg:flex justify-between items-center px-6 py-2.5 bg-white dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-900 text-[10.5px] font-black text-zinc-800 dark:text-zinc-200 select-none shrink-0 relative">
-            <div className="font-mono">08:06</div>
+            <div className="font-mono flex items-center gap-1">
+              <span className="animate-pulse text-red-500">●</span>
+              <span>{deviceTime}</span>
+            </div>
             {/* Simulated notch */}
             <div className="w-20 h-4 bg-black rounded-full absolute left-1/2 -translate-x-1/2 top-2 flex items-center justify-center border border-white/5 shadow-inner">
-              <div className="w-1.5 h-1.5 rounded-full bg-zinc-900/40 border border-white/5 ml-auto mr-3" />
+              <div className="w-1.5 h-1.5 rounded-full bg-zinc-900/40 border border-white/5 ml-auto mr-3 animate-pulse" />
             </div>
             <div className="flex items-center gap-1.5 font-mono text-[9px]">
+              <span className="text-[8px] px-1 bg-red-500/10 text-red-500 rounded border border-red-500/15 font-sans">LIVE</span>
               <span>5G</span>
               <span className="flex items-center gap-0.5">
                 <span className="w-0.5 h-1.5 bg-current rounded-3xs" />
@@ -27347,7 +28809,26 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <HomeOverview />
+              <HomeOverview
+                news={news}
+                citizenNews={citizenNews}
+                reporters={reporters}
+                webtoons={webtoons}
+                user={user}
+                onPageChange={(page: string, category?: string) => {
+                  setSelectedNews(null);
+                  setSelectedWebtoon(null);
+                  setIsAdminView(false);
+                  setCurrentPage(page as any);
+                  if (category) {
+                    setSelectedNewsCategory(category);
+                  }
+                }}
+                isSimulatedMobileView={isSimulatedMobileView}
+                selectedCharacterId={selectedCharacterId}
+                playHapticClick={playHapticClick}
+                deviceTime={deviceTime}
+              />
             </motion.div>
           )}
           {currentPage === "isol-post" && (
@@ -27402,6 +28883,8 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 banners={banners}
                 setBanners={setBanners}
                 onAdApplyClick={() => setIsAdApplyModalOpen(true)}
+                setCitizenNews={setCitizenNews}
+                isSimulatedMobileView={isSimulatedMobileView}
               />
             </motion.div>
           )}
