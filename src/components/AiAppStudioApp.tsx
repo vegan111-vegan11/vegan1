@@ -16,9 +16,10 @@ import CharacterCueSheetBlueprint from "./CharacterCueSheetBlueprint";
 
 interface AiAppStudioAppProps {
   user: any;
+  isSimulatedMobileView?: boolean;
 }
 
-export default function AiAppStudioApp({ user }: AiAppStudioAppProps) {
+export default function AiAppStudioApp({ user, isSimulatedMobileView = false }: AiAppStudioAppProps) {
   const [activeSubApp, setActiveSubApp] = useState<"turnaround" | "shorts">("turnaround");
 
   // --- APP 1: Character Single-Image Turnaround Cue Sheet ---
@@ -261,9 +262,9 @@ export default function AiAppStudioApp({ user }: AiAppStudioAppProps) {
       {/* APP 1: CHARACTER SINGLE-IMAGE TURNAROUND CUE SHEET GENERATOR            */}
       {/* ========================================================================= */}
       {activeSubApp === "turnaround" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-in fade-in duration-300">
+        <div className={`grid ${isSimulatedMobileView ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12"} gap-8 items-start animate-in fade-in duration-300`}>
           {/* Left Inputs Box */}
-          <div className="lg:col-span-5 space-y-6 bg-white dark:bg-zinc-900 p-6 md:p-8 rounded-3xl border border-neutral-200 dark:border-zinc-800 shadow-xl">
+          <div className={`${isSimulatedMobileView ? "col-span-1" : "lg:col-span-5"} space-y-6 bg-white dark:bg-zinc-900 p-6 md:p-8 rounded-3xl border border-neutral-200 dark:border-zinc-800 shadow-xl`}>
             <div className="space-y-1">
               <span className="text-[11px] font-black tracking-wider text-purple-600 dark:text-purple-400 uppercase">STEP 1. CHARACTER MOUNT</span>
               <h2 className="text-xl font-black text-zinc-900 dark:text-white flex items-center gap-2">
@@ -368,7 +369,7 @@ export default function AiAppStudioApp({ user }: AiAppStudioAppProps) {
           </div>
 
           {/* Right Output Blueprints Box */}
-          <div className="lg:col-span-7 space-y-8">
+          <div className={`${isSimulatedMobileView ? "col-span-1" : "lg:col-span-7"} space-y-8`}>
             {isGeneratingSheet ? (
               <div className="bg-white dark:bg-zinc-900 rounded-3xl p-12 text-center border border-neutral-200 dark:border-zinc-800 shadow-xl min-h-[580px] flex flex-col items-center justify-center space-y-6">
                 <div className="relative">
@@ -419,9 +420,9 @@ export default function AiAppStudioApp({ user }: AiAppStudioAppProps) {
       {/* APP 2: AI SHORTS / REELS WEBTOON STORYBOARD GENERATOR                   */}
       {/* ========================================================================= */}
       {activeSubApp === "shorts" && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-in fade-in duration-300">
+        <div className={`grid ${isSimulatedMobileView ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12"} gap-8 items-start animate-in fade-in duration-300`}>
           {/* Left Inputs */}
-          <div className="lg:col-span-5 space-y-6 bg-white dark:bg-zinc-900 p-6 md:p-8 rounded-3xl border border-neutral-200 dark:border-zinc-800 shadow-xl">
+          <div className={`${isSimulatedMobileView ? "col-span-1" : "lg:col-span-5"} space-y-6 bg-white dark:bg-zinc-900 p-6 md:p-8 rounded-3xl border border-neutral-200 dark:border-zinc-800 shadow-xl`}>
             <div className="space-y-1">
               <span className="text-[11px] font-black tracking-wider text-cyan-600 dark:text-cyan-400 uppercase">STEP 1. VIRAL SCRIPT SETUP</span>
               <h2 className="text-xl font-black text-zinc-900 dark:text-white flex items-center gap-2">
@@ -485,7 +486,7 @@ export default function AiAppStudioApp({ user }: AiAppStudioAppProps) {
           </div>
 
           {/* Right Outputs */}
-          <div className="lg:col-span-7 space-y-6">
+          <div className={`${isSimulatedMobileView ? "col-span-1" : "lg:col-span-7"} space-y-6`}>
             {isGeneratingShorts ? (
               <div className="bg-white dark:bg-zinc-900 rounded-3xl p-12 text-center border border-neutral-200 dark:border-zinc-800 shadow-xl min-h-[540px] flex flex-col items-center justify-center space-y-6">
                 <div className="relative">

@@ -166,6 +166,7 @@ import AiAppStudioApp from "./components/AiAppStudioApp";
 import CitizenAgora from "./components/CitizenAgora";
 import HyeonWonCinema from "./components/HyeonWonCinema";
 import { CorporateAdApplyModal } from "./components/CorporateAdApplyModal";
+import { AdminVerifiedPhotosDashboard } from "./components/AdminVerifiedPhotosDashboard";
 import {
   RagDocument,
   chunkText,
@@ -3286,17 +3287,17 @@ const Section: React.FC<{
       </button>
     </div>
 
-    <div className="flex gap-6 overflow-x-auto no-scrollbar pb-4 -mx-2 px-2">
+    <div className="flex gap-6 overflow-x-auto no-scrollbar pb-4 -mx-2 px-2 lg:grid lg:grid-cols-4 xl:grid-cols-6 lg:gap-6 lg:overflow-visible lg:pb-0">
       {isLoading
         ? Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex-shrink-0 w-40 md:w-48 space-y-3">
+            <div key={i} className="flex-shrink-0 w-40 md:w-48 space-y-3 lg:w-full">
               <Skeleton className="aspect-[2/3]" />
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-3 w-1/2" />
             </div>
           ))
         : webtoons.map((webtoon, index) => (
-            <div key={webtoon.id} className="relative">
+            <div key={webtoon.id} className="relative flex-shrink-0 w-40 md:w-48 lg:w-full">
               {isRankingView && (
                 <div className="absolute -left-2 -top-4 text-7xl font-black italic text-brand/20 select-none z-0">
                   {index + 1}
@@ -4388,6 +4389,7 @@ const AdminDashboard: React.FC<{
   ragTopK: number;
   setRagTopK: React.Dispatch<React.SetStateAction<number>>;
   isLoading?: boolean;
+  isSimulatedMobileView?: boolean;
 }> = ({
   webtoons,
   news,
@@ -4421,6 +4423,7 @@ const AdminDashboard: React.FC<{
   ragTopK,
   setRagTopK,
   isLoading = false,
+  isSimulatedMobileView = false,
 }) => {
   // 1. All State declarations at the top to avoid hoisting issues
   const [activeTab, setActiveTab] = useState<
@@ -11267,10 +11270,9 @@ const NewsDetailModal: React.FC<{
     }
   };
 
-  // 🌟 보완 4: 데스크톱 유저용 키보드 단축키(Esc로 닫기, 좌우 방향키로 다음/이전 기사 탐색) 등록
+  // 🌟 보완 4: 데스크톱 유저용 키보드 단축키(Esc로 닫기, 좌우 방향키로 다음/이전 기사 템플릿) 등록
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 입력창 혹은 텍스트에어리어에 포커스가 있는 경우 단축키 동작 차단
       if (
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA" ||
@@ -11415,7 +11417,6 @@ const NewsDetailModal: React.FC<{
         toast.success("🔖 기사가 책갈피함에 추가되었습니다!");
       }
       localStorage.setItem("isol_bookmarks_v1", JSON.stringify(updated));
-      // Dispatch event to refresh drawer
       window.dispatchEvent(new Event("isol_bookmarks_updated"));
     } catch (e) {
       console.error(e);
@@ -11434,7 +11435,7 @@ const NewsDetailModal: React.FC<{
           text: "이 기사에서 다룬 투명성과 사실성에 깊이 공감합니다.",
           stance: "pro" as const,
           likes: 4,
-          createdAt: new Date(Date.now() - 3600000 * 2).toLocaleDateString()
+          createdAt: new Date(Date.now() - 3600000 * 12).toLocaleDateString()
         },
         {
           id: "cmt_fallback_2",
@@ -11603,7 +11604,7 @@ const NewsDetailModal: React.FC<{
     }
   };
 
-  const coreBody = (
+  const simpleCoreBody = (
     <div className="w-full h-full flex flex-col font-sans relative overflow-hidden bg-white dark:bg-[#0c0d10] text-zinc-900 dark:text-zinc-100">
       {/* Scroll Progress Line */}
       <div className="absolute top-0 left-0 right-0 h-[3px] bg-zinc-100 dark:bg-zinc-900 z-50 overflow-hidden pointer-events-none">
@@ -11735,7 +11736,7 @@ const NewsDetailModal: React.FC<{
     </div>
   );
 
-  const obsoleteCoreBody =
+  const coreBody =
     <div className={cn(
       "w-full h-full flex flex-col font-sans relative selection:bg-red-500/20 selection:text-red-500 overflow-hidden",
       eyeCareBg === "sepia" ? "bg-[#f4ebd0] text-[#433422]" : eyeCareBg === "charcoal" ? "bg-[#1e252b] text-[#c9d1d9]" : eyeCareBg === "pure_black" ? "bg-black text-white" : eyeCareBg === "nord_blue" ? "bg-[#2e3440] text-[#eceff4]" : eyeCareBg === "warm_sand" ? "bg-[#faf6f0] text-[#2c2c2c]" : "bg-white dark:bg-[#0c0d10] text-zinc-900 dark:text-zinc-100"
@@ -12339,6 +12340,8 @@ const NewsDetailModal: React.FC<{
                         {sponsorAmount.toLocaleString()}원 정성 전송
                       </button>
                     </div>
+
+                    
 
                     {/* QR Code generator */}
                     <div className="flex flex-col items-center justify-center border-l border-zinc-200 dark:border-zinc-800 pl-6 text-center space-y-2">
@@ -13197,6 +13200,7 @@ const Navbar = ({
   isMobileMenuOpen: parentMobileMenuOpen,
   setIsMobileMenuOpen: parentSetMobileMenuOpen,
   onSearchClick,
+  isSimulatedMobileView = false,
 }: any) => {
   const [localMobileMenuOpen, setLocalMobileMenuOpen] = React.useState(false);
   const isMobileMenuOpen = parentMobileMenuOpen !== undefined ? parentMobileMenuOpen : localMobileMenuOpen;
@@ -13368,11 +13372,11 @@ const Navbar = ({
         Mobile Top bar (lg:hidden):
         Highly professional header with Hamburger Menu + Logo + Action Icons
       */}
-      <div className="lg:hidden flex items-center justify-between px-4 py-2 text-zinc-900 dark:text-zinc-100 border-b border-zinc-100/50 dark:border-zinc-800/30 bg-white/75 dark:bg-zinc-950/75 backdrop-blur-md transition-colors duration-500">
+      <div className={cn(isSimulatedMobileView ? "flex" : "lg:hidden flex", "items-center justify-between px-4 py-2.5 text-zinc-900 dark:text-zinc-100 border-b border-zinc-100/40 dark:border-zinc-850/40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md transition-all duration-300")}>
         {/* Left: Hamburger menu trigger */}
         <button
           onClick={() => setIsMobileMenuOpen(true)}
-          className="p-2 -ml-2 text-zinc-750 hover:text-red-650 transition-colors cursor-pointer"
+          className="p-2 -ml-2 text-zinc-700 dark:text-zinc-300 hover:text-red-500 transition-colors cursor-pointer"
           aria-label="메뉴 열기"
         >
           <Menu size={22} />
@@ -13381,9 +13385,9 @@ const Navbar = ({
         {/* Center: Brand Logo */}
         <div
           onClick={() => onPageChange("isol-post", "전체기사")}
-          className="cursor-pointer select-none py-1 flex flex-col items-center"
+          className="cursor-pointer select-none py-1.5 flex flex-col items-center"
         >
-          <h1 className="text-red-650 text-base font-black italic tracking-tighter leading-none uppercase">
+          <h1 className="text-red-655 text-base font-black italic tracking-tighter leading-none uppercase bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-rose-655">
             IsolNaraNews
           </h1>
           <p className="text-zinc-500 text-[6.5px] font-bold mt-[1px] tracking-wider uppercase">
@@ -13391,74 +13395,82 @@ const Navbar = ({
           </p>
         </div>
 
-        {/* Right side Actions: Compact Icons */}
-        <div className="flex items-center gap-1.5 font-sans">
-          {/* Quick Search Button */}
+        {/* Right side Actions: Compact Search & Profile status */}
+        <div className="flex items-center gap-1 font-sans shrink-0">
           {onSearchClick && (
             <button
               onClick={onSearchClick}
-              className="p-1.5 text-zinc-700 hover:text-red-500 dark:text-zinc-300 dark:hover:text-red-400 transition-colors cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              className="p-2 text-zinc-600 hover:text-red-500 dark:text-zinc-400 dark:hover:text-red-400 transition-all cursor-pointer rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900"
               title="기사 검색"
             >
-              <Search size={16} className="text-zinc-600 dark:text-zinc-400" />
+              <Search size={18} />
             </button>
           )}
-
-          {/* Admin access (데스크) */}
-          <button
-            onClick={onAdminClick}
-            className="p-1.5 text-zinc-700 hover:text-indigo-600 dark:text-zinc-300 dark:hover:text-indigo-400 transition-colors cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900"
-            title="관리자 데스크"
-          >
-            <LayoutDashboard size={16} className="text-indigo-500" />
-          </button>
-
-          {/* Quick Community button (이솔 소모임) */}
-          <button
-            onClick={() => onPageChange("community")}
-            className="p-1.5 text-zinc-700 hover:text-emerald-600 dark:text-zinc-300 dark:hover:text-emerald-400 transition-colors cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900"
-            title="이솔 소모임"
-          >
-            <Users size={16} className="text-emerald-500" />
-          </button>
-
-          {/* Quick Kakao Chat button */}
-          <button
-            onClick={onKakaoClick}
-            className="p-1.5 text-zinc-700 hover:text-amber-600 dark:text-zinc-300 dark:hover:text-amber-400 transition-colors cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900"
-            title="카카오톡 챗봇 비서"
-          >
-            <Bot size={16} className="text-amber-500" />
-          </button>
-
-          {/* Quick Write/Report Icon */}
-          <button
-            onClick={onWriteClick}
-            className="p-1.5 text-zinc-700 hover:text-red-655 dark:text-zinc-300 dark:hover:text-red-400 transition-colors cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 relative"
-            title="기사 제보하기"
-          >
-            <Edit2 size={16} className="text-red-500" />
-          </button>
-
-          {/* Auth (Login/Logout Check) */}
-          {user ? (
-            <button
-              onClick={onLogout}
-              className="p-1.5 text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 transition-colors cursor-pointer rounded-full hover:bg-rose-50 dark:hover:bg-rose-950/20"
-              title="로그아웃"
-            >
-              <LogOut size={16} className="text-zinc-500 dark:text-zinc-400 hover:text-rose-500" />
-            </button>
-          ) : (
-            <button
-              onClick={onAuthClick}
-              className="p-1.5 text-zinc-700 hover:text-red-655 dark:text-zinc-300 dark:hover:text-red-400 transition-colors cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900"
-              title="로그인"
-            >
-              <User size={16} className="text-zinc-650 dark:text-zinc-300" />
-            </button>
+          {user && (
+            <div className="flex items-center gap-1 max-w-[80px] px-2 py-1 bg-zinc-100 dark:bg-zinc-900 rounded-lg border border-zinc-200/50 dark:border-zinc-800">
+              <User size={10} className="text-zinc-500 shrink-0" />
+              <span className="text-[9px] font-black text-zinc-600 dark:text-zinc-300 truncate">
+                {user.displayName || "기자"}
+              </span>
+            </div>
           )}
         </div>
+      </div>
+
+      {/* 
+        🌟 Mobile Row 2 (상단 줄바꿈 배치!): High-Visibility Premium Mobile Utility Belt
+        Always prominently displayed in a separate row right under the header for quick, comfortable touch-actions!
+      */}
+      <div className={cn(isSimulatedMobileView ? "flex" : "lg:hidden flex", "items-center justify-between px-4 py-2 bg-gradient-to-r from-zinc-50 to-zinc-100/50 dark:from-zinc-900/60 dark:to-zinc-950/60 border-b border-zinc-200/50 dark:border-zinc-850/50 gap-2 select-none font-sans shadow-sm")}>
+        {/* 1. 기사 제보 (Write) */}
+        {onWriteClick && (
+          <button
+            onClick={onWriteClick}
+            className="flex-1 py-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-655 hover:to-rose-700 text-white rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm shadow-red-500/10 border border-red-500/15 text-[11px] font-extrabold"
+            title="기사 제보하기"
+          >
+            <Edit2 size={13} className="text-white shrink-0" />
+            <span>기사제보</span>
+          </button>
+        )}
+
+        {/* 2. 관리자 데스크 (Admin) */}
+        {onAdminClick && (
+          <button
+            onClick={onAdminClick}
+            className="flex-1 py-2 bg-gradient-to-b from-indigo-50 to-indigo-100/50 hover:from-indigo-100 hover:to-indigo-150 text-indigo-700 dark:from-zinc-900 dark:to-zinc-950 dark:hover:from-zinc-855 dark:hover:to-zinc-900 dark:text-indigo-400 border border-indigo-100/60 dark:border-zinc-800 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs relative text-[11px] font-extrabold"
+            title="관리자 데스크"
+          >
+            <LayoutDashboard size={13} className="text-indigo-500 dark:text-indigo-400 shrink-0" />
+            <span>데스크</span>
+            {pendingCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border border-white dark:border-zinc-950 shadow-sm animate-pulse">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+        )}
+
+        {/* 3. 로그인/로그아웃 (Auth) */}
+        {user ? (
+          <button
+            onClick={onLogout}
+            className="flex-1 py-2 bg-gradient-to-b from-zinc-100 to-zinc-50 hover:from-rose-50 hover:to-rose-100/60 dark:from-zinc-900 dark:to-zinc-950 dark:hover:from-rose-950/45 dark:hover:to-rose-950/20 text-zinc-650 dark:text-zinc-455 hover:text-rose-600 dark:hover:text-rose-400 border border-zinc-200/50 dark:border-zinc-800 hover:border-rose-200/40 dark:hover:border-rose-900/30 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs text-[11px] font-extrabold"
+            title="로그아웃"
+          >
+            <LogOut size={13} className="shrink-0" />
+            <span>로그아웃</span>
+          </button>
+        ) : (
+          <button
+            onClick={onAuthClick}
+            className="flex-1 py-2 bg-gradient-to-b from-zinc-900 to-zinc-950 hover:from-zinc-805 hover:to-zinc-900 text-white border border-zinc-900 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm text-[11px] font-extrabold"
+            title="로그인 / 회원가입"
+          >
+            <User size={13} className="text-zinc-300 shrink-0" />
+            <span>로그인</span>
+          </button>
+        )}
       </div>
 
       {/* 
@@ -13466,7 +13478,7 @@ const Navbar = ({
         Sleek micro-3D capsules optimized for comfortable thumb-tapping
       */}
       {!isWorkshopActive && (
-        <div className="lg:hidden relative bg-zinc-50 dark:bg-zinc-950/40 border-b border-zinc-200/40 dark:border-zinc-850/60 shadow-[0_2px_10px_rgba(0,0,0,0.01)]">
+        <div className={cn(isSimulatedMobileView ? "block" : "lg:hidden block", "relative bg-zinc-50 dark:bg-zinc-950/40 border-b border-zinc-200/40 dark:border-zinc-850/60 shadow-[0_2px_10px_rgba(0,0,0,0.01)]")}>
           <div className="py-2.5 overflow-x-auto no-scrollbar flex items-center gap-2 whitespace-nowrap px-4 select-none touch-pan-x" style={{ WebkitOverflowScrolling: "touch" }}>
             <span className="text-[9px] font-black text-zinc-450 dark:text-zinc-500 uppercase tracking-widest block shrink-0 mr-1 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
@@ -13507,7 +13519,7 @@ const Navbar = ({
         Always visible under Channel Desk with icons. Scrollable horizontally.
       */}
       {!isWorkshopActive && (
-        <div className="lg:hidden relative pill-scroll-track bg-white/75 dark:bg-zinc-950/75 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-800/30">
+        <div className={cn(isSimulatedMobileView ? "block" : "lg:hidden block", "relative pill-scroll-track bg-white/75 dark:bg-zinc-950/75 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-800/30")}>
           <div className="py-2.5 overflow-x-auto scrollbar-none scroll-smooth flex items-center gap-3.5 whitespace-nowrap px-4 select-none touch-pan-x" style={{ WebkitOverflowScrolling: "touch" }}>
             <span className="text-[9px] font-black text-red-500 uppercase tracking-widest block shrink-0 italic mr-0.5">전체메뉴:</span>
             {mainNavItems.map((item) => {
@@ -13533,10 +13545,86 @@ const Navbar = ({
       )}
 
       {/* 
+        🌟 Desktop Row 0 (상단 줄바꿈 특수 배치!): High-Visibility Premium Desktop Action Belt
+        Provides instant access to Logout, Admin Desk, and Article Writing on a separate top line as requested!
+      */}
+      <div className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:flex", "bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-200/50 dark:border-zinc-850/50 select-none font-sans py-2 px-4 md:px-8 justify-between items-center text-xs text-zinc-500")}>
+        {/* Left Side: Live info indicator */}
+        <div className="flex items-center gap-2">
+          <span className="flex h-2 w-2 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          </span>
+          <span className="font-black tracking-tight text-zinc-700 dark:text-zinc-300">실시간 종합 언론 포털 • ALL CITIZENS ARE JOURNALISTS</span>
+        </div>
+
+        {/* Right Side: High-Visibility Row 0 Primary Actions (로그아웃, 데스크, 기사제보) */}
+        <div className="flex items-center gap-3">
+          {/* User Welcome Text */}
+          {user && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-150/40 dark:bg-zinc-950/40 border border-zinc-200/60 dark:border-zinc-800/60 rounded-lg text-[11px] font-black text-zinc-700 dark:text-zinc-300">
+              <User size={12} className="text-zinc-450 dark:text-zinc-500" />
+              <span>{user.displayName || "기자"}님 환영합니다</span>
+            </div>
+          )}
+
+          {/* 1. 기사제보 */}
+          {onWriteClick && (
+            <button
+              onClick={onWriteClick}
+              className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-red-500 to-rose-655 text-white hover:from-red-655 hover:to-rose-700 rounded-lg text-[11px] font-black transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm shadow-red-500/10 border border-red-500/15"
+              title="기사제보하기"
+            >
+              <Edit2 size={11} className="text-white" />
+              <span>기사제보</span>
+            </button>
+          )}
+
+          {/* 2. 관리자 데스크 */}
+          {onAdminClick && (
+            <button
+              onClick={onAdminClick}
+              className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-b from-indigo-50 to-indigo-100/50 text-indigo-700 dark:from-zinc-950 dark:to-zinc-900 dark:text-indigo-400 border border-indigo-150/40 dark:border-zinc-800 rounded-lg text-[11px] font-black transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer relative shadow-xs"
+              title="관리자 데스크"
+            >
+              <LayoutDashboard size={11} className="text-indigo-500 dark:text-indigo-400" />
+              <span>데스크</span>
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-zinc-950 shadow-sm animate-pulse">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          )}
+
+          {/* 3. 로그인 / 로그아웃 */}
+          {user ? (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-b from-zinc-150 to-zinc-100/50 text-zinc-700 hover:text-rose-600 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-400 dark:hover:text-rose-400 border border-zinc-200/60 dark:border-zinc-800 hover:border-rose-200/40 rounded-lg text-[11px] font-black transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-xs"
+              title="로그아웃"
+            >
+              <LogOut size={11} />
+              <span>로그아웃</span>
+            </button>
+          ) : (
+            <button
+              onClick={onAuthClick}
+              className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-b from-zinc-900 to-zinc-950 text-white rounded-lg text-[11px] font-black transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm border border-zinc-900"
+              title="로그인 / 회원가입"
+            >
+              <User size={11} className="text-zinc-300" />
+              <span>로그인</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 
         Desktop Top Bar (Row 1): 
         Logo + Portal Navigation + Search + Premium Utilities
       */}
-      <div className="hidden lg:flex max-w-7xl mx-auto w-full px-4 md:px-8 py-2.5 items-center justify-between gap-4 border-b border-gray-100/50 dark:border-zinc-800/30 bg-transparent transition-colors duration-500">
+      <div className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:flex", "max-w-7xl mx-auto w-full px-4 md:px-8 py-2.5 items-center justify-between gap-4 border-b border-gray-100/50 dark:border-zinc-800/30 bg-transparent transition-colors duration-500")}>
         {/* Left: Compact Brand Logo & Page Tabs */}
         <div className="flex items-center gap-5 shrink-0">
           <div
@@ -13600,29 +13688,6 @@ const Navbar = ({
           </div>
 
           <button
-            onClick={onWriteClick}
-            className="luxury-3d-btn luxury-3d-red h-8.5 font-bold"
-            title="시민 기자로서 정직한 뉴스를 제보하고 제안합니다"
-          >
-            <Edit2 size={13} className="relative z-10 text-white shrink-0" />
-            <span className="relative z-10 text-white font-extrabold">기사제보</span>
-          </button>
-          
-          <button
-            onClick={onAdminClick}
-            className="luxury-3d-btn luxury-3d-silver h-8.5 group"
-            title="관리자 뉴스 데스크 제어실로 이동합니다"
-          >
-            <LayoutDashboard size={13} className="text-indigo-500 dark:text-indigo-400 shrink-0 transition-transform duration-350 group-hover:rotate-6" />
-            <span className="font-semibold text-zinc-700 dark:text-zinc-200">데스크</span>
-            {pendingCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[8.5px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center animate-bounce shadow-[0_2px_6px_rgba(244,63,94,0.3)] border border-white dark:border-zinc-900">
-                {pendingCount}
-              </span>
-            )}
-          </button>
-
-          <button
             onClick={() => onPageChange("community")}
             className="luxury-3d-btn luxury-3d-mint h-8.5"
             title="시민들이 자율적으로 소통하고 스마트팜, 버스킹 등 소모임을 교류하는 소모임 광장으로 이동합니다"
@@ -13655,38 +13720,12 @@ const Navbar = ({
               <span className="font-semibold text-zinc-700 dark:text-zinc-200">전문필진 신청</span>
             </button>
           )}
-
-          {user ? (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg h-8.5 max-w-[130px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
-                <User size={13} className="text-zinc-500 shrink-0" />
-                <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 font-sans truncate">
-                  {user.displayName || "기자"}
-                </span>
-              </div>
-              <button
-                onClick={onLogout}
-                className="px-4 py-1.5 bg-gradient-to-b from-zinc-100 to-zinc-150 hover:from-rose-50 hover:to-rose-100 hover:text-rose-600 dark:from-zinc-900 dark:to-zinc-950 dark:hover:from-rose-950/40 dark:hover:to-rose-950/20 dark:hover:text-rose-400 border border-zinc-200 dark:border-zinc-800 hover:border-rose-200 dark:hover:border-rose-900/30 text-zinc-650 dark:text-zinc-400 rounded-lg text-xs font-bold transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer h-8.5 flex items-center gap-1 active:scale-95 font-sans shadow-[0_2px_6px_rgba(0,0,0,0.01)] hover:shadow-[0_4px_12px_rgba(239,68,68,0.05)]"
-              >
-                <LogOut size={13} className="shrink-0" />
-                <span className="font-semibold">로그아웃</span>
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={onAuthClick}
-              className="luxury-3d-btn luxury-3d-black h-8.5"
-            >
-              <User size={13} className="text-zinc-300 shrink-0" />
-              <span className="text-white font-extrabold">로그인 / 가입</span>
-            </button>
-          )}
         </div>
       </div>
 
       {/* Row 1.5: Desktop Portal Channel Desk Sub-navigation Menu Bar (Placed above Row 2 - Category Bar with "전체뉴스") */}
       {!isWorkshopActive && (
-        <div className="hidden lg:block luxury-subnav-container py-2.5 select-none backdrop-blur-md">
+        <div className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:block", "luxury-subnav-container py-2.5 select-none backdrop-blur-md")}>
           <div className="max-w-7xl mx-auto flex items-center justify-between px-4 md:px-8">
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-extrabold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase flex items-center gap-1.5 mr-3 relative">
@@ -13739,7 +13778,7 @@ const Navbar = ({
 
       {/* Row 2: Category Navigation Menu Bar */}
       {!isWorkshopActive && (
-        <div className="bg-zinc-950 select-none hidden lg:block border-b border-zinc-800">
+        <div className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:block", "bg-zinc-950 select-none border-b border-zinc-800")}>
           <div className="max-w-7xl mx-auto flex items-center justify-between h-[50px] px-4 md:px-8">
             <div className="flex items-center flex-wrap h-full">
               {/* Primary navigation: First 12 items index 0-11 */}
@@ -15154,6 +15193,7 @@ const IsolPost = ({
         onAuthClick={onAuthClick}
         onLogout={onLogout}
         currentPage={activeCategory}
+        isSimulatedMobileView={isSimulatedMobileView}
         onAdminClick={onPageChange ? () => onPageChange("admin") : undefined}
         onProfessionalRegClick={onProfessionalRegClick}
         onManualClick={onManualClick}
@@ -15205,7 +15245,7 @@ const IsolPost = ({
       />
 
       {/* 🌟 보완 1: 모바일 한 손 터치 추천 키워드 태그 슬라이더 (Desktop only, mobile search overlay handles this) */}
-      <div className="hidden lg:block w-full bg-zinc-50 dark:bg-zinc-950/80 border-b border-zinc-150 dark:border-white/5 py-2.5 px-4 overflow-hidden select-none z-40 relative">
+      <div className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:block", "w-full bg-zinc-50 dark:bg-zinc-950/80 border-b border-zinc-150 dark:border-white/5 py-2.5 px-4 overflow-hidden select-none z-40 relative")}>
         <div className="max-w-7xl mx-auto flex items-center gap-2">
           <span className="text-[9px] font-black text-red-655 bg-red-50 dark:bg-red-950/35 px-1.5 py-0.5 rounded-md uppercase tracking-widest shrink-0 border border-red-500/10">
             인기태그
@@ -15267,8 +15307,12 @@ const IsolPost = ({
 
       <main className={
         activeCategory === "이솔공방"
-          ? "pt-[60px] sm:pt-[65px] md:pt-[70px] lg:pt-[75px] pb-28 sm:pb-16"
-          : "pt-[140px] sm:pt-[150px] md:pt-[160px] lg:pt-[165px] pb-28 sm:pb-16"
+          ? (isSimulatedMobileView 
+              ? "pt-[60px] sm:pt-[65px] pb-28 sm:pb-16" 
+              : "pt-[60px] sm:pt-[65px] md:pt-[70px] lg:pt-[115px] pb-28 sm:pb-16")
+          : (isSimulatedMobileView 
+              ? "pt-[140px] sm:pt-[150px] pb-28 sm:pb-16" 
+              : "pt-[140px] sm:pt-[150px] md:pt-[160px] lg:pt-[205px] pb-28 sm:pb-16")
       }>
         {/* GNB Top Ad Banner */}
         <div className="max-w-7xl mx-auto px-4 md:px-6 mb-6">
@@ -15279,11 +15323,14 @@ const IsolPost = ({
 
 
 
-        <div className="max-w-7xl mx-auto px-4 md:px-6 mt-2 md:mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-8">
+        <div className={cn(
+          "max-w-7xl mx-auto px-4 md:px-6 mt-2 md:mt-4 grid gap-4 md:gap-8",
+          isSimulatedMobileView ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-12"
+        )}>
           <div className={cn(
-            activeCategory === "이솔공방" ? "lg:col-span-12" : "lg:col-span-9",
+            isSimulatedMobileView ? "col-span-1" : (activeCategory === "이솔공방" ? "lg:col-span-12" : "lg:col-span-9"),
             "space-y-6 md:space-y-12",
-            mobileTab === "feed" ? "block" : "hidden lg:block"
+            (isSimulatedMobileView || mobileTab === "feed") ? "block" : "hidden lg:block"
           )}>
 
             {/* Hero Grid - Bento Style (모든 기사 카테고리 기본 상태에서 상단에 항상 고정 노출) */}
@@ -15532,7 +15579,7 @@ const IsolPost = ({
 
                 {/* Seamless unified desktop/mobile scrollable inline line (📊 ✉️ 💝 and the circular category menus) - Hidden on mobile for clutter reduction since mobile has a dedicated tab for these */}
                 {activeCategory === "전체기사" && (
-                  <div className="hidden lg:flex flex-col gap-1 w-full overflow-hidden">
+                  <div className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:flex", "flex-col gap-1 w-full overflow-hidden")}>
                   <div className="flex items-center gap-3 overflow-x-auto pb-2.5 pt-1.5 no-scrollbar max-w-full select-none w-full">
                     {/* 🌟 Quick-Action Premium Core Widgets Dock (Poll, Newsletter, Support) */}
                     <div className="flex items-center gap-2 shrink-0">
@@ -16276,9 +16323,9 @@ const IsolPost = ({
 
                 {/* Grid layout of creative drafts */}
                 {workshopSubCategory === "⚡ AI 앱 스튜디오" ? (
-                  <AiAppStudioApp user={user} />
+                  <AiAppStudioApp user={user} isSimulatedMobileView={isSimulatedMobileView} />
                 ) : workshopSubCategory === "🎬 AI 영화 큐시트" ? (
-                  <CinePortraitApp user={user} />
+                  <CinePortraitApp user={user} isSimulatedMobileView={isSimulatedMobileView} />
                 ) : filteredNews.length === 0 ? (
                   <div className="text-center py-20 border-2 border-dashed border-gray-150 dark:border-zinc-800 rounded-3xl animate-in fade-in duration-300">
                     <p className="text-gray-400 font-bold text-sm uppercase tracking-wider">이 장르에 해당하는 공방 창작물이 아직 없습니다.</p>
@@ -16888,6 +16935,32 @@ const IsolPost = ({
                               </p>
                             </div>
 
+                            {/* AI 위변조 실시간 검출 계측소 */}
+                            <div className="p-3.5 bg-zinc-950 text-emerald-400 rounded-xl border border-zinc-900 font-mono text-[10.5px] space-y-2">
+                              <div className="flex justify-between items-center border-b border-zinc-900 pb-1.5 font-sans font-black text-[9.5px] tracking-wider text-zinc-500 uppercase">
+                                <span>[AI 위변조 실시간 검출 계측]</span>
+                                <span className="text-emerald-500 animate-pulse">● SECURE</span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                <div>
+                                  <span className="text-zinc-500 block">AI 합성 변조 탐지</span>
+                                  <span className="text-white font-bold block mt-0.5">0.00% (이상무)</span>
+                                </div>
+                                <div>
+                                  <span className="text-zinc-500 block">회절 광학 무결성</span>
+                                  <span className="text-white font-bold block mt-0.5">99.8% (정상보정)</span>
+                                </div>
+                                <div>
+                                  <span className="text-zinc-500 block">픽셀 배열 연속성</span>
+                                  <span className="text-white font-bold block mt-0.5">일관성 유지 (STABLE)</span>
+                                </div>
+                                <div>
+                                  <span className="text-zinc-500 block">HSM 하드웨어 서명</span>
+                                  <span className="text-white font-bold block mt-0.5">인장 날인 확인됨</span>
+                                </div>
+                              </div>
+                            </div>
+
                             {/* Interactive Buttons */}
                             <div className="flex flex-col gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-900">
                               <button
@@ -17005,7 +17078,7 @@ const IsolPost = ({
 
             {/* 🔥 독자 소통 서비스 퀵 툴바 (📊 여론조사, ✉️ 이솔레터, 💝 취재후원) - Desktop only under feed, separated into dedicated tab on mobile */}
             {!newsSearchQuery.trim() && (
-              <div className="hidden lg:flex relative overflow-hidden bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/85 rounded-2xl p-5 md:p-6 flex-col md:flex-row items-center justify-between gap-5 shadow-lg select-none animate-in fade-in duration-350 border-l-[5px] border-l-rose-500">
+              <div className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:flex", "relative overflow-hidden bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800/85 rounded-2xl p-5 md:p-6 flex-col md:flex-row items-center justify-between gap-5 shadow-lg select-none animate-in fade-in duration-350 border-l-[5px] border-l-rose-500")}>
                 <div className="flex items-start md:items-center gap-4 w-full md:w-auto">
                   <div className="w-12 h-12 rounded-xl bg-zinc-950 dark:bg-zinc-900 text-white flex items-center justify-center shadow-lg shrink-0 border border-white/10">
                     <Megaphone size={19} className="text-rose-500 animate-pulse" />
@@ -17074,7 +17147,7 @@ const IsolPost = ({
           </div>
 
           {/* 📱 Mobile Hot Clicks - Dedicated Full Screen View */}
-          <div className={cn("lg:hidden col-span-1 space-y-6", mobileTab === "hotclicks" ? "block" : "hidden")}>
+          <div className={cn(isSimulatedMobileView ? "col-span-1 space-y-6" : "lg:hidden col-span-1 space-y-6", mobileTab === "hotclicks" ? "block" : "hidden")}>
             <div className="bg-zinc-50 dark:bg-zinc-950 p-4.5 rounded-3xl border border-zinc-200/60 dark:border-zinc-800">
               <div className="flex items-center gap-2 mb-4 border-b border-zinc-150 dark:border-zinc-900 pb-3">
                 <Zap size={16} className="text-red-500 fill-current animate-pulse" />
@@ -17095,7 +17168,7 @@ const IsolPost = ({
           </div>
 
           {/* 📱 Mobile Community & Readership - Dedicated Full Screen View */}
-          <div className={cn("lg:hidden col-span-1 space-y-5", mobileTab === "community" ? "block" : "hidden")}>
+          <div className={cn(isSimulatedMobileView ? "col-span-1 space-y-5" : "lg:hidden col-span-1 space-y-5", mobileTab === "community" ? "block" : "hidden")}>
             <div className="bg-white dark:bg-zinc-950 p-4 rounded-3xl border border-zinc-200 dark:border-zinc-800/80 shadow-md">
               <div className="flex items-center gap-2 mb-4 border-b border-zinc-100 dark:border-zinc-900 pb-3">
                 <Users size={16} className="text-red-650" />
@@ -17111,7 +17184,7 @@ const IsolPost = ({
           </div>
 
           {activeCategory !== "이솔공방" && (
-            <aside className="hidden lg:block lg:col-span-3 space-y-6 lg:sticky lg:top-[290px] self-start" id="home_right_aside">
+            <aside className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:block lg:col-span-3 space-y-6 lg:sticky lg:top-[290px] self-start")} id="home_right_aside">
             {/* Render interactive modal dialog overlays on demand */}
             {isPollModalOpen && (
               <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" id="custom-live-poll-modal">
@@ -17215,7 +17288,7 @@ const IsolPost = ({
       </main>
 
       {/* 📱 Mobile Bottom Navigation Bar (Sticky, only visible on mobile `lg:hidden`) */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200/50 dark:border-zinc-800/40 py-2.5 px-4 flex items-center justify-around z-[100] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] pb-[max(12px,env(safe-area-inset-bottom))]">
+      <div className={cn(isSimulatedMobileView ? "fixed" : "lg:hidden fixed", "bottom-0 left-0 right-0 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200/50 dark:border-zinc-800/40 py-2.5 px-4 flex items-center justify-around z-[100] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] pb-[max(12px,env(safe-area-inset-bottom))]" )}>
         <button
           onClick={() => {
             if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
@@ -17458,14 +17531,18 @@ const AdminNewsCenter = ({
   citizenNews,
   banners = [],
   setBanners,
+  setCitizenNews,
+  isSimulatedMobileView = false,
 }: {
   user: FirebaseUser | null;
   reporters: Reporter[];
   citizenNews: CitizenNews[];
   banners?: NewsBanner[];
   setBanners?: React.Dispatch<React.SetStateAction<NewsBanner[]>>;
+  setCitizenNews?: React.Dispatch<React.SetStateAction<CitizenNews[]>>;
+  isSimulatedMobileView?: boolean;
 }) => {
-  const [activeTab, setActiveTab] = useState<"articles" | "reporters" | "registration" | "banners">(
+  const [activeTab, setActiveTab] = useState<"articles" | "reporters" | "registration" | "banners" | "verified_photos">(
     "articles",
   );
   const [deletingArticleId, setDeletingArticleId] = useState<string | null>(null);
@@ -17965,6 +18042,18 @@ const AdminNewsCenter = ({
           >
             📢 광고 배너 관리
           </button>
+          <button
+            id="admin_tab_verified_photos"
+            onClick={() => setActiveTab("verified_photos")}
+            className={cn(
+              "px-6 py-2 rounded-full font-black text-sm transition-all cursor-pointer flex items-center gap-1",
+              activeTab === "verified_photos"
+                ? "bg-zinc-900 text-white dark:bg-white dark:text-black shadow-lg"
+                : "bg-zinc-200 dark:bg-zinc-800 text-zinc-500",
+            )}
+          >
+            📸 실사 이미지 검증센터
+          </button>
           
           <button
             id="admin_direct_publish_btn"
@@ -18259,6 +18348,9 @@ const AdminNewsCenter = ({
         ) : activeTab === "banners" ? (
           /* Render Banner Management Panel */
           <AdBannersManagementDashboard banners={banners} setBanners={setBanners} />
+        ) : activeTab === "verified_photos" ? (
+          /* Render EXIF & Optical Integrity Control Dashboard */
+          <AdminVerifiedPhotosDashboard citizenNews={citizenNews} setCitizenNews={setCitizenNews} isSimulatedMobileView={isSimulatedMobileView} />
         ) : (
           /* Render Official Certificate of Periodical Registration */
           <div className="p-8 md:p-12 bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col items-center select-none text-center animate-in fade-in duration-300">
@@ -23727,6 +23819,18 @@ const HomeOverview = ({
   playHapticClick,
   deviceTime = "08:06"
 }: any) => {
+  // 🖱️ Premium Mouse Tracker for Bento Grid Glow Hover Effects
+  const [mouseCoords, setMouseCoords] = React.useState<Record<string, { x: number; y: number }>>({});
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>, cardId: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setMouseCoords(prev => ({
+      ...prev,
+      [cardId]: { x, y }
+    }));
+  };
+
   // 🗳️ Stateful Poll System
   const [votedOption, setVotedOption] = React.useState<string | null>(() => {
     return localStorage.getItem("isol_home_poll_voted_v1") || null;
@@ -23746,7 +23850,7 @@ const HomeOverview = ({
     setVotedOption(option);
     localStorage.setItem("isol_home_poll_voted_v1", option);
     localStorage.setItem("isol_home_poll_votes_v1", JSON.stringify(newVotes));
-    toast.success(`🗳️ 성공적으로 투표가 기록되었습니다! (선택지 ${option})`);
+    toast.success(`🗳️ 국영 여론조사 투표 완료! (선택지 ${option})`);
   };
 
   const totalVotes = Object.values(pollVotes).reduce((a, b) => a + b, 0);
@@ -23769,7 +23873,16 @@ const HomeOverview = ({
     }
     setMascotLovePct(prev => Math.min(100, prev + 5));
     setMascotFeedStatus("행복 가득");
-    toast.success(`💖 ${activeMascot.name}의 친밀도가 상승했습니다!`);
+    toast.success(`💖 ${activeMascot.name}의 친밀도가 5% 상승했습니다!`);
+  };
+
+  const handlePetMascot = () => {
+    if (typeof playHapticClick === "function") {
+      playHapticClick(500, 0.03, "sine");
+    }
+    setMascotLovePct(prev => Math.min(100, prev + 2));
+    setMascotFeedStatus("매우 만족");
+    toast.success(`✨ ${activeMascot.name}가 기분 좋게 갸웃거립니다.`);
   };
 
   const handleActivateBooster = () => {
@@ -23779,9 +23892,93 @@ const HomeOverview = ({
     toast.success(`⚡ 초고속 전송 부스터 가동! 모든 메타버스 피드가 실시간 연동됩니다.`);
   };
 
+  // 🗺️ Spatial Mirror Nodes Map (Trendy Interactive Area)
+  const [activeSector, setActiveSector] = React.useState("central");
+  const sectors = {
+    central: {
+      name: "중앙 행정관구",
+      desc: "이솔나라 국영 정보 센터 및 실시간 팩트체크 중앙 허브",
+      integrity: "99.98%",
+      nodes: 12,
+      status: "STABLE",
+      accent: "text-red-500 bg-red-500/10 border-red-500/20"
+    },
+    visual: {
+      name: "오감 소설 공방",
+      desc: "실시간 독자 반응 감응형 하이퍼-텍스트 웹툰 창작 구역",
+      integrity: "98.75%",
+      nodes: 8,
+      status: "ACTIVE",
+      accent: "text-amber-500 bg-amber-500/10 border-amber-500/20"
+    },
+    press: {
+      name: "시민 기자 연맹",
+      desc: "탈중앙 분산형 검증 및 EXIF 카메라 무결성 인증 보도 국경",
+      integrity: "99.42%",
+      nodes: 15,
+      status: "ONLINE",
+      accent: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+    },
+    ombudsman: {
+      name: "옴부즈만 센터",
+      desc: "국민 투표와 여론 수렴, 공정 보도 윤리 심의 및 사법 통제 구역",
+      integrity: "100.00%",
+      nodes: 6,
+      status: "SECURED",
+      accent: "text-purple-500 bg-purple-500/10 border-purple-500/20"
+    },
+    antarctica: {
+      name: "남극 라이브 기지",
+      desc: "실시간 혹한 캠피드 연동 및 메타버스 환경 무결성 극지 초소",
+      integrity: "97.10%",
+      nodes: 4,
+      status: "SYNCED",
+      accent: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20"
+    }
+  };
+
+  const handleSectorClick = (key: string) => {
+    if (typeof playHapticClick === "function") {
+      playHapticClick(700, 0.04, "triangle");
+    }
+    setActiveSector(key);
+  };
+
+  // 🎯 Citizen Daily Quest State (Gamification checklist)
+  const [questSigned, setQuestSigned] = React.useState(false);
+  const q1 = votedOption !== null;
+  const q2 = mascotLovePct >= 70;
+  const q3 = questSigned;
+  const questProgress = (q1 ? 1 : 0) + (q2 ? 1 : 0) + (q3 ? 1 : 0);
+  const questPct = Math.round((questProgress / 3) * 100);
+
+  const handleQuestSign = () => {
+    if (questSigned) return;
+    if (typeof playHapticClick === "function") {
+      playHapticClick(800, 0.06, "sine");
+    }
+    setQuestSigned(true);
+    toast.success("🔐 보안 서명 검증 성공! 일일 퀘스트 항목이 완료되었습니다.");
+  };
+
+  // Trigger special reward effect if 100% completed
+  React.useEffect(() => {
+    if (questPct === 100) {
+      toast.success("🏆 일일 공헌 완료! '💎 특급 공헌 시민' 칭호를 획득하셨습니다!");
+    }
+  }, [questPct]);
+
   // 📰 Highlight featured webtoons and news
   const featuredWebtoon = webtoons.find((w: any) => w.isHot) || webtoons[0];
   const recentArticles = citizenNews.slice(0, 4);
+
+  // Mock EXIF data for articles to enhance high-tech vibe
+  const exifData = [
+    "SONY α7R V • 35mm • f/1.4 • 1/160s • ISO 100",
+    "Canon EOS R5 • 50mm • f/1.2 • 1/200s • ISO 200",
+    "Nikon Z8 • 85mm • f/1.8 • 1/125s • ISO 400",
+    "Leica M11 • 28mm • f/2.0 • 1/250s • ISO 80"
+  ];
 
   // -------------------------------------------------------------
   // RENDER OPTION A: 📱 MOBILE OPTIMIZED UI/UX
@@ -23789,33 +23986,33 @@ const HomeOverview = ({
   if (isSimulatedMobileView) {
     return (
       <div className="min-h-screen bg-[#07070a] text-zinc-100 pb-24 font-sans select-none animate-in fade-in duration-300">
-        {/* 1. Brand Hero Segment with Radial Background */}
-        <div className="relative overflow-hidden px-5 pt-16 pb-8 bg-gradient-to-b from-red-950/20 via-zinc-950/10 to-[#07070a] border-b border-zinc-900/40">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-red-650/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+        {/* 1. Mobile Brand Hero with Sleek Glassmorphism */}
+        <div className="relative overflow-hidden px-5 pt-14 pb-6 bg-gradient-to-b from-red-950/20 via-zinc-950/10 to-[#07070a] border-b border-zinc-900/40">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-red-650/10 rounded-full blur-3xl pointer-events-none -mr-8 -mt-8" />
           
-          <div className="relative z-10 flex flex-col items-start text-left gap-2.5">
-            <span className="bg-red-500/10 border border-red-500/20 text-red-500 text-[9px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-              LIVE METAVERSE
+          <div className="relative z-10 flex flex-col items-start text-left gap-2">
+            <span className="bg-red-500/10 border border-red-500/20 text-red-500 text-[8px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="w-1 h-1 bg-red-500 rounded-full animate-pulse" />
+              LIVE TELEMETRY
             </span>
-            <h2 className="text-3xl font-black tracking-tighter leading-tight text-white">
+            <h2 className="text-2xl font-black tracking-tighter leading-tight text-white">
               이솔나라 <br />
-              <span className="text-red-500">스토리 미러 스페이스</span>
+              <span className="text-red-500">포털 대시보드</span>
             </h2>
-            <p className="text-zinc-400 text-xs font-semibold leading-relaxed max-w-xs">
-              인간 촬영 실사 무결성 검증, 인공지능 스토리텔링 및 남극 라이브가 교차하는 가상 포털
+            <p className="text-zinc-400 text-[10px] font-semibold leading-relaxed max-w-xs">
+              검증완료 국영 통신, 감응형 오감 소설 공방, 극지 캠 연동
             </p>
           </div>
         </div>
 
-        <div className="px-4 mt-6 space-y-6">
-          {/* 2. Interactive App Shortcuts Widget */}
-          <div className="bg-zinc-900/60 border border-zinc-850/80 rounded-2xl p-4 flex justify-between items-center shadow-lg backdrop-blur-md">
+        <div className="px-4 mt-4 space-y-5">
+          {/* 2. Compact Touch Shortcuts */}
+          <div className="grid grid-cols-4 gap-2 bg-gradient-to-b from-zinc-900/50 to-zinc-950/60 border border-zinc-900/80 rounded-[2rem] p-4 shadow-xl backdrop-blur-md">
             {[
-              { label: "국영 뉴스룸", id: "isol-post", emoji: "📰", color: "from-red-500 to-red-655" },
-              { label: "웹툰 광장", id: "webtoon", emoji: "🧸", color: "from-amber-500 to-yellow-500" },
-              { label: "시민 기자", id: "soul-center", emoji: "🎙️", color: "from-emerald-500 to-teal-500" },
-              { label: "소통 창구", id: "community", emoji: "⚖️", color: "from-purple-500 to-indigo-500" }
+              { label: "국영 뉴스", id: "isol-post", emoji: "📰" },
+              { label: "웹툰 광장", id: "webtoon", emoji: "🧸" },
+              { label: "시민 기자", id: "soul-center", emoji: "🎙️" },
+              { label: "소통 창구", id: "community", emoji: "⚖️" }
             ].map(shortcut => (
               <button
                 key={shortcut.id}
@@ -23823,237 +24020,249 @@ const HomeOverview = ({
                   if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
                   onPageChange(shortcut.id);
                 }}
-                className="flex flex-col items-center gap-1.5 cursor-pointer active:scale-95 group transition-transform"
+                className="flex flex-col items-center gap-1 cursor-pointer active:scale-95 group transition-all"
               >
-                <div className={cn(
-                  "w-11 h-11 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition-transform"
-                )}>
+                <div className="w-11 h-11 rounded-2xl bg-zinc-950/80 border border-zinc-900 flex items-center justify-center text-base shadow-inner group-hover:scale-105 transition-transform">
                   {shortcut.emoji}
                 </div>
-                <span className="text-[10px] font-extrabold text-zinc-300 group-hover:text-white transition-colors">{shortcut.label}</span>
+                <span className="text-[9.5px] font-black text-zinc-400 group-hover:text-white transition-colors">{shortcut.label}</span>
               </button>
             ))}
           </div>
 
-          {/* 3. Horizontal Featured Stories Strip (Tactile Swiper) */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center px-1">
-              <h3 className="text-xs font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Rocket size={12} className="text-red-500" />
-                인기 크리에이티브 쇼케이스
-              </h3>
-              <span className="text-[10px] font-extrabold text-red-500 hover:underline cursor-pointer" onClick={() => onPageChange("webtoon")}>전체보기</span>
+          {/* 3. Gamified Citizens Quests */}
+          <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/70 border border-zinc-900/80 p-5 rounded-[2rem] shadow-2xl space-y-4">
+            <div className="flex justify-between items-center">
+              <h4 className="text-[10px] font-black text-zinc-400 tracking-wider flex items-center gap-1.5 font-mono">
+                <Sparkles size={11} className="text-red-500 animate-pulse" /> CITIZEN DAILY QUEST
+              </h4>
+              <span className="text-[10px] font-extrabold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-md">{questPct}% 완료</span>
+            </div>
+            
+            {/* Quest Progress bar */}
+            <div className="w-full bg-zinc-950 h-1.5 rounded-full overflow-hidden border border-zinc-900">
+              <div className="bg-red-650 h-full rounded-full transition-all duration-500" style={{ width: `${questPct}%` }} />
             </div>
 
-            <div className="flex gap-4 overflow-x-auto pb-2 scroll-smooth snap-x no-scrollbar touch-pan-x" style={{ WebkitOverflowScrolling: "touch" }}>
-              {featuredWebtoon ? (
-                <div 
-                  onClick={() => {
-                    if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
-                    onPageChange("webtoon");
-                  }}
-                  className="snap-center shrink-0 w-[280px] rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-850 relative aspect-[16/10] cursor-pointer"
-                >
-                  <img
-                    src={featuredWebtoon.banner || "https://picsum.photos/seed/mobile_hero/600/400"}
-                    alt={featuredWebtoon.title}
-                    className="w-full h-full object-cover opacity-60"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent p-4 flex flex-col justify-end text-left">
-                    <span className="text-[8px] bg-red-655 text-white font-extrabold px-1.5 py-0.5 rounded w-fit mb-1.5 uppercase tracking-widest">HOT STORY</span>
-                    <h4 className="text-white text-sm font-black drop-shadow">{featuredWebtoon.title}</h4>
-                    <p className="text-zinc-300 text-[10px] font-bold mt-0.5">{featuredWebtoon.author} 작가 • ⭐ {featuredWebtoon.rating.toFixed(1)}</p>
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Duplicate Card for sliding feel */}
-              <div 
-                onClick={() => {
-                  if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
-                  onPageChange("isol-post");
-                }}
-                className="snap-center shrink-0 w-[280px] rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-850 relative aspect-[16/10] cursor-pointer"
-              >
-                <img
-                  src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=600&h=400"
-                  alt="Citizen Newsroom"
-                  className="w-full h-full object-cover opacity-50"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent p-4 flex flex-col justify-end text-left">
-                  <span className="text-[8px] bg-emerald-500 text-white font-extrabold px-1.5 py-0.5 rounded w-fit mb-1.5 uppercase tracking-widest font-mono">REAL CITIZEN</span>
-                  <h4 className="text-white text-sm font-black drop-shadow">실시간 시민 관제 뉴스룸</h4>
-                  <p className="text-zinc-300 text-[10px] font-bold mt-0.5">신뢰 기반 수평 저널리즘 연동</p>
-                </div>
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between text-[10px] p-2 bg-zinc-950/40 border border-zinc-900/50 rounded-lg">
+                <span className="text-zinc-300 font-bold flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${q1 ? "bg-red-500" : "bg-zinc-700"}`} />
+                  국영 여론조사 1회 투표 참여
+                </span>
+                <span className={`font-black text-[9px] ${q1 ? "text-emerald-400" : "text-zinc-500"}`}>{q1 ? "SUCCESS" : "WAITING"}</span>
+              </div>
+              <div className="flex items-center justify-between text-[10px] p-2 bg-zinc-950/40 border border-zinc-900/50 rounded-lg">
+                <span className="text-zinc-300 font-bold flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${q2 ? "bg-red-500" : "bg-zinc-700"}`} />
+                  비서 마스코트 친밀도 70% 충전
+                </span>
+                <span className={`font-black text-[9px] ${q2 ? "text-emerald-400" : "text-zinc-500"}`}>{q2 ? "SUCCESS" : `${mascotLovePct}/70%`}</span>
+              </div>
+              <div onClick={handleQuestSign} className="flex items-center justify-between text-[10px] p-2 bg-zinc-950/40 border border-zinc-900/50 rounded-lg cursor-pointer active:bg-zinc-900/80">
+                <span className="text-zinc-300 font-bold flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${q3 ? "bg-red-500" : "bg-zinc-700"}`} />
+                  실시간 무결성 서명 확인
+                </span>
+                <span className={`font-black text-[9px] ${q3 ? "text-emerald-400 text-shadow" : "text-red-500 underline animate-pulse"}`}>{q3 ? "VERIFIED" : "PRESS HERE"}</span>
               </div>
             </div>
           </div>
 
-          {/* 4. Mascot Companion Interaction HUD */}
-          <div className="bg-gradient-to-r from-zinc-950 to-zinc-900 border border-zinc-850 rounded-2xl p-4 text-left relative overflow-hidden shadow-lg">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+          {/* 4. Mascot Companion Interaction Card */}
+          <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/70 border border-zinc-900/80 rounded-[2rem] p-5 shadow-xl space-y-4 relative overflow-hidden">
+            <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-red-650/5 rounded-full blur-xl pointer-events-none" />
             
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-2xl shrink-0">
-                {activeMascot.emoji}
+              <div className="w-12 h-12 rounded-2xl bg-zinc-950 border border-zinc-900 flex items-center justify-center text-2xl shadow-inner relative">
+                <span className="animate-bounce duration-1000">{activeMascot.emoji}</span>
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-zinc-900 animate-pulse" />
               </div>
-              <div className="space-y-0.5">
+              <div className="text-left flex-1">
                 <div className="flex items-center gap-1.5">
-                  <h4 className="text-xs font-black text-white">{activeMascot.name}</h4>
-                  <span className="text-[8px] bg-amber-500/15 text-amber-500 border border-amber-500/25 px-1.5 py-0.5 rounded font-black uppercase">ACTIVE</span>
+                  <span className="text-xs font-black text-zinc-100 leading-none">{activeMascot.name}</span>
+                  <span className="text-[8px] bg-red-500/10 text-red-500 border border-red-500/15 px-1 py-0.5 rounded font-mono font-extrabold uppercase">LIVE VIRTUAL</span>
                 </div>
-                <p className="text-zinc-400 text-[10px] font-semibold leading-relaxed line-clamp-1">
-                  "시민님! 오늘의 이솔 뉴스 피드가 모두 검정 완료되었어요! 🐧"
-                </p>
+                <p className="text-[9.5px] text-zinc-400 mt-1 leading-tight font-semibold">{activeMascot.desc}</p>
               </div>
             </div>
 
-            {/* Micro gauges */}
-            <div className="grid grid-cols-2 gap-3 mt-4 pt-3.5 border-t border-zinc-900/60 text-[9px] font-black">
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-zinc-400">
-                  <span>💖 친밀 지수</span>
-                  <span className="text-rose-500">{mascotLovePct}%</span>
+            {/* Micro-gauges */}
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <div className="bg-zinc-950/80 p-2.5 rounded-2xl border border-zinc-900">
+                <div className="flex justify-between items-center text-[9px] text-zinc-400 font-bold">
+                  <span>사랑 친밀 지수</span>
+                  <span className="text-red-500 font-extrabold font-mono">{mascotLovePct}%</span>
                 </div>
-                <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-rose-500 transition-all duration-300" style={{ width: `${mascotLovePct}%` }} />
+                <div className="w-full bg-zinc-900 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                  <div className="bg-gradient-to-r from-red-500 to-red-650 h-full rounded-full transition-all duration-300" style={{ width: `${mascotLovePct}%` }} />
                 </div>
               </div>
-
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-zinc-400">
-                  <span>🔋 소울 컨디션</span>
-                  <span className="text-amber-500">{mascotFeedStatus}</span>
+              <div className="bg-zinc-950/80 p-2.5 rounded-2xl border border-zinc-900">
+                <div className="flex justify-between items-center text-[9px] text-zinc-400 font-bold">
+                  <span>활성 컨디션</span>
+                  <span className="text-emerald-400 font-mono font-black">{mascotFeedStatus}</span>
                 </div>
-                <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
-                  <div className="h-full bg-amber-500 transition-all duration-300" style={{ width: mascotFeedStatus === "행복 가득" ? "100%" : "60%" }} />
+                <div className="w-full bg-zinc-900 h-1.5 rounded-full mt-1.5 overflow-hidden">
+                  <div className="bg-emerald-500 h-full rounded-full transition-all duration-300" style={{ width: mascotFeedStatus === "행복 가득" || mascotFeedStatus === "매우 만족" ? "100%" : "70%" }} />
                 </div>
               </div>
             </div>
 
             {/* Interaction Buttons */}
-            <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-zinc-900/40">
-              <button
-                onClick={handleInteractMascot}
-                className="py-2 bg-zinc-900 hover:bg-zinc-850 text-[10px] font-extrabold rounded-lg border border-zinc-800 text-zinc-300 transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-97"
-              >
-                <span>🎁</span> 선물하며 칭찬하기
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              <button onClick={handleInteractMascot} className="py-2.5 px-2 bg-zinc-950 text-[10px] font-black text-zinc-300 border border-zinc-900 rounded-2xl hover:bg-zinc-900 active:scale-95 transition-all flex items-center justify-center gap-1 cursor-pointer">
+                <span>🎁</span> 선물
               </button>
-              <button
-                onClick={handleActivateBooster}
-                className="py-2 bg-red-655 hover:bg-red-700 text-white text-[10px] font-black rounded-lg border border-red-600 transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-97"
-              >
-                <span>⚡</span> 전송 가속 부스터
+              <button onClick={handlePetMascot} className="py-2.5 px-2 bg-zinc-950 text-[10px] font-black text-zinc-300 border border-zinc-900 rounded-2xl hover:bg-zinc-900 active:scale-95 transition-all flex items-center justify-center gap-1 cursor-pointer">
+                <span>👋</span> 쓰다듬기
+              </button>
+              <button onClick={handleActivateBooster} className="py-2.5 px-2 bg-zinc-950 text-[10px] font-black text-zinc-300 border border-zinc-900 rounded-2xl hover:bg-zinc-900 active:scale-95 transition-all flex items-center justify-center gap-1 cursor-pointer">
+                <span>⚡</span> 부스터
               </button>
             </div>
           </div>
 
-          {/* 5. Mobile Dynamic Interactive Poll Segment */}
-          <div className="bg-zinc-900/60 border border-zinc-850/80 rounded-2xl p-4 text-left shadow-lg">
-            <div className="flex items-center gap-1.5 pb-2.5 border-b border-zinc-850/60">
-              <Scale size={14} className="text-red-500" />
-              <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">
-                오늘의 이솔 국영 여론조사
-              </h4>
-            </div>
-
-            <div className="mt-3.5 space-y-3">
-              <h3 className="text-xs font-black text-white leading-relaxed">
-                Q. 이솔나라가 추진해야 할 제1차 인공지능 윤리 규범은?
+          {/* 5. Horizontal Tactile Story Swiper */}
+          <div className="space-y-2.5">
+            <div className="flex justify-between items-center px-1">
+              <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                <Rocket size={11} className="text-red-500 animate-pulse" />
+                HOT CREATIVE SHOWCASE
               </h3>
+              <span className="text-[10px] font-extrabold text-red-500 hover:underline cursor-pointer" onClick={() => onPageChange("webtoon")}>전체보기</span>
+            </div>
 
-              <div className="space-y-2 mt-3">
-                {[
-                  { id: "A", text: "인간 광학 가치 수호 및 AI 표기 의무화" },
-                  { id: "B", text: "AI 창작 재산권 인정 및 스토리소득 보장" },
-                  { id: "C", text: "전 기사/웹툰 해시 무결성 검증 의무화" }
-                ].map(option => {
-                  const currentVotes = pollVotes[option.id];
-                  const percentage = totalVotes > 0 ? Math.round((currentVotes / totalVotes) * 100) : 0;
-                  const isSelected = votedOption === option.id;
-
-                  return (
-                    <button
-                      key={option.id}
-                      onClick={() => handleVote(option.id)}
-                      disabled={!!votedOption}
-                      className={cn(
-                        "w-full text-left p-3 rounded-xl border transition-all relative overflow-hidden flex flex-col gap-1 cursor-pointer",
-                        votedOption
-                          ? isSelected
-                            ? "bg-red-500/10 border-red-500/30"
-                            : "bg-zinc-950/60 border-zinc-900/40 opacity-70"
-                          : "bg-zinc-950 border-zinc-850 hover:border-red-500/30 hover:bg-zinc-900/40"
-                      )}
-                    >
-                      {/* Background Vote Percentage Indicator Bar */}
-                      {votedOption && (
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${percentage}%` }}
-                          transition={{ type: "spring", stiffness: 100, damping: 15 }}
-                          className="absolute inset-y-0 left-0 bg-red-500/5 pointer-events-none"
-                        />
-                      )}
-
-                      <div className="flex justify-between items-center relative z-10 text-[11px] font-extrabold text-zinc-200">
-                        <span className="flex items-center gap-2">
-                          <span className={cn(
-                            "w-5 h-5 rounded-md flex items-center justify-center font-black text-[9px] border",
-                            isSelected ? "bg-red-500 border-red-500 text-white" : "bg-zinc-900 border-zinc-800 text-zinc-400"
-                          )}>
-                            {option.id}
-                          </span>
-                          <span className="line-clamp-1">{option.text}</span>
-                        </span>
-                        {votedOption && (
-                          <span className="text-red-500 font-mono font-black">{percentage}%</span>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {votedOption && (
-                <div className="text-[10px] text-zinc-500 font-bold text-center mt-2 animate-pulse">
-                  ✓ 투표가 반영되었습니다. (총 {totalVotes}표 누적 중)
+            <div className="flex gap-3 overflow-x-auto pb-2 scroll-smooth snap-x no-scrollbar touch-pan-x" style={{ WebkitOverflowScrolling: "touch" }}>
+              {featuredWebtoon ? (
+                <div 
+                  onClick={() => onPageChange("webtoon")}
+                  className="flex-shrink-0 w-[240px] bg-zinc-900/40 border border-zinc-900 rounded-2xl overflow-hidden snap-center cursor-pointer hover:border-zinc-850 transition-colors"
+                >
+                  <div className="relative h-28">
+                    <img src={featuredWebtoon.banner} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent" />
+                    <span className="absolute top-2 left-2 bg-red-650 text-[8px] font-black uppercase px-2 py-0.5 rounded-full">HOT WEEKLY</span>
+                  </div>
+                  <div className="p-3 text-left space-y-1">
+                    <h4 className="text-xs font-black text-zinc-200 line-clamp-1">{featuredWebtoon.title}</h4>
+                    <p className="text-[10px] text-zinc-400 line-clamp-1 leading-normal font-semibold">By {featuredWebtoon.author} • ⭐ {featuredWebtoon.rating}</p>
+                  </div>
                 </div>
-              )}
+              ) : null}
+              
+              {webtoons.slice(1, 4).map((webtoon: any) => (
+                <div 
+                  key={webtoon.id}
+                  onClick={() => onPageChange("webtoon")}
+                  className="flex-shrink-0 w-[200px] bg-zinc-900/40 border border-zinc-900 rounded-2xl overflow-hidden snap-center cursor-pointer hover:border-zinc-850 transition-colors"
+                >
+                  <div className="relative h-28">
+                    <img src={webtoon.thumbnail} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent" />
+                    <span className="absolute top-2 left-2 bg-zinc-950/80 text-[8px] font-bold px-2 py-0.5 rounded-full border border-zinc-800">{webtoon.genre}</span>
+                  </div>
+                  <div className="p-3 text-left space-y-1">
+                    <h4 className="text-xs font-black text-zinc-200 line-clamp-1">{webtoon.title}</h4>
+                    <p className="text-[10px] text-zinc-400 line-clamp-1 font-semibold">{webtoon.author}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* 6. Live News Ticker List (Vertical Compact Feed) */}
-          <div className="space-y-3 pb-8 text-left">
-            <h3 className="text-xs font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Activity size={12} className="text-red-500" />
-              실시간 시민 보도 피드
-            </h3>
+          {/* 6. Mobile National Consensus Poll */}
+          <div className="bg-gradient-to-br from-zinc-900/50 to-zinc-950/70 border border-zinc-900/80 rounded-[2rem] p-5 shadow-xl text-left space-y-4">
+            <div className="flex items-center gap-2 border-b border-zinc-900 pb-2.5">
+              <Scale size={13} className="text-red-500 animate-pulse" />
+              <h4 className="text-[10px] font-black text-zinc-400 tracking-wider font-mono">LIVE CONSENSUS POLL</h4>
+            </div>
+
+            <div className="space-y-1.5">
+              <h5 className="text-[11px] font-black text-zinc-200 leading-snug">이솔나라 가상 시민 팩트체크 시스템에 투표식 배심원제를 영구 도입하는 개정안에 찬성하십니까?</h5>
+              <p className="text-[9px] text-zinc-500 font-bold">국민 여론조사 2026-T1 • 투표 마감 3일 전</p>
+            </div>
+
+            <div className="space-y-2">
+              {[
+                { key: "A", text: "찬성 (적극 도입 및 알고리즘 투명성 강화)", color: "from-red-650 to-red-500" },
+                { key: "B", text: "반대 (심의 효율성 저하 및 담합 리스크)", color: "from-amber-650 to-amber-500" },
+                { key: "C", text: "기권 (추가 검토 및 보강 입안 필요)", color: "from-zinc-700 to-zinc-600" }
+              ].map(opt => {
+                const isSelected = votedOption === opt.key;
+                const hasVoted = votedOption !== null;
+                const votes = pollVotes[opt.key] || 0;
+                const pct = hasVoted ? Math.round((votes / totalVotes) * 100) : 0;
+
+                return (
+                  <button
+                    key={opt.key}
+                    disabled={hasVoted}
+                    onClick={() => handleVote(opt.key)}
+                    className={cn(
+                      "w-full text-left p-3 rounded-xl border font-bold text-xs relative overflow-hidden transition-all flex justify-between items-center",
+                      isSelected 
+                        ? "bg-red-500/10 border-red-500/30 text-white" 
+                        : hasVoted 
+                          ? "bg-zinc-950/40 border-zinc-900 text-zinc-500" 
+                          : "bg-zinc-950/80 border-zinc-850 text-zinc-300 hover:border-zinc-800 hover:bg-zinc-950 cursor-pointer active:scale-98"
+                    )}
+                  >
+                    {hasVoted && (
+                      <div 
+                        className={cn("absolute left-0 top-0 bottom-0 bg-gradient-to-r opacity-15 transition-all duration-1000", opt.color)} 
+                        style={{ width: `${pct}%` }}
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-2">
+                      <span className="font-mono text-[10px] font-black">{opt.key}</span>
+                      <span>{opt.text}</span>
+                    </span>
+                    {hasVoted ? (
+                      <span className="relative z-10 font-mono text-xs font-black text-zinc-300">{pct}%</span>
+                    ) : (
+                      <span className="text-[9px] text-zinc-500 uppercase font-black tracking-widest font-mono">SELECT</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            {votedOption && (
+              <p className="text-[9px] text-center text-zinc-500 font-bold">감사합니다! 귀하의 암호화 투표권이 블록에 기록되었습니다. (총 {totalVotes}표)</p>
+            )}
+          </div>
+
+          {/* 7. Live Verified Timeline ( 속보 ) */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center px-1">
+              <h3 className="text-[10px] font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                <Activity size={12} className="text-red-500 animate-pulse" />
+                EXIF VERIFIED CHRONICLE
+              </h3>
+              <span className="text-[10px] font-extrabold text-red-500 hover:underline cursor-pointer" onClick={() => onPageChange("isol-post")}>전체속보</span>
+            </div>
 
             <div className="space-y-2.5">
-              {recentArticles.length > 0 ? (
-                recentArticles.map((art: any) => (
-                  <div
-                    key={art.id}
-                    onClick={() => {
-                      if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
-                      onPageChange("isol-post");
-                    }}
-                    className="p-3 bg-zinc-900/40 border border-zinc-900 rounded-xl hover:border-zinc-800 transition-all flex justify-between items-center cursor-pointer active:scale-99"
-                  >
-                    <div className="space-y-0.5 max-w-[80%]">
-                      <span className="text-[8px] bg-red-500/10 text-red-500 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">{art.category || "GENERAL"}</span>
-                      <h4 className="text-xs font-black text-zinc-200 truncate">{art.title}</h4>
-                      <p className="text-[10px] text-zinc-400 font-semibold">{art.author || "시민기자"}</p>
-                    </div>
-                    <ChevronRight size={14} className="text-zinc-600 shrink-0" />
+              {recentArticles.map((art: any, index: number) => (
+                <div 
+                  key={art.id}
+                  onClick={() => {
+                    if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                    onPageChange("isol-post");
+                  }}
+                  className="p-4 bg-gradient-to-b from-zinc-900/40 to-zinc-950/50 border border-zinc-900/60 rounded-2xl hover:border-zinc-800 active:scale-98 transition-all duration-200 cursor-pointer text-left space-y-2 shadow-sm"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="text-[7.5px] font-black bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded uppercase tracking-wider">{art.category || "GENERAL"}</span>
+                    <span className="text-[8px] text-zinc-500 font-mono font-bold">{art.date || "TODAY"}</span>
                   </div>
-                ))
-              ) : (
-                <p className="text-[11px] text-zinc-500 italic">게시된 최근 기사가 없습니다.</p>
-              )}
+                  <h4 className="text-xs font-black text-zinc-200 line-clamp-1 leading-relaxed">{art.title}</h4>
+                  <div className="border-t border-zinc-900/60 pt-2 flex justify-between items-center text-[9px] text-zinc-400 font-semibold">
+                    <span>By {art.author || "시민기자"}</span>
+                    <span className="text-[7.5px] text-zinc-500 font-mono tracking-tighter uppercase font-medium">{exifData[index % exifData.length]}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -24062,304 +24271,479 @@ const HomeOverview = ({
   }
 
   // -------------------------------------------------------------
-  // RENDER OPTION B: 🖥️ LAPTOP/WEB OPTIMIZED BENTO MATRIX
+  // RENDER OPTION B: 💻 WEB / LAPTOP OPTIMIZED BENTO GRID
   // -------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans pb-32 animate-in fade-in duration-500 select-none">
-      {/* 1. Immersive 3D Parallax Header & Hero Visual */}
-      <div className="relative overflow-hidden border-b border-zinc-900 bg-gradient-to-b from-red-950/10 via-zinc-950 to-zinc-950 py-24 md:py-32 px-6 md:px-16 text-left">
-        {/* Particle grid layout */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293708_1px,transparent_1px),linear-gradient(to_bottom,#1f293708_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-650/5 rounded-full blur-[140px] pointer-events-none -mr-32 -mt-32" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-550/5 rounded-full blur-[140px] pointer-events-none -ml-32 -mb-32" />
-
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
-          <div className="lg:col-span-8 space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-500/15 border border-red-500/20 text-red-500 text-[10px] font-extrabold uppercase tracking-widest rounded-full">
-              <Activity size={11} className="animate-pulse" />
-              INTEGRITY VERIFIED SYSTEM V4
+    <div className="min-h-screen bg-transparent text-zinc-100 font-sans pb-24 select-none animate-in fade-in duration-300">
+      
+      {/* 1. Immersive Premium Header block */}
+      <div className="relative overflow-hidden px-8 py-10 bg-gradient-to-b from-[#0e0e11] via-zinc-950/20 to-transparent border-b border-zinc-900/50">
+        <div className="absolute top-0 right-10 w-[450px] h-[450px] bg-red-650/5 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute top-1/4 left-10 w-[300px] h-[300px] bg-red-600/5 rounded-full blur-[120px] pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end md:justify-between gap-6 relative z-10">
+          <div className="text-left space-y-3 max-w-2xl">
+            <div className="flex items-center gap-3">
+              <span className="bg-red-500/10 border border-red-500/20 text-red-500 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                이솔나라 통합 포털 포트폴리오
+              </span>
+              <span className="text-[10px] text-zinc-500 font-mono flex items-center gap-1">
+                <Clock size={11} /> 
+                <span>국영 표준시 {deviceTime} (ISST)</span>
+              </span>
             </div>
             
-            <h2 className="text-4xl md:text-7xl font-black italic tracking-tighter uppercase leading-none text-white">
-              The Future of <br />
-              <span className="text-red-550 drop-shadow-[0_0_30px_rgba(239,68,68,0.2)]">Narrative & Mirror</span>
-            </h2>
-            
-            <p className="text-lg md:text-xl text-zinc-400 font-medium max-w-2xl leading-relaxed">
-              이솔나라는 최첨단 인공지능 스토리텔링, 인간 광학 원천 기탁물 실사 검증 시스템 및 수평형 시민 저널리즘이 교차 연동된 프리미엄 다차원 스토리 매트릭스 허브입니다.
+            <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-white leading-[1.1]">
+              이솔나라 <span className="text-red-500">스토리 미러 스페이스</span>
+            </h1>
+            <p className="text-zinc-400 text-sm font-semibold leading-relaxed max-w-xl">
+              실사 이미지 카메라 무결성 입증, 극지 라이브 연동, 감응형 가상 요정이 실시간으로 지탱하는 독점적 미러 월드 시연 네트워크입니다.
             </p>
-
-            <div className="flex flex-wrap gap-3.5 pt-4">
-              <button
-                onClick={() => {
-                  if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
-                  onPageChange("isol-post");
-                }}
-                className="px-6 py-3.5 bg-red-655 hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-[0_5px_25px_rgba(239,68,68,0.15)] flex items-center gap-2 cursor-pointer hover:scale-103 active:scale-97"
-              >
-                <Newspaper size={14} />
-                실시간 뉴스룸 관찰하기
-              </button>
-              <button
-                onClick={() => {
-                  if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
-                  onPageChange("webtoon");
-                }}
-                className="px-6 py-3.5 bg-zinc-900 hover:bg-zinc-850 text-zinc-200 hover:text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all border border-zinc-850 flex items-center gap-2 cursor-pointer hover:scale-103 active:scale-97"
-              >
-                <Sparkles size={14} />
-                오감 스토리 공방 입장
-              </button>
-            </div>
           </div>
 
-          {/* Real-time Telemetry Stats Display Widget */}
-          <div className="lg:col-span-4 bg-zinc-900/45 border border-zinc-900 p-6 rounded-3xl space-y-4 backdrop-blur-md select-none text-left">
-            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest font-mono">Platform Live Telemetry</span>
-              </div>
-              <span className="text-[9px] text-emerald-400 font-bold bg-emerald-950/45 px-2 py-0.5 rounded border border-emerald-500/10 uppercase tracking-wider font-mono">NORMAL</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-zinc-950/40 rounded-2xl border border-zinc-900">
-                <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-widest">이솔 표준시</span>
-                <div className="text-sm font-black text-zinc-200 mt-1 font-mono">{deviceTime}</div>
-              </div>
-              <div className="p-3 bg-zinc-950/40 rounded-2xl border border-zinc-900">
-                <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-widest">기탁 기사량</span>
-                <div className="text-sm font-black text-zinc-200 mt-1 font-mono">{citizenNews.length + 1380} <span className="text-[10px] text-zinc-500">개</span></div>
-              </div>
-              <div className="p-3 bg-zinc-950/40 rounded-2xl border border-zinc-900">
-                <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-widest">광학 실사 검증률</span>
-                <div className="text-sm font-black text-zinc-200 mt-1 font-mono">99.8%</div>
-              </div>
-              <div className="p-3 bg-zinc-950/40 rounded-2xl border border-zinc-900">
-                <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-widest">시민 기자단 수</span>
-                <div className="text-sm font-black text-zinc-200 mt-1 font-mono">{reporters.length + 342} <span className="text-[10px] text-zinc-500">명</span></div>
+          <div className="flex items-center gap-6 bg-zinc-900/30 border border-zinc-900 p-4 rounded-3xl backdrop-blur-md shadow-xl">
+            <div className="text-left">
+              <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest font-mono">GLOBAL INTEGRITY</span>
+              <div className="text-2xl font-black text-emerald-400 font-mono tracking-tight flex items-center gap-1.5">
+                <span>99.85%</span>
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
               </div>
             </div>
-
-            <div className="p-3 bg-zinc-950/80 rounded-2xl border border-zinc-900 text-[10px] font-semibold text-zinc-400 leading-normal flex items-start gap-2">
-              <Info size={14} className="text-red-500 shrink-0 mt-0.5" />
-              <span>헤드라인 무결성 기탁 및 EXIF 메타데이터 서명 매칭 암호 검증관 노드가 현재 안전하게 운영 중입니다.</span>
+            <div className="h-8 w-[1px] bg-zinc-900" />
+            <div className="text-left">
+              <span className="text-[9px] text-zinc-500 font-black uppercase tracking-widest font-mono">ACTIVE SECTORS</span>
+              <div className="text-2xl font-black text-white font-mono tracking-tight">
+                05 <span className="text-zinc-500 text-xs font-bold">/ 05</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. Bento Grid Hub Layout (Main Content Platform Matrix) */}
-      <div className="max-w-7xl mx-auto px-6 md:px-8 mt-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* 2. Top-tier Dynamic Stats HUD */}
+      <div className="max-w-7xl mx-auto px-6 mt-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: "국영통신 취재 기사", val: news.length + citizenNews.length, suffix: "건", status: "안전 검정 완료", desc: "분산 노드 서명 승인", color: "text-red-500" },
+            { label: "웹툰 실시간 릴리즈", val: webtoons.length, suffix: "종", status: "오감 동조형", desc: "활성 독자 가독율 98%", color: "text-amber-500" },
+            { label: "활동 시민기자", val: reporters.length + 12, suffix: "명", status: "실명 인증단", desc: "EXIF 서명 대조 완료", color: "text-emerald-500" },
+            { label: "분산 합의 투표자", val: totalVotes, suffix: "표", status: "무결 보장", desc: "블록체인 지배구조 연동", color: "text-purple-500" }
+          ].map((s, idx) => (
+            <div key={idx} className="bg-gradient-to-b from-zinc-900/50 to-zinc-950/50 border border-zinc-900/60 p-5 rounded-[2rem] text-left hover:border-red-500/25 hover:shadow-[0_0_30px_rgba(239,68,68,0.03)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between h-32 group shadow-lg">
+              <div className="flex justify-between items-start">
+                <span className="text-[10px] text-zinc-500 font-black tracking-wider uppercase font-mono">{s.label}</span>
+                <span className="text-[9px] font-bold text-zinc-500">{s.status}</span>
+              </div>
+              <div className="flex items-baseline gap-1 mt-2">
+                <span className={`text-3xl font-black font-mono tracking-tight transition-transform group-hover:scale-105 ${s.color}`}>{s.val}</span>
+                <span className="text-xs text-zinc-400 font-bold">{s.suffix}</span>
+              </div>
+              <p className="text-[10px] text-zinc-500 font-bold border-t border-zinc-950 pt-2">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 3. High-End Bento Grid Layout */}
+      <div className="max-w-7xl mx-auto px-6 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
           
-          {/* Main Left Pane (col-span-8) */}
-          <div className="lg:col-span-8 space-y-8">
+          {/* LEFT AREA: CONTENT BLOCKS (Col-span: 8) */}
+          <div className="md:col-span-8 space-y-6">
             
-            {/* Bento Block 1: Interactive Citizen Poll Capsule */}
-            <div className="bg-gradient-to-b from-zinc-900/60 to-zinc-950/40 border border-zinc-850 rounded-[2.5rem] p-8 md:p-10 text-left shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-80 h-80 bg-red-500/5 rounded-full blur-[100px] pointer-events-none -mr-32 -mt-32" />
+            {/* Bento-Block 1: 🗺️ Spatial Mirror Nodes Map (Extremely futuristic interactive map!) */}
+            <div 
+              onMouseMove={(e) => handleMouseMove(e, "bento-1")}
+              style={{
+                "--mouse-x": `${mouseCoords["bento-1"]?.x || 0}px`,
+                "--mouse-y": `${mouseCoords["bento-1"]?.y || 0}px`,
+              } as React.CSSProperties}
+              className="bg-gradient-to-br from-zinc-900/45 to-zinc-950/65 border border-zinc-900/60 rounded-[2rem] p-6 text-left shadow-2xl relative overflow-hidden hover:border-red-500/25 transition-all duration-300 group/b1"
+            >
+              {/* Glow tail background */}
+              <div className="absolute inset-0 opacity-0 group-hover/b1:opacity-100 transition-opacity duration-300 pointer-events-none bg-[radial-gradient(400px_circle_at_var(--mouse-x)_var(--mouse-y),rgba(239,68,68,0.06),transparent_40%)]" />
+              <div className="absolute top-0 right-0 w-80 h-80 bg-red-650/5 rounded-full blur-3xl pointer-events-none" />
               
-              <div className="flex items-center gap-2.5 pb-4 border-b border-zinc-850/80">
-                <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
-                  <Scale size={16} className="text-red-500" />
+              <div className="flex items-center justify-between pb-4 border-b border-zinc-900 relative z-10">
+                <div className="flex items-center gap-2">
+                  <Activity size={14} className="text-red-500 animate-pulse" />
+                  <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-widest font-mono">SPATIAL MIRROR NODES MAP</h4>
                 </div>
-                <div>
-                  <span className="text-[9.5px] font-black text-red-500 uppercase tracking-widest">NATIONAL FORUM CONSENSUS</span>
-                  <h3 className="text-lg font-black text-white tracking-tight">이솔 국영 인공지능 윤리 여론조사</h3>
-                </div>
+                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest bg-zinc-950 border border-zinc-850 px-2.5 py-0.5 rounded-full">INTERACTIVE CONSOLE</span>
               </div>
 
-              <div className="mt-8 space-y-5">
-                <h4 className="text-lg md:text-xl font-black text-zinc-100 leading-relaxed max-w-3xl">
-                  이솔나라 메타버스 생태계 내에서 최우선으로 규제 및 입법 추진해야 할 제1차 인공지능 권익 규범은 무엇입니까?
-                </h4>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-                  {[
-                    { id: "A", text: "인간 광학 가치 전면 수호 및 AI 인공 창작 헤더 표기 의무화" },
-                    { id: "B", text: "AI 창작 재산권 공인 인정 및 기본스토리소득 입법 재원 마련" },
-                    { id: "C", text: "전 기자/웹툰 업로드본 실시간 해시 무결성 암호 대조제" }
-                  ].map(option => {
-                    const currentVotes = pollVotes[option.id];
-                    const percentage = totalVotes > 0 ? Math.round((currentVotes / totalVotes) * 100) : 0;
-                    const isSelected = votedOption === option.id;
-
-                    return (
-                      <button
-                        key={option.id}
-                        onClick={() => handleVote(option.id)}
-                        disabled={!!votedOption}
-                        className={cn(
-                          "text-left p-6 rounded-2xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-44 cursor-pointer group/opt",
-                          votedOption
-                            ? isSelected
-                              ? "bg-red-500/10 border-red-500/30 scale-98 shadow-inner"
-                              : "bg-zinc-950/40 border-zinc-900/60 opacity-60 scale-95"
-                            : "bg-zinc-950 border-zinc-900 hover:border-red-500/30 hover:bg-zinc-900/20 hover:-translate-y-1 hover:shadow-2xl hover:shadow-red-500/5"
-                        )}
-                      >
-                        {/* Interactive Background fill bar */}
-                        {votedOption && (
-                          <motion.div
-                            initial={{ height: 0 }}
-                            animate={{ height: `${percentage}%` }}
-                            transition={{ type: "spring", stiffness: 80, damping: 12 }}
-                            className="absolute inset-x-0 bottom-0 bg-red-500/5 pointer-events-none"
-                          />
-                        )}
-
-                        <div className="flex justify-between items-center relative z-10 w-full">
-                          <span className={cn(
-                            "w-7 h-7 rounded-lg flex items-center justify-center font-black text-[11px] border transition-colors",
-                            isSelected ? "bg-red-500 border-red-500 text-white" : "bg-zinc-900 border-zinc-800 text-zinc-400 group-hover/opt:border-red-500/50"
-                          )}>
-                            {option.id}
-                          </span>
-                          {votedOption && (
-                            <span className="text-red-500 font-mono font-black text-sm">{percentage}%</span>
-                          )}
-                        </div>
-
-                        <p className="text-xs font-bold text-zinc-300 leading-relaxed mt-4 relative z-10">
-                          {option.text}
-                        </p>
-                      </button>
-                    );
-                  })}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 relative z-10">
+                {/* Visual grid sectors */}
+                <div className="lg:col-span-5 space-y-2">
+                  <p className="text-[10px] text-zinc-500 font-extrabold uppercase tracking-widest font-mono mb-3">Sectors Matrix</p>
+                  {Object.entries(sectors).map(([key, sector]) => (
+                    <button
+                      key={key}
+                      onClick={() => handleSectorClick(key)}
+                      className={cn(
+                        "w-full text-left p-3 rounded-2xl border font-bold text-xs flex justify-between items-center transition-all cursor-pointer relative overflow-hidden",
+                        activeSector === key 
+                          ? "bg-red-500/10 border-red-500/25 text-white shadow-lg" 
+                          : "bg-zinc-950/40 border-zinc-950 text-zinc-400 hover:bg-zinc-900 hover:border-zinc-850"
+                      )}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className={cn("w-1.5 h-1.5 rounded-full", activeSector === key ? "bg-red-500 animate-ping" : "bg-zinc-600")} />
+                        <span>{sector.name}</span>
+                      </span>
+                      <span className="font-mono text-[9px] font-black text-zinc-500">{sector.status}</span>
+                    </button>
+                  ))}
                 </div>
 
-                {votedOption && (
-                  <div className="text-xs text-zinc-500 font-bold text-center mt-4 animate-pulse flex items-center justify-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-red-500" />
-                    <span>귀중한 의견 감사드립니다. (총 {totalVotes}표 참여 완료)</span>
+                {/* Live Console Output for selected Sector */}
+                <div className="lg:col-span-7 bg-zinc-950 border border-zinc-900 rounded-2xl p-5 flex flex-col justify-between font-mono text-xs relative overflow-hidden min-h-[220px]">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-red-650/5 rounded-full blur-2xl pointer-events-none" />
+                  <div className="flex justify-between items-center pb-2 border-b border-zinc-900/60">
+                    <span className="text-[10px] text-red-500 font-black">[{activeSector.toUpperCase()}_SECTOR_FEED]</span>
+                    <span className="text-[9px] text-zinc-500">INTEGRITY: {sectors[activeSector as keyof typeof sectors].integrity}</span>
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Bento Block 2: Mascot Companion Interactive HUD */}
-            <div className="bg-zinc-900/40 border border-zinc-900 rounded-[2.5rem] p-8 md:p-10 text-left shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none -mr-32 -mt-32" />
-
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-                <div className="md:col-span-8 space-y-4">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-500/15 text-amber-500 text-[10px] font-extrabold uppercase tracking-widest rounded-full">
-                    <Bot size={11} />
-                    Mascot AI Companion
-                  </div>
-                  <h3 className="text-2xl font-black text-white tracking-tight">
-                    {activeMascot.name} 실시간 비서 연동
-                  </h3>
-                  <p className="text-zinc-400 text-sm font-semibold leading-relaxed">
-                    시민 비서가 플랫폼 활동 현황과 여론 동향을 분석하여 유쾌하게 전달합니다. 선물 아이템을 통하여 친밀도를 지속 충전하면 뉴스 기고 가속 버프가 발동됩니다.
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-4 pt-2 text-xs font-black">
-                    <div className="p-4 bg-zinc-950/60 rounded-2xl border border-zinc-900 space-y-2">
-                      <div className="flex justify-between items-center text-zinc-400">
-                        <span>💖 비서 친밀도</span>
-                        <span className="text-rose-500">Level {Math.ceil(mascotLovePct / 20)} ({mascotLovePct}%)</span>
-                      </div>
-                      <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden shadow-inner">
-                        <div className="bg-rose-500 h-full rounded-full transition-all duration-300" style={{ width: `${mascotLovePct}%` }} />
-                      </div>
-                    </div>
-
-                    <div className="p-4 bg-zinc-950/60 rounded-2xl border border-zinc-900 space-y-2">
-                      <div className="flex justify-between items-center text-zinc-400">
-                        <span>🔋 활성 컨디션</span>
-                        <span className="text-amber-500">{mascotFeedStatus}</span>
-                      </div>
-                      <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden shadow-inner">
-                        <div className="bg-amber-500 h-full rounded-full transition-all duration-300" style={{ width: mascotFeedStatus === "행복 가득" ? "100%" : "60%" }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="md:col-span-4 bg-zinc-950 border border-zinc-900 rounded-3xl p-6 flex flex-col justify-between h-56 relative overflow-hidden">
-                  <div className="space-y-3">
-                    <div className="text-[32px]">{activeMascot.emoji}</div>
-                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-3 text-zinc-300 text-[11.5px] font-medium leading-relaxed italic relative">
-                      <div className="absolute -top-1.5 left-4 w-3 h-3 bg-zinc-900 border-t border-l border-zinc-800 rotate-45" />
-                      "시민님! 오늘의 이솔 뉴스 피드가 모두 안전하게 검정 완료되었습니다!"
+                  
+                  <div className="text-left space-y-2 mt-3 flex-1">
+                    <h5 className="font-bold text-sm text-zinc-200">{sectors[activeSector as keyof typeof sectors].name}</h5>
+                    <p className="text-[11px] text-zinc-400 leading-relaxed font-sans">{sectors[activeSector as keyof typeof sectors].desc}</p>
+                    
+                    <div className="bg-zinc-900/40 p-2.5 rounded-lg border border-zinc-900 mt-4">
+                      <p className="text-[9.5px] text-zinc-500 leading-normal flex items-center gap-1.5 font-mono">
+                        <span className="text-emerald-400">●</span> 
+                        <span>ACTIVE NODE: NO.{sectors[activeSector as keyof typeof sectors].nodes}</span>
+                      </p>
+                      <p className="text-[9.5px] text-zinc-500 leading-normal font-mono mt-1">
+                        &gt; status check: OK. cryptographic parity validated.
+                      </p>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 mt-4">
-                    <button
-                      onClick={handleInteractMascot}
-                      className="py-2.5 bg-zinc-900 hover:bg-zinc-850 text-[11px] font-extrabold text-zinc-300 rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer hover:scale-103 active:scale-97"
-                    >
-                      🎁 선물 증정
-                    </button>
-                    <button
-                      onClick={handleActivateBooster}
-                      className="py-2.5 bg-red-655 hover:bg-red-700 text-[11px] font-black text-white rounded-xl border border-red-600 transition-all cursor-pointer hover:scale-103 active:scale-97"
-                    >
-                      ⚡ 전송 버스트
-                    </button>
+                  <div className="text-[8.5px] text-zinc-600 border-t border-zinc-900/40 pt-2 flex justify-between items-center">
+                    <span>SYSTEM VER: v2.4.1-STABLE</span>
+                    <span>STANDARDS PROTOCOL SYNCED</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Bento Block 3: Premium Services Hub Navigation */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Bento-Block 2: 🗳️ National Consensus & Policy Poll (Sleek voting segment) */}
+            <div 
+              onMouseMove={(e) => handleMouseMove(e, "bento-2")}
+              style={{
+                "--mouse-x": `${mouseCoords["bento-2"]?.x || 0}px`,
+                "--mouse-y": `${mouseCoords["bento-2"]?.y || 0}px`,
+              } as React.CSSProperties}
+              className="bg-gradient-to-br from-zinc-900/40 to-zinc-950/60 border border-zinc-900/60 rounded-[2rem] p-6 text-left shadow-2xl space-y-5 hover:border-red-500/25 transition-all duration-300 group/b2 relative overflow-hidden"
+            >
+              {/* Glow tail background */}
+              <div className="absolute inset-0 opacity-0 group-hover/b2:opacity-100 transition-opacity duration-300 pointer-events-none bg-[radial-gradient(400px_circle_at_var(--mouse-x)_var(--mouse-y),rgba(239,68,68,0.06),transparent_40%)]" />
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-900 relative z-10">
+                <div className="flex items-center gap-2">
+                  <Scale size={14} className="text-red-500 animate-pulse" />
+                  <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-widest font-mono">NATIONAL CONSENSUS POLL</h4>
+                </div>
+                <span className="text-[9px] font-bold text-zinc-500 bg-red-500/10 px-2 py-0.5 rounded-md">VIRTUAL ETHICS COMMITTEE</span>
+              </div>
+
+              <div className="space-y-2 relative z-10">
+                <h3 className="text-lg font-black text-zinc-100 leading-snug">이솔나라 가상 시민 팩트체크 시스템에 투표식 배심원제를 영구 도입하는 개정안에 찬성하십니까?</h3>
+                <p className="text-xs text-zinc-400 font-semibold leading-relaxed">
+                  본 개정안이 통과되면, 모든 검증 완료된 속보는 가상 시민 배심원 30인의 분산 합의 서명을 득해야만 최종 국영 미러 월드 아카이브에 기탁됩니다. 찬반 투표에 참여하시면 국영 통신에 직접 개입할 권리가 영구 부여됩니다.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 relative z-10">
+                {[
+                  { key: "A", text: "찬성 (배심원제 영구 가동)", color: "from-red-650 to-red-500" },
+                  { key: "B", text: "반대 (효율 우선 및 담합 배제)", color: "from-amber-650 to-amber-500" },
+                  { key: "C", text: "기권 (추가 보완책 검토 권고)", color: "from-zinc-700 to-zinc-600" }
+                ].map(opt => {
+                  const isSelected = votedOption === opt.key;
+                  const hasVoted = votedOption !== null;
+                  const votes = pollVotes[opt.key] || 0;
+                  const pct = hasVoted ? Math.round((votes / totalVotes) * 100) : 0;
+
+                  return (
+                    <button
+                      key={opt.key}
+                      disabled={hasVoted}
+                      onClick={() => handleVote(opt.key)}
+                      className={cn(
+                        "text-left p-4 rounded-2xl border font-bold text-xs relative overflow-hidden transition-all h-24 flex flex-col justify-between",
+                        isSelected 
+                          ? "bg-red-500/10 border-red-500/30 text-white" 
+                          : hasVoted 
+                            ? "bg-zinc-950/40 border-zinc-950 text-zinc-500" 
+                            : "bg-zinc-950/80 border-zinc-850 text-zinc-300 hover:border-zinc-800 hover:bg-zinc-950 cursor-pointer active:scale-98"
+                      )}
+                    >
+                      {hasVoted && (
+                        <div 
+                          className={cn("absolute left-0 top-0 bottom-0 bg-gradient-to-r opacity-15 transition-all duration-1000", opt.color)} 
+                          style={{ width: `${pct}%` }}
+                        />
+                      )}
+                      
+                      <div className="flex justify-between items-start w-full relative z-10">
+                        <span className="font-mono text-xs font-black">{opt.key}</span>
+                        {hasVoted ? (
+                          <span className="font-mono text-sm font-black text-zinc-300">{pct}%</span>
+                        ) : (
+                          <span className="text-[8px] bg-zinc-900 text-zinc-500 px-1.5 py-0.5 rounded font-black uppercase tracking-wider font-mono">SELECT</span>
+                        )}
+                      </div>
+                      
+                      <span className="relative z-10 text-[11px] leading-tight font-black">{opt.text}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {votedOption && (
+                <div className="p-3.5 bg-zinc-950 rounded-2xl border border-zinc-900 flex justify-between items-center text-[10px] text-zinc-500 font-bold">
+                  <span>🗳️ 귀하의 암호화 투표권이 블록에 기록되었습니다. (총 투표수: {totalVotes}표)</span>
+                  <span className="text-emerald-400">분산 원장 검증 완료</span>
+                </div>
+              )}
+            </div>
+
+            {/* Bento-Block 3: Premium Core Services shortcuts */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { title: "국영 뉴스룸", desc: "검증된 헤드라인 속보", icon: Newspaper, id: "isol-post", badge: "Live News" },
-                { title: "오감 소설 공방", desc: "AI 비주얼 에피소드 극장", icon: Sparkles, id: "webtoon", badge: "Creative" },
-                { title: "시민 기자 광장", desc: "수평적 독립 저널리즘 단체", icon: Edit3, id: "soul-center", badge: "Citizen" },
-                { title: "민원 소통창구", desc: "시민 권익 향상 센터", icon: Scale, id: "community", badge: "Ombudsman" }
-              ].map(portal => {
-                const PortalIcon = portal.icon;
-                return (
-                  <div
-                    key={portal.id}
-                    onClick={() => {
-                      if (typeof playHapticClick === "function") playHapticClick(600, 0.04);
-                      onPageChange(portal.id);
-                    }}
-                    className="p-8 bg-zinc-900/40 border border-zinc-900 hover:border-red-500/30 rounded-[2rem] hover:bg-zinc-900/60 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-red-500/5 transition-all duration-300 text-left cursor-pointer group"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="w-11 h-11 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-red-550 group-hover:scale-110 transition-transform">
-                        <PortalIcon size={20} />
-                      </div>
-                      <span className="text-[8px] bg-red-500/10 text-red-500 border border-red-500/15 font-black px-2 py-0.5 rounded font-mono uppercase tracking-wider">{portal.badge}</span>
-                    </div>
-
-                    <h4 className="text-lg font-black text-white mt-6 group-hover:text-red-500 transition-colors">{portal.title}</h4>
-                    <p className="text-zinc-400 text-xs font-semibold mt-1 leading-normal">{portal.desc}</p>
+                { label: "국영 뉴스룸", id: "isol-post", emoji: "📰", bg: "from-red-500/5 to-red-655/5 hover:border-red-500/30", text: "실시간 속보", iconColor: "text-red-500" },
+                { label: "웹툰 광장", id: "webtoon", emoji: "🧸", bg: "from-amber-500/5 to-amber-600/5 hover:border-amber-500/30", text: "오감 소설 공방", iconColor: "text-amber-500" },
+                { label: "시민 기자", id: "soul-center", emoji: "🎙️", bg: "from-emerald-500/5 to-emerald-600/5 hover:border-emerald-500/30", text: "실명 인증 취재", iconColor: "text-emerald-500" },
+                { label: "국회 소통창구", id: "community", emoji: "⚖️", bg: "from-purple-500/5 to-indigo-650/5 hover:border-purple-500/30", text: "옴부즈만 청원", iconColor: "text-purple-500" }
+              ].map(shortcut => (
+                <button
+                  key={shortcut.id}
+                  onClick={() => {
+                    if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                    onPageChange(shortcut.id);
+                  }}
+                  className={cn(
+                    "bg-gradient-to-br border border-zinc-900/60 rounded-[2rem] p-5 text-left transition-all hover:-translate-y-1 hover:shadow-[0_15px_35px_rgba(239,68,68,0.03)] group relative overflow-hidden cursor-pointer",
+                    shortcut.bg
+                  )}
+                >
+                  <div className="w-10 h-10 rounded-2xl bg-zinc-950 border border-zinc-850 flex items-center justify-center text-lg shadow-inner group-hover:scale-105 transition-transform mb-4">
+                    {shortcut.emoji}
                   </div>
-                );
-              })}
+                  <h5 className="text-sm font-black text-zinc-100 group-hover:text-white transition-colors">{shortcut.label}</h5>
+                  <p className="text-[10px] text-zinc-500 mt-1 font-bold">{shortcut.text}</p>
+                </button>
+              ))}
             </div>
 
           </div>
 
-          {/* Sticky Sidebar Right Pane (col-span-4) */}
-          <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-28">
-            
-            {/* Live Observation Console Feed */}
-            <div className="bg-zinc-900/40 border border-zinc-900 rounded-[2rem] p-6 text-left shadow-xl space-y-5">
-              <div className="flex items-center gap-2 pb-3 border-b border-zinc-800/80">
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest font-mono">LIVE OBSERVATION TERMINAL</h4>
+          {/* RIGHT AREA: TELEMETRY & SIDEPANEL (Col-span: 4) */}
+          <div className="md:col-span-4 space-y-6">
+
+            {/* Bento-Block 4: 🎯 Today's Citizen Daily Quests (Interactive Checklist!) */}
+            <div 
+              onMouseMove={(e) => handleMouseMove(e, "bento-4")}
+              style={{
+                "--mouse-x": `${mouseCoords["bento-4"]?.x || 0}px`,
+                "--mouse-y": `${mouseCoords["bento-4"]?.y || 0}px`,
+              } as React.CSSProperties}
+              className="bg-gradient-to-br from-zinc-900/40 to-zinc-950/60 border border-zinc-900/60 rounded-[2rem] p-6 text-left shadow-2xl space-y-5 hover:border-red-500/25 transition-all duration-300 group/b4 relative overflow-hidden"
+            >
+              {/* Glow tail background */}
+              <div className="absolute inset-0 opacity-0 group-hover/b4:opacity-100 transition-opacity duration-300 pointer-events-none bg-[radial-gradient(400px_circle_at_var(--mouse-x)_var(--mouse-y),rgba(239,68,68,0.06),transparent_40%)]" />
+              <div className="flex justify-between items-center pb-3 border-b border-zinc-900 relative z-10">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} className="text-red-500 animate-pulse" />
+                  <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-widest font-mono">DAILY CITIZEN QUESTS</h4>
+                </div>
+                <span className="text-[10px] font-extrabold text-red-500 bg-red-500/10 px-2.5 py-0.5 rounded-full">{questPct}%</span>
               </div>
 
-              <div className="space-y-4">
+              {/* Progress visual ring/line combo */}
+              <div className="space-y-2 relative z-10">
+                <div className="flex justify-between items-center text-[11px] font-bold text-zinc-400">
+                  <span>일일 공헌 수치</span>
+                  <span>{questProgress} / 3 완료</span>
+                </div>
+                <div className="w-full bg-zinc-950 h-2 rounded-full overflow-hidden border border-zinc-900">
+                  <div className="bg-red-650 h-full rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]" style={{ width: `${questPct}%` }} />
+                </div>
+              </div>
+
+              {/* Quest Items */}
+              <div className="space-y-2.5 pt-2 relative z-10">
+                
+                {/* Item 1 */}
+                <div className="p-3 bg-zinc-950/50 border border-zinc-900 rounded-2xl flex items-center justify-between transition-colors">
+                  <div className="flex items-center gap-2.5 text-left">
+                    <div className={cn("w-5 h-5 rounded-lg flex items-center justify-center text-xs border transition-colors", q1 ? "bg-red-500/15 border-red-500/20 text-red-500" : "bg-zinc-950 border-zinc-800 text-zinc-700")}>
+                      {q1 ? "✓" : "•"}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold text-zinc-200">국영 여론조사 투표 참여</span>
+                      <span className="text-[9px] text-zinc-500 font-semibold">합의 지배구조 권리 실현</span>
+                    </div>
+                  </div>
+                  <span className={cn("text-[9px] font-mono font-black", q1 ? "text-emerald-400" : "text-zinc-500")}>
+                    {q1 ? "COMPLETE" : "WAITING"}
+                  </span>
+                </div>
+
+                {/* Item 2 */}
+                <div className="p-3 bg-zinc-950/50 border border-zinc-900 rounded-2xl flex items-center justify-between transition-colors">
+                  <div className="flex items-center gap-2.5 text-left">
+                    <div className={cn("w-5 h-5 rounded-lg flex items-center justify-center text-xs border transition-colors", q2 ? "bg-red-500/15 border-red-500/20 text-red-500" : "bg-zinc-950 border-zinc-800 text-zinc-700")}>
+                      {q2 ? "✓" : "•"}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold text-zinc-200">비서 친밀도 70% 충전</span>
+                      <span className="text-[9px] text-zinc-500 font-semibold">이솔비 교감 및 선물하기</span>
+                    </div>
+                  </div>
+                  <span className={cn("text-[9px] font-mono font-black", q2 ? "text-emerald-400" : "text-zinc-500")}>
+                    {q2 ? "COMPLETE" : `${mascotLovePct}/70%`}
+                  </span>
+                </div>
+
+                {/* Item 3 */}
+                <div 
+                  onClick={handleQuestSign} 
+                  className={cn(
+                    "p-3 rounded-2xl flex items-center justify-between transition-colors border cursor-pointer group active:scale-98",
+                    q3 
+                      ? "bg-zinc-950/50 border-zinc-900" 
+                      : "bg-red-500/5 border-red-500/10 hover:border-red-500/25"
+                  )}
+                >
+                  <div className="flex items-center gap-2.5 text-left">
+                    <div className={cn("w-5 h-5 rounded-lg flex items-center justify-center text-xs border transition-colors", q3 ? "bg-red-500/15 border-red-500/20 text-red-500" : "bg-red-500/20 border-red-500/40 text-red-400 animate-pulse")}>
+                      {q3 ? "✓" : "!"}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-bold text-zinc-200">실시간 보안 서명 승인</span>
+                      <span className="text-[9px] text-zinc-500 font-semibold">단독 광학 검정 수동 사인</span>
+                    </div>
+                  </div>
+                  <span className={cn("text-[9px] font-mono font-black", q3 ? "text-emerald-400" : "text-red-500 underline animate-pulse group-hover:text-red-400")}>
+                    {q3 ? "SUCCESS" : "CHECK IN"}
+                  </span>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Bento-Block 5: 🦊 Mascot Companion Interactive HUD */}
+            <div 
+              onMouseMove={(e) => handleMouseMove(e, "bento-5")}
+              style={{
+                "--mouse-x": `${mouseCoords["bento-5"]?.x || 0}px`,
+                "--mouse-y": `${mouseCoords["bento-5"]?.y || 0}px`,
+              } as React.CSSProperties}
+              className="bg-gradient-to-br from-zinc-900/40 to-zinc-950/60 border border-zinc-900/60 rounded-[2rem] p-6 text-left shadow-xl space-y-4 relative overflow-hidden hover:border-red-500/25 transition-all duration-300 group/b5"
+            >
+              {/* Glow tail background */}
+              <div className="absolute inset-0 opacity-0 group-hover/b5:opacity-100 transition-opacity duration-300 pointer-events-none bg-[radial-gradient(400px_circle_at_var(--mouse-x)_var(--mouse-y),rgba(239,68,68,0.06),transparent_40%)]" />
+              <div className="absolute -right-8 -bottom-8 w-28 h-28 bg-red-650/5 rounded-full blur-2xl pointer-events-none" />
+              
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-900 relative z-10">
+                <div className="flex items-center gap-2">
+                  <Bot size={14} className="text-red-500" />
+                  <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-widest font-mono">COMPANION BOT STATUS</h4>
+                </div>
+                <span className="text-[8px] bg-red-500/10 text-red-500 border border-red-500/15 font-black px-1.5 py-0.5 rounded uppercase tracking-wider font-mono">LIVE AI</span>
+              </div>
+
+              <div className="flex items-center gap-4 py-1 relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-zinc-950 border border-zinc-850 flex items-center justify-center text-3xl shadow-inner relative select-none shrink-0">
+                  <span className="animate-bounce duration-1000">{activeMascot.emoji}</span>
+                  <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border border-zinc-900 animate-pulse" />
+                </div>
+                <div className="text-left">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-black text-zinc-100 leading-none">{activeMascot.name}</span>
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  </div>
+                  <p className="text-[10px] text-zinc-400 mt-1 leading-normal font-semibold">{activeMascot.desc}</p>
+                </div>
+              </div>
+
+              {/* Advanced Indicators */}
+              <div className="space-y-3 pt-2 relative z-10">
+                <div className="bg-zinc-950 p-3 rounded-2xl border border-zinc-900">
+                  <div className="flex justify-between items-center text-[10px] text-zinc-400 font-bold">
+                    <span>비서 친밀도</span>
+                    <span className="text-red-500 font-black font-mono">{mascotLovePct} / 100%</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div className="bg-gradient-to-r from-red-500 to-red-650 h-full rounded-full transition-all duration-300 shadow-[0_0_8px_rgba(239,68,68,0.4)]" style={{ width: `${mascotLovePct}%` }} />
+                  </div>
+                </div>
+
+                <div className="bg-zinc-950 p-3 rounded-2xl border border-zinc-900">
+                  <div className="flex justify-between items-center text-[10px] text-zinc-400 font-bold">
+                    <span>활성 컨디션</span>
+                    <span className="text-emerald-400 font-mono font-black">{mascotFeedStatus}</span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div className="bg-emerald-500 h-full rounded-full transition-all duration-300" style={{ width: mascotFeedStatus === "행복 가득" || mascotFeedStatus === "매우 만족" ? "100%" : "70%" }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Interaction Triggers */}
+              <div className="grid grid-cols-3 gap-2 pt-2 relative z-10">
+                <button
+                  onClick={handleInteractMascot}
+                  className="py-2.5 px-3 bg-zinc-950 text-xs font-bold text-zinc-300 border border-zinc-850 hover:border-zinc-700 hover:text-white rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-1 active:scale-95 shadow-sm"
+                >
+                  <span>🎁</span> 선물
+                </button>
+                <button
+                  onClick={handlePetMascot}
+                  className="py-2.5 px-3 bg-zinc-950 text-xs font-bold text-zinc-300 border border-zinc-850 hover:border-zinc-700 hover:text-white rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-1 active:scale-95 shadow-sm"
+                >
+                  <span>👋</span> 쓰다듬기
+                </button>
+                <button
+                  onClick={handleActivateBooster}
+                  className="py-2.5 px-3 bg-zinc-950 text-xs font-bold text-zinc-300 border border-zinc-850 hover:border-zinc-700 hover:text-white rounded-2xl transition-all cursor-pointer flex items-center justify-center gap-1 active:scale-95 shadow-sm"
+                >
+                  <span>⚡</span> 부스터
+                </button>
+              </div>
+            </div>
+
+            {/* Bento-Block 6: Live EXIF-Verified 속보 (EXIF Chronicle) */}
+            <div 
+              onMouseMove={(e) => handleMouseMove(e, "bento-6")}
+              style={{
+                "--mouse-x": `${mouseCoords["bento-6"]?.x || 0}px`,
+                "--mouse-y": `${mouseCoords["bento-6"]?.y || 0}px`,
+              } as React.CSSProperties}
+              className="bg-gradient-to-br from-zinc-900/40 to-zinc-950/60 border border-zinc-900/60 rounded-[2rem] p-6 text-left shadow-xl space-y-5 hover:border-red-500/25 transition-all duration-300 group/b6 relative overflow-hidden"
+            >
+              {/* Glow tail background */}
+              <div className="absolute inset-0 opacity-0 group-hover/b6:opacity-100 transition-opacity duration-300 pointer-events-none bg-[radial-gradient(400px_circle_at_var(--mouse-x)_var(--mouse-y),rgba(239,68,68,0.06),transparent_40%)]" />
+              <div className="flex items-center justify-between pb-3 border-b border-zinc-900 relative z-10">
+                <div className="flex items-center gap-2">
+                  <Activity size={14} className="text-red-500" />
+                  <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-widest font-mono">EXIF VERIFIED CHRONICLE</h4>
+                </div>
+                <span className="text-[9px] font-bold text-zinc-500">LIVE FEED</span>
+              </div>
+
+              <div className="space-y-3.5 relative z-10">
                 {recentArticles.length > 0 ? (
-                  recentArticles.map((art: any) => (
+                  recentArticles.map((art: any, index: number) => (
                     <div
                       key={art.id}
                       onClick={() => {
                         if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
                         onPageChange("isol-post");
                       }}
-                      className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl hover:border-zinc-800 transition-all flex flex-col gap-2.5 cursor-pointer group"
+                      className="p-4 bg-zinc-950 border border-zinc-900 rounded-2xl hover:border-zinc-800 hover:bg-zinc-950/60 transition-all flex flex-col gap-2 cursor-pointer group shadow-sm"
                     >
                       <div className="flex justify-between items-start gap-2">
                         <span className="text-[8px] bg-red-500/10 text-red-500 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">{art.category || "GENERAL"}</span>
@@ -24368,11 +24752,14 @@ const HomeOverview = ({
                       <h5 className="text-xs font-black text-zinc-200 line-clamp-2 leading-relaxed group-hover:text-red-550 transition-colors">
                         {art.title}
                       </h5>
-                      <div className="flex justify-between items-center text-[10px] text-zinc-400 border-t border-zinc-900/60 pt-2 font-bold">
-                        <span>By {art.author || "시민기자"}</span>
-                        <div className="flex items-center gap-1 text-[9px] text-zinc-500 font-mono">
-                          <Eye size={11} /> {art.views || 0}
+                      <div className="flex flex-col gap-1 border-t border-zinc-900/60 pt-2 text-[10px] text-zinc-400 font-bold mt-1">
+                        <div className="flex justify-between items-center">
+                          <span>By {art.author || "시민기자"}</span>
+                          <div className="flex items-center gap-1 text-[9px] text-zinc-500 font-mono">
+                            <Eye size={11} /> {art.views || 0}
+                          </div>
                         </div>
+                        <span className="text-[8px] text-zinc-500 font-mono tracking-tighter uppercase text-left">{exifData[index % exifData.length]}</span>
                       </div>
                     </div>
                   ))
@@ -24382,24 +24769,24 @@ const HomeOverview = ({
               </div>
             </div>
 
-            {/* Reporter Guild / Guild Badges Card */}
+            {/* Bento-Block 7: Active Reporter Guild / Cryptographic Badges Card */}
             <div className="bg-zinc-900/40 border border-zinc-900 rounded-[2rem] p-6 text-left shadow-xl space-y-5">
               <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
                 <div className="flex items-center gap-2">
                   <Users size={14} className="text-red-500" />
-                  <h4 className="text-[10px] font-black text-zinc-400 uppercase tracking-widest font-mono">ACTIVE REPORTER GUILD</h4>
+                  <h4 className="text-[11px] font-black text-zinc-400 uppercase tracking-widest font-mono">ACTIVE REPORTER GUILD</h4>
                 </div>
                 <span className="text-[9px] font-bold text-zinc-500">{reporters.length + 12} ACTIVE</span>
               </div>
 
               <div className="space-y-3">
-                {reporters.slice(0, 5).map((rep: any) => (
+                {reporters.slice(0, 5).map((rep: any, idx: number) => (
                   <div
                     key={rep.id}
-                    className="flex items-center justify-between p-2.5 bg-zinc-950/40 border border-zinc-900 rounded-2xl"
+                    className="flex items-center justify-between p-3 bg-zinc-950/40 border border-zinc-900 rounded-2xl hover:border-zinc-850 transition-all"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center font-black text-zinc-300 uppercase text-xs">
+                      <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center font-black text-zinc-300 uppercase text-xs shadow-inner">
                         {rep.name ? rep.name.substring(0, 1) : "기"}
                       </div>
                       <div className="text-left">
@@ -24407,10 +24794,13 @@ const HomeOverview = ({
                           <span className="text-xs font-black text-zinc-200 leading-none">{rep.name}</span>
                           <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                         </div>
-                        <span className="text-[10px] text-zinc-500 font-bold">{rep.field || "종합"} 전문 기자</span>
+                        <span className="text-[10px] text-zinc-500 font-bold mt-1 block">{rep.field || "종합"} 전문 기자</span>
                       </div>
                     </div>
-                    <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 font-black px-1.5 py-0.5 rounded uppercase tracking-wider font-mono">VERIFIED</span>
+                    <div className="text-right flex flex-col gap-1 items-end">
+                      <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 font-black px-1.5 py-0.5 rounded uppercase tracking-wider font-mono">EXIF_PASS</span>
+                      <span className="text-[7.5px] text-zinc-600 font-mono scale-90">ID_{1000 + idx}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -24422,9 +24812,7 @@ const HomeOverview = ({
       </div>
     </div>
   );
-};
-
-const Hero = ({
+};const Hero = ({
   webtoons,
   onWebtoonClick,
   isLoading,
@@ -26998,18 +27386,19 @@ function App() {
   React.useEffect(() => {
     if (typeof window === "undefined") return;
     const handleResize = () => {
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      const isPhysicalMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
-      ) || window.innerWidth < 1024;
+      );
       
-      if (isMobileDevice) {
+      if (isPhysicalMobile) {
         setIsSimulatedMobileView(true);
       } else {
         const saved = localStorage.getItem("isSimulatedMobileView");
         if (saved !== null) {
           setIsSimulatedMobileView(saved === "true");
         } else {
-          setIsSimulatedMobileView(false);
+          // If on desktop and no preference is saved, default to desktop view for width >= 1024
+          setIsSimulatedMobileView(window.innerWidth < 1024);
         }
       }
     };
@@ -27027,10 +27416,13 @@ function App() {
       return saved === "true";
     }
     if (typeof window !== "undefined") {
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      const isPhysicalMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
-      ) || window.innerWidth < 1024;
-      return isMobileDevice;
+      );
+      if (isPhysicalMobile) {
+        return true;
+      }
+      return window.innerWidth < 1024;
     }
     return false;
   });
@@ -28580,6 +28972,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
         ragTopK={ragTopK}
         setRagTopK={setRagTopK}
         isLoading={isLoading}
+        isSimulatedMobileView={isSimulatedMobileView}
       />
     );
   }
@@ -28616,7 +29009,10 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
     )}>
       {/* Ambient background glow */}
       {isSimulatedMobileView && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-600/10 rounded-full blur-[120px] pointer-events-none z-0 hidden lg:block" />
+        <>
+          <div className="absolute top-1/3 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-650/10 rounded-full blur-[140px] pointer-events-none z-0 hidden lg:block" />
+          <div className="absolute bottom-1/4 right-1/4 translate-x-1/3 translate-y-1/3 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none z-0 hidden lg:block" />
+        </>
       )}
       
       {/* Minimal sandbox header */}
@@ -28698,6 +29094,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           onLogout={handleLogout}
           theme={theme}
           onThemeToggle={() => setTheme(theme === "dark" ? "light" : "dark")}
+          isSimulatedMobileView={isSimulatedMobileView}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           currentPage={currentPage}
@@ -28992,6 +29389,8 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 citizenNews={citizenNews}
                 banners={banners}
                 setBanners={setBanners}
+                setCitizenNews={setCitizenNews}
+                isSimulatedMobileView={isSimulatedMobileView}
               />
             </motion.div>
           )}

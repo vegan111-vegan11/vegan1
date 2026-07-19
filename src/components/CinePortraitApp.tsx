@@ -17,9 +17,10 @@ import leeSeolImg from "../assets/images/daily_webtoon_lee_seol_1777187440015.pn
 
 interface CinePortraitAppProps {
   user: any;
+  isSimulatedMobileView?: boolean;
 }
 
-export default function CinePortraitApp({ user }: CinePortraitAppProps) {
+export default function CinePortraitApp({ user, isSimulatedMobileView = false }: CinePortraitAppProps) {
   const [activeTab, setActiveTab] = useState<"create" | "gallery">("create");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -731,7 +732,7 @@ export default function CinePortraitApp({ user }: CinePortraitAppProps) {
                       </p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className={`grid ${isSimulatedMobileView ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"} gap-6`}>
                       {galleryItems.map((item) => (
                         <div 
                           key={item.id}
