@@ -13200,6 +13200,7 @@ const Navbar = ({
   isMobileMenuOpen: parentMobileMenuOpen,
   setIsMobileMenuOpen: parentSetMobileMenuOpen,
   onSearchClick,
+  onToggleSimulatedMobileView,
   isSimulatedMobileView = false,
 }: any) => {
   const [localMobileMenuOpen, setLocalMobileMenuOpen] = React.useState(false);
@@ -13548,14 +13549,18 @@ const Navbar = ({
         🌟 Desktop Row 0 (상단 줄바꿈 특수 배치!): High-Visibility Premium Desktop Action Belt
         Provides instant access to Logout, Admin Desk, and Article Writing on a separate top line as requested!
       */}
-      <div className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:flex", "bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-200/50 dark:border-zinc-850/50 select-none font-sans py-2 px-4 md:px-8 justify-between items-center text-xs text-zinc-500")}>
-        {/* Left Side: Live info indicator */}
-        <div className="flex items-center gap-2">
-          <span className="flex h-2 w-2 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-          </span>
-          <span className="font-black tracking-tight text-zinc-700 dark:text-zinc-300">실시간 종합 언론 포털 • ALL CITIZENS ARE JOURNALISTS</span>
+      <div className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:flex", "bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-200/50 dark:border-zinc-850/50 select-none font-sans py-2.5 px-4 md:px-8 justify-between items-center text-xs text-zinc-500")}>
+        {/* Left Side: Premium Interactive Layout & Trend Controller HUD */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px] uppercase tracking-wider">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            </span>
+            🖥️ Laptop Web Optimized
+          </div>
+          
+
         </div>
 
         {/* Right Side: High-Visibility Row 0 Primary Actions (로그아웃, 데스크, 기사제보) */}
@@ -14550,6 +14555,7 @@ const IsolPost = ({
   setBanners,
   onAdApplyClick,
   setCitizenNews,
+  onToggleSimulatedMobileView,
   isSimulatedMobileView,
 }: any) => {
   const [activeCategory, setActiveCategory] = React.useState("전체기사");
@@ -15194,6 +15200,7 @@ const IsolPost = ({
         onLogout={onLogout}
         currentPage={activeCategory}
         isSimulatedMobileView={isSimulatedMobileView}
+        onToggleSimulatedMobileView={onToggleSimulatedMobileView}
         onAdminClick={onPageChange ? () => onPageChange("admin") : undefined}
         onProfessionalRegClick={onProfessionalRegClick}
         onManualClick={onManualClick}
@@ -19357,6 +19364,20 @@ const SoulCenter = ({
   }, [registerTypeFromHeader, clearRegisterTypeFromHeader]);
   const [uploadedDoc, setUploadedDoc] = useState<{name: string, size: string} | null>(null);
   const [isDraggingDoc, setIsDraggingDoc] = useState(false);
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingImage(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processAndSetFile(file);
+    }
+  };
   
   // 10대 보완점용 초정밀 상태 변수 선언 (AI OCR 진행률 및 인증서 관리)
   const [ocrProgress, setOcrProgress] = useState<number>(0);
@@ -20768,459 +20789,7 @@ const SoulCenter = ({
               <div className="w-full max-w-2xl mx-auto">
                 {/* Column 1: Media & Attachment (Professional Integrated Panel) */}
                 <div className="space-y-6">
-                  {isEasyMode ? (
-                    <div className="space-y-3 text-left">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-xs font-black uppercase tracking-wider text-zinc-400">
-                          기사 대표 사진 (Featured Photo)
-                        </label>
-                      </div>
-
-                      {postData.thumbnail ? (
-                        <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-md">
-                          <img
-                            src={postData.thumbnail}
-                            alt="Featured"
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }))}
-                            className="absolute bottom-3 right-3 px-3 py-1.5 bg-red-650 hover:bg-red-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
-                          >
-                            <Trash2 size={12} />
-                            사진 지우기
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                           <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="luxury-3d-dropzone aspect-[4/3] flex flex-col items-center justify-center p-4 text-center"
-                          >
-                            <Upload className="text-zinc-500 dark:text-zinc-400 group-hover:text-orange-500 transition-colors luxury-3d-float mb-2" size={24} />
-                            <span className="text-xs font-black text-zinc-800 dark:text-zinc-200">📸 사진 첨부 / 촬영</span>
-                            <span className="text-[10px] text-zinc-400 mt-1">스마트폰 갤러리 또는 카메라</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={handleGenerateImageUser}
-                            disabled={isGeneratingImageUser}
-                            className="luxury-3d-dropzone aspect-[4/3] flex flex-col items-center justify-center p-4 text-center disabled:opacity-50"
-                          >
-                            {isGeneratingImageUser ? (
-                              <Loader2 className="text-purple-500 animate-spin mb-2" size={24} />
-                            ) : (
-                              <Sparkles className="text-purple-500 mb-2 animate-pulse luxury-3d-float" size={24} />
-                            )}
-                            <span className="text-xs font-black text-zinc-800 dark:text-zinc-200">🪄 AI 추천 이미지 그리기</span>
-                            <span className="text-[10px] text-zinc-400 mt-1">
-                              {isGeneratingImageUser ? "AI가 화풍 분석..." : "기사 제목에 맞춰 자동 드로잉"}
-                            </span>
-                          </button>
-                        </div>
-                      )}
-
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                        accept="image/*"
-                        className="hidden"
-                      />
-                    </div>
-                  ) : (
-                    <>
-                      {/* Integrated Media Section */}
-                  <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                      <label className="block text-xs font-black uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                        기사 대표 이미지 (Featured Photo)
-                      </label>
-                      <span className="text-[9px] text-purple-600 dark:text-purple-400 font-extrabold bg-purple-500/10 px-2 py-0.5 rounded uppercase tracking-wider">
-                        기사 메인 썸네일
-                      </span>
-                    </div>
-
-                     {/* Pro Segmented Tabs (Direct Upload vs AI Generate vs Image URL) */}
-                    <div className="grid grid-cols-3 gap-1 bg-zinc-100 dark:bg-zinc-900/60 p-1 rounded-xl">
-                      <button
-                        type="button"
-                        onClick={() => setImageInputMode("upload")}
-                        className={cn(
-                          "py-2 text-[10px] font-black rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer",
-                          imageInputMode === "upload"
-                            ? "bg-white dark:bg-zinc-800 text-purple-650 dark:text-purple-400 shadow-sm"
-                            : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-                        )}
-                      >
-                        <Upload size={11} />
-                        직접 업로드
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setImageInputMode("ai")}
-                        className={cn(
-                          "py-2 text-[10px] font-black rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer",
-                          imageInputMode === "ai"
-                            ? "bg-white dark:bg-zinc-800 text-orange-600 dark:text-orange-400 shadow-sm"
-                            : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-                        )}
-                      >
-                        <Sparkles size={11} />
-                        AI 자동 생성
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setImageInputMode("url")}
-                        className={cn(
-                          "py-2 text-[10px] font-black rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer",
-                          imageInputMode === "url"
-                            ? "bg-white dark:bg-zinc-800 text-amber-600 dark:text-amber-400 shadow-sm"
-                            : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
-                        )}
-                      >
-                        <LinkIcon size={11} />
-                        외부 주소 입력
-                      </button>
-                    </div>
-
-                    {/* Active Input Panel */}
-                    <div className="transition-all duration-300">
-                      {imageInputMode === "upload" ? (
-                        /* DRAG & DROP / FILE SELECT PANEL WITH GORGEOUS LIVE PREVIEW */
-                        <div className="space-y-3">
-                          {postData.thumbnail ? (
-                            /* Premium Newsroom Interactive Preview Window with Persistent Controls */
-                            <div className="space-y-3">
-                              <div className={cn(
-                                checkedInnovations.includes(1) ? "luxury-3d-image-card" : "border border-zinc-200 dark:border-zinc-800 rounded-3xl",
-                                "w-full aspect-video overflow-hidden p-1 duration-300"
-                              )}>
-                                <div className={cn(
-                                  checkedInnovations.includes(1) ? "luxury-3d-image-inner" : "",
-                                  "w-full h-full relative"
-                                )}>
-                                  <img
-                                    src={postData.thumbnail}
-                                    alt="Preview"
-                                    className="w-full h-full object-cover rounded-2xl"
-                                    referrerPolicy="no-referrer"
-                                  />
-                                  
-                                  {/* Bottom Control Drawer (Always-on mobile-friendly design) */}
-                                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 flex flex-col gap-2.5 text-left z-20">
-                                    <div className="flex items-center gap-2">
-                                      <span className="relative flex h-2 w-2 shrink-0">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                      </span>
-                                      <span className="text-[10px] font-black tracking-widest text-emerald-400 uppercase">
-                                        기사 첨부 썸네일 파일 정상 수신됨
-                                      </span>
-                                    </div>
-                                    
-                                    <div className="flex items-center justify-between gap-3 flex-wrap">
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-bold text-white truncate pr-2" title={postData.thumbnailName}>
-                                          📄 {postData.thumbnailName || "대표_이미지_첨부.jpg"}
-                                        </p>
-                                      </div>
-                                      
-                                      <div className="flex items-center gap-2 shrink-0">
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRotateImage()}
-                                          className="px-2.5 py-1.5 bg-purple-600 hover:bg-purple-750 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
-                                          title="모바일 세로방향 회전 보정"
-                                        >
-                                          🔄 회전
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            fileInputRef.current?.click();
-                                          }}
-                                          className="px-2.5 py-1.5 bg-white/10 hover:bg-white/20 active:bg-white/30 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer border border-white/10"
-                                        >
-                                          <RefreshCw size={11} />
-                                          교체
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }));
-                                          }}
-                                          className="px-2.5 py-1.5 bg-red-650 hover:bg-red-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
-                                        >
-                                          <Trash2 size={11} />
-                                          삭제
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* 🔍 전문 언론사용 스마트 미디어 인스펙터 분석 통계 패널 */}
-                              {(originalSizeStr || compressedSizeStr) && (
-                                <div className="p-3 bg-zinc-50 dark:bg-zinc-950/20 border border-zinc-200/55 dark:border-zinc-800 rounded-2xl flex flex-col gap-1.5 text-[10.5px] font-sans text-zinc-500 dark:text-zinc-400">
-                                  <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <span className="font-extrabold text-purple-600 dark:text-purple-400">📊 미디어 최적화 인스펙터</span>
-                                    {compressionRatio > 0 && (
-                                      <span className="text-[9.5px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold px-1.5 py-0.5 rounded">
-                                        네트워크 데이터 {compressionRatio}% 극대화 보존
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="grid grid-cols-3 gap-2 border-t border-zinc-200/30 dark:border-zinc-800/30 pt-1.5 text-center">
-                                    <div>
-                                      <span className="block text-[8px] uppercase tracking-wider opacity-60">원본 용량</span>
-                                      <span className="font-bold text-zinc-750 dark:text-zinc-300">{originalSizeStr || "-"}</span>
-                                    </div>
-                                    <div>
-                                      <span className="block text-[8px] uppercase tracking-wider opacity-60">통신용 인코딩</span>
-                                      <span className="font-bold text-purple-600 dark:text-purple-400">{compressedSizeStr || "-"}</span>
-                                    </div>
-                                    <div>
-                                      <span className="block text-[8px] uppercase tracking-wider opacity-60">인증 픽셀 정보</span>
-                                      <span className="font-bold text-zinc-750 dark:text-zinc-300">1200 px 최적화</span>
-                                    </div>
-                                  </div>
-                                  <p className="text-[9.5px] bg-amber-500/5 text-amber-600/80 dark:text-amber-400/80 px-2 py-1.5 rounded-lg border border-amber-500/10 text-left leading-normal mt-1">
-                                    💡 <b>노트북 투고 추천:</b> 스마트 기사 작성란 아무 곳에서 캡처하신 뒤 <b>Ctrl+V(붙여넣기)</b>를 누르면 기사 대표 썸네일로 고압축 자동 삽입됩니다.
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            /* Drag & Drop clickable box (Triggered when empty) with dynamic drag hover active highlight */
-                            <div
-                              onClick={() => fileInputRef.current?.click()}
-                              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(true); }}
-                              onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); setIsDragActive(false); }}
-                              onDrop={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setIsDragActive(false);
-                                const file = e.dataTransfer.files?.[0];
-                                if (file && file.type.startsWith("image/")) {
-                                  processAndSetFile(file);
-                                } else {
-                                  toast.error("기사 대표로는 이미지 파일만 투고 가능합니다.");
-                                }
-                              }}
-                              className={cn(
-                                "luxury-3d-dropzone w-full aspect-video p-6 text-center flex flex-col items-center justify-center select-none",
-                                isDragActive && "border-purple-500 bg-purple-500/10 scale-[1.02] shadow-xl"
-                              )}
-                            >
-                              <div className="flex flex-col items-center gap-2.5 text-zinc-400 group-hover:text-purple-500 transition-colors">
-                                <div className={cn(
-                                  "w-12 h-12 rounded-2xl flex items-center justify-center transition-all luxury-3d-float border border-zinc-200/50 dark:border-zinc-800 shadow-md",
-                                  isDragActive
-                                    ? "bg-purple-500 text-white scale-110 rotate-12"
-                                    : "bg-zinc-100 dark:bg-zinc-850 text-zinc-500 group-hover:scale-110 group-hover:rotate-3"
-                                )}>
-                                  <Upload size={20} className={isDragActive ? "text-white animate-bounce" : "text-zinc-500 dark:text-zinc-400 group-hover:text-purple-500"} />
-                                </div>
-                                <div className="text-center w-full px-4 space-y-1">
-                                  <p className="text-xs font-black tracking-tight text-zinc-700 dark:text-zinc-350">
-                                    {isDragActive ? "이곳에 미디어를 놓아 즉시 업로드하십시오!" : "기사 대표 사진 투고 (클릭 / 드래그)"}
-                                  </p>
-                                  <p className="text-[9px] font-bold opacity-60 uppercase tracking-widest leading-relaxed">
-                                    고해상도 실시간 동적 자동 압축 인코딩 시스템 가동
-                                  </p>
-                                </div>
-
-                                {/* 📱 핸드폰 현장 카메라 고속 수동 촬영 버튼 */}
-                                <div className="mt-3 pt-2.5 border-t border-zinc-200/40 dark:border-zinc-800/40 w-full flex justify-center">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      mobileCameraInputRef.current?.click();
-                                    }}
-                                    className="px-3.5 py-2 bg-zinc-900 hover:bg-black dark:bg-zinc-850 dark:hover:bg-zinc-800 text-white text-[10.5px] font-black rounded-xl flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer max-w-[200px] border border-zinc-800"
-                                  >
-                                    <Camera size={12} className="text-purple-400 animate-pulse shrink-0" />
-                                    <span>스마트폰 현장 촬영 직접 투고</span>
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Stable Consolidated Single File Input representing fileRef */}
-                          <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            accept="image/*"
-                            className="hidden"
-                          />
-
-                          {/* 📸 스마트폰 카메라 현장 사진 다이렉트 캡처 포트 */}
-                          <input
-                            type="file"
-                            ref={mobileCameraInputRef}
-                            onChange={handleMobileCameraChange}
-                            accept="image/*"
-                            capture="environment"
-                            className="hidden"
-                          />
-                        </div>
-                      ) : imageInputMode === "ai" ? (
-                        /* AI IMAGE GENERATION PANEL WITH GORGEOUS LIVE PREVIEW */
-                        <div className="space-y-4">
-                          <div className="p-4 bg-orange-500/5 dark:bg-orange-500/[0.02] border border-orange-500/15 rounded-2xl space-y-3">
-                            <p className="text-[11px] font-bold text-zinc-750 dark:text-zinc-300 leading-relaxed text-left">
-                              💡 <b>이솔 AI 썸네일 합성 엔진:</b> 입력해주신 헤드라인(뉴스 제목)을 반영하여 독창적인 신문 지면 보도 전용 일러스트/사진을 즉시 생성 및 기사에 삽입합니다.
-                            </p>
-                            <button
-                              type="button"
-                              onClick={handleGenerateImageUser}
-                              disabled={isGeneratingImageUser}
-                              className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 disabled:opacity-50 text-white rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md active:scale-98"
-                            >
-                              {isGeneratingImageUser ? (
-                                <>
-                                  <Loader2 size={13} className="animate-spin mr-1 text-white" />
-                                  <span>AI 썸네일 화풍 렌더링 중...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Sparkles size={13} className="text-white" />
-                                  <span>🎨 AI 맞춤 썸네일 즉시 생성하기</span>
-                                </>
-                              )}
-                            </button>
-                          </div>
-
-                          {postData.thumbnail ? (
-                            <div className="space-y-3">
-                              <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 shadow-lg animate-in fade-in duration-300">
-                                <img
-                                  src={postData.thumbnail}
-                                  alt="AI Preview"
-                                  className="w-full h-full object-cover rounded-3xl"
-                                  referrerPolicy="no-referrer"
-                                />
-                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 flex flex-col gap-2.5 text-left">
-                                  <div className="flex items-center gap-2">
-                                    <span className="relative flex h-2 w-2 shrink-0">
-                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
-                                    </span>
-                                    <span className="text-[10px] font-black tracking-widest text-orange-400 uppercase">
-                                      이솔 AI 가 생성한 기사용 썸네일 아트웍
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center justify-between gap-3">
-                                    <p className="text-xs font-bold text-white truncate flex-1">
-                                      ✨ AI_Generated_Press_Image.png
-                                    </p>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }));
-                                      }}
-                                      className="px-2.5 py-1.5 bg-red-650 hover:bg-red-500 text-white rounded-xl text-[10px] font-black flex items-center gap-1 transition-all shadow-md cursor-pointer"
-                                    >
-                                      <Trash2 size={11} />
-                                      삭제
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="w-full aspect-video rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center p-6 text-center select-none bg-zinc-50/50 dark:bg-zinc-950/20">
-                              <ImageIcon size={32} className="text-zinc-300 dark:text-zinc-700 mb-2" />
-                              <p className="text-xs font-bold text-zinc-400">아직 생성되거나 지정된 대표 사진이 없습니다</p>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        /* WEB URL INPUT WITH GORGEOUS LIVE PREVIEW WINDOW */
-                        <div className="space-y-3">
-                          <div className="relative">
-                            <input
-                              value={postData.thumbnail}
-                              onChange={(e) =>
-                                setPostData({ ...postData, thumbnail: e.target.value })
-                              }
-                              className="w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-10 pr-10 py-3 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-amber-500 font-bold transition-colors"
-                              placeholder="인터넷 이미지 주소(JPEG, PNG, WEBP URL)를 입력하세요"
-                            />
-                            <LinkIcon
-                              size={14}
-                              className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400"
-                            />
-                            {postData.thumbnail && (
-                              <button
-                                type="button"
-                                onClick={() => setPostData({ ...postData, thumbnail: "" })}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-red-500 transition-colors p-1 cursor-pointer"
-                                title="입력 비우기"
-                              >
-                                <X size={14} />
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Live URL Image Preview Window block */}
-                          <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/20 flex flex-col items-center justify-center p-1">
-                            {postData.thumbnail && (postData.thumbnail.startsWith("http") || postData.thumbnail.startsWith("data:image")) ? (
-                              <div className="group relative w-full h-full">
-                                <img
-                                  src={postData.thumbnail}
-                                  alt="Web URL Preview"
-                                  className="w-full h-full object-cover rounded-xl animate-fade-in"
-                                  onError={(e) => {
-                                    (e.target as HTMLElement).style.display = "none";
-                                  }}
-                                  referrerPolicy="no-referrer"
-                                />
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                  <button
-                                    type="button"
-                                    onClick={() => setPostData({ ...postData, thumbnail: "" })}
-                                    className="px-3 py-1.5 bg-red-650 text-white rounded-lg font-black text-[10px] flex items-center gap-1 hover:scale-105 active:scale-95 transition-all shadow-lg cursor-pointer"
-                                  >
-                                    <Trash2 size={12} /> 이미지 URL 비우기
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="text-center p-6 text-zinc-400 dark:text-zinc-650">
-                                <ImageIcon size={28} className="mx-auto mb-2 text-zinc-300 dark:text-zinc-700 animate-pulse" />
-                                <p className="text-[11px] font-bold">웹 이미지 실시간 미리보기</p>
-                                <p className="text-[9px] opacity-60 mt-0.5 max-w-[220px] mx-auto">
-                                  유효한 이미지 웹주소가 입력되면 이곳에 즉시 실시간 언론사 스타일 미리보기가 렌더링됩니다.
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* PROFESSIONAL PRESS AGENCY METADATA PICKER PANEL (전문언론사처럼 대조 장치) */}
-                  <div className="p-4 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-3.5 text-left font-sans">
-                    <div className="flex items-center gap-1.5 border-b border-zinc-150 dark:border-zinc-800 pb-2">
-                      <ShieldCheck size={16} className="text-purple-600 dark:text-purple-400 shrink-0" />
-                      <div>
-                        <h4 className="text-[11px] font-black text-zinc-900 dark:text-white uppercase tracking-wider">
-                          정식 제휴 보도 기조 검증
-                        </h4>
-                        <p className="text-[9px] text-zinc-400 font-bold tracking-widest uppercase">Verified Publisher</p>
-                      </div>
-                    </div>
+                  null
 
                     <div className="space-y-1.5">
                       <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-400">
@@ -21804,10 +21373,7 @@ const SoulCenter = ({
                   </motion.div>
                 </div>
               )}
-            </>
-          )}
                 </div>
-              </div>
             </form>
 
             {/* 📱 스마트폰 실시간 모바일 뷰어 모달 (10대 고도화 핵심 요소) */}
@@ -22339,69 +21905,11 @@ const SoulCenter = ({
                             "flex-1 py-1.5 rounded-lg border text-[9px] font-black uppercase transition-all tracking-wider cursor-pointer",
                             selectedPressSeal === style
                               ? "bg-amber-500 border-amber-500 text-black shadow-lg"
-                              : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-zinc-100"
+                              : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                           )}
                         >
-                          {style === "standard" && "Classic Red"}
-                          {style === "independent" && "Cyber Teal"}
-                          {style === "state" && "Gold Royal"}
+                          {style === "standard" ? "기본 인장" : style === "independent" ? "독립 인장" : "국가 국새"}
                         </button>
-                      ))}
-                    </div>
-
-                    <div className="relative h-32 bg-white dark:bg-black/50 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center overflow-hidden">
-                      {/* Animated grid mesh backdrop */}
-                      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]" />
-                      
-                      {/* Interactive Stamp */}
-                      <div className="relative animate-[spin_20s_linear_infinite] hover:animate-[spin_4s_linear_infinite] transition-transform">
-                        {selectedPressSeal === "standard" && (
-                          <div className="w-20 h-20 border-[3px] border-red-500 rounded-full flex flex-col items-center justify-center text-[7px] font-black text-red-500 rotate-6 p-1 select-none bg-red-500/5">
-                            <span className="tracking-widest border-b border-red-400 pb-0.5 mb-0.5">이솔포스트</span>
-                            <span className="text-[10px] tracking-tighter leading-none max-w-[65px] truncate text-center">
-                              {formData.agencyName ? formData.agencyName.slice(0, 5) : "진본보도"}
-                            </span>
-                            <span className="mt-0.5 text-[6px]">인증인</span>
-                          </div>
-                        )}
-
-                        {selectedPressSeal === "independent" && (
-                          <div className="w-18 h-18 border-2 border-teal-500 rounded-xl flex flex-col items-center justify-center text-[7px] font-black text-teal-500 rotate-12 p-1 select-none bg-teal-500/5">
-                            <span className="text-[6px] text-teal-400">INDEPENDENT</span>
-                            <span className="text-[9px] font-mono tracking-tighter my-0.5 truncate max-w-[55px] text-center">
-                              {formData.agencyName ? formData.agencyName.slice(0, 5) : "FACT-CHECK"}
-                            </span>
-                            <span className="border border-teal-500 px-1 py-0.2 rounded text-[5px]">VERIFIED</span>
-                          </div>
-                        )}
-
-                        {selectedPressSeal === "state" && (
-                          <div className="w-20 h-20 border-[3px] border-amber-400 rounded-full flex flex-col items-center justify-center text-[7px] font-black text-amber-400 -rotate-3 p-1 select-none bg-amber-500/5 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
-                            <span className="text-[5px] text-amber-500">★ STATE EMBLEM ★</span>
-                            <span className="text-[9px] tracking-tight leading-none truncate max-w-[65px] text-center my-0.5 font-serif font-black">
-                              {formData.agencyName ? formData.agencyName.slice(0, 5) : "국영공정"}
-                            </span>
-                            <span className="text-[6px] tracking-widest text-amber-500">정부인가인</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* [디자인 보완 3] 실시간 뉴스 노드 텔레메트리 스트림 터미널 */}
-                  <div className="bg-[#0b0b0f] border border-zinc-800 rounded-3xl p-5 space-y-3 font-mono text-[9px] shadow-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between border-b border-zinc-850 pb-2">
-                      <span className="text-zinc-500 font-bold uppercase tracking-wider flex items-center gap-1.5 animate-pulse">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Decentralized News Node Stream
-                      </span>
-                      <span className="text-zinc-600 text-[8px] font-extrabold">SSL v3 SECURE</span>
-                    </div>
-
-                    <div className="space-y-1.5 max-h-[110px] overflow-y-auto no-scrollbar scroll-smooth">
-                      {telemetryLogs.map((log, index) => (
-                        <p key={index} className="text-zinc-400 truncate leading-relaxed">
-                          <span className="text-amber-500/80 font-bold">&gt;</span> {log}
-                        </p>
                       ))}
                     </div>
                   </div>
@@ -22502,8 +22010,8 @@ const SoulCenter = ({
                   {ocrProgress > 0 && (
                     <div className="w-40 space-y-1 mt-1">
                       <div className="flex justify-between items-center text-[8px] font-mono font-bold text-amber-500">
-                        <span>OCR 해독율:</span>
-                        <span>{ocrProgress}%</span>
+                         <span>OCR 해독율:</span>
+                         <span>{ocrProgress}%</span>
                       </div>
                       <div className="w-full h-1 bg-zinc-105 dark:bg-zinc-800 rounded-full overflow-hidden">
                         <div 
@@ -22517,7 +22025,7 @@ const SoulCenter = ({
               </div>
 
               {/* Segmented Registration Type Selector */}
-              <div className={cn("flex p-1.5", checkedInnovations.includes(5) ? "luxury-3d-tab-container" : "border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 rounded-xl")}>
+               <div className={cn("flex p-1.5", checkedInnovations.includes(5) ? "luxury-3d-tab-container" : "border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 rounded-xl")}>
                 <button
                   type="button"
                   onClick={() => {
@@ -22567,7 +22075,7 @@ const SoulCenter = ({
                     "text-[10px] font-black py-1.5 rounded-lg transition-all border",
                     regStep === 2 
                       ? "bg-gradient-to-b from-amber-400 to-amber-500 text-black border-amber-500/20 font-extrabold shadow-sm scale-[1.02]" 
-                      : regStep > 2 
+                       : regStep > 2 
                       ? "bg-emerald-500/10 text-emerald-650 dark:text-emerald-450 border-emerald-500/20" 
                       : "bg-transparent text-zinc-400 border-transparent"
                   )}>
@@ -22593,7 +22101,7 @@ const SoulCenter = ({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-400 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-widest text-zinc-455 dark:text-zinc-400 mb-1.5">
                         기자 필명 (닉네임)
                       </label>
                       <input
@@ -22607,7 +22115,7 @@ const SoulCenter = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-400 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-widest text-zinc-455 dark:text-zinc-400 mb-1.5">
                         관심 취재 분야
                       </label>
                       <select
@@ -22628,7 +22136,7 @@ const SoulCenter = ({
 
                     {/* Improvement 6: Journalism Core Code Badge Selector (Bio Builder) */}
                     <div>
-                      <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-455 dark:text-zinc-400 mb-1.5">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-455 mb-1.5">
                         👉 기자정신 서약 핵심 가치 선택 (필수지향)
                       </label>
                       <div className="flex flex-wrap gap-1.5">
@@ -22650,7 +22158,7 @@ const SoulCenter = ({
                         ))}
                       </div>
                     </div>
-
+                    
                     <div>
                       <label className="block text-xs font-black uppercase tracking-widest text-zinc-455 dark:text-zinc-400 mb-1.5">
                         기자 임무 및 한 줄 각오
@@ -27389,18 +26897,7 @@ function App() {
       const isPhysicalMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
       );
-      
-      if (isPhysicalMobile) {
-        setIsSimulatedMobileView(true);
-      } else {
-        const saved = localStorage.getItem("isSimulatedMobileView");
-        if (saved !== null) {
-          setIsSimulatedMobileView(saved === "true");
-        } else {
-          // If on desktop and no preference is saved, default to desktop view for width >= 1024
-          setIsSimulatedMobileView(window.innerWidth < 1024);
-        }
-      }
+      setIsSimulatedMobileView(isPhysicalMobile || window.innerWidth < 1024);
     };
     
     handleResize();
@@ -27411,18 +26908,11 @@ function App() {
   const [isAdminView, setIsAdminView] = React.useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
   const [isSimulatedMobileView, setIsSimulatedMobileView] = React.useState<boolean>(() => {
-    const saved = localStorage.getItem("isSimulatedMobileView");
-    if (saved !== null) {
-      return saved === "true";
-    }
     if (typeof window !== "undefined") {
       const isPhysicalMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
       );
-      if (isPhysicalMobile) {
-        return true;
-      }
-      return window.innerWidth < 1024;
+      return isPhysicalMobile || window.innerWidth < 1024;
     }
     return false;
   });
@@ -27460,7 +26950,7 @@ function App() {
     | "admin-news-center"
     | "community"
     | "hyeonwon-cinema"
-  >("isol-post");
+  >("home");
 
   const [windowScrollProgress, setWindowScrollProgress] = React.useState(0);
   React.useEffect(() => {
@@ -29095,6 +28585,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           theme={theme}
           onThemeToggle={() => setTheme(theme === "dark" ? "light" : "dark")}
           isSimulatedMobileView={isSimulatedMobileView}
+          onToggleSimulatedMobileView={() => setIsSimulatedMobileView(!isSimulatedMobileView)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           currentPage={currentPage}
@@ -29281,6 +28772,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 setBanners={setBanners}
                 onAdApplyClick={() => setIsAdApplyModalOpen(true)}
                 setCitizenNews={setCitizenNews}
+                onToggleSimulatedMobileView={() => setIsSimulatedMobileView(!isSimulatedMobileView)}
                 isSimulatedMobileView={isSimulatedMobileView}
               />
             </motion.div>
