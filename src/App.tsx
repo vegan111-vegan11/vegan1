@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useMemo, useRef, Component } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { HomeOverview } from "./components/HomeOverview";
 import {
   Search,
   Menu,
@@ -15688,7 +15689,95 @@ const IsolPost = ({
             )}
 
             {/* Main Article List / Cartoon Gallery */}
-            {activeCategory === "전체기사" && !newsSearchQuery.trim() ? null : activeCategory === "전체기사" || activeCategory === "속보" ? (
+            {activeCategory === "전체기사" && !newsSearchQuery.trim() ? (
+              <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Modern Trend-aligned Full Article Stream */}
+                <div className="border-t border-zinc-150 dark:border-zinc-850/80 pt-10 mt-6 text-left">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="w-1.5 h-6 bg-red-655 rounded-full" />
+                      <h3 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-white tracking-tight">
+                        실시간 뉴스 타임라인
+                      </h3>
+                      <span className="text-[10px] font-black bg-red-500/10 text-red-655 px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
+                        {filteredNews.length} ARTICLES
+                      </span>
+                    </div>
+                    <div className="text-[11px] font-black text-zinc-450 dark:text-zinc-500 font-mono uppercase tracking-wider bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/40 dark:border-zinc-800/80 px-3 py-1.5 rounded-xl">
+                      ⚡ 실시간 여론 진작 & 정보 수렴 시스템
+                    </div>
+                  </div>
+                  
+                  {/* Grid of articles */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+                    {filteredNews.map((item) => {
+                      if (!item) return null;
+                      return (
+                        <div
+                          key={item.id}
+                          className="group relative flex flex-col justify-between overflow-hidden rounded-[1.75rem] bg-white dark:bg-zinc-950 border border-zinc-150/80 dark:border-zinc-900/90 shadow-[0_4px_24px_rgba(0,0,0,0.02)] hover:shadow-2xl hover:shadow-zinc-200/30 dark:hover:shadow-red-550/5 hover:-translate-y-1.5 transition-all duration-350 w-full cursor-pointer"
+                          onClick={() => {
+                            if (typeof playHapticClick === "function") {
+                              playHapticClick(600, 0.03);
+                            }
+                            setSelectedNews(item);
+                            setTimeout(() => {
+                              document.getElementById("inline-news-reader-container")?.scrollIntoView({ behavior: "smooth" });
+                            }, 50);
+                          }}
+                        >
+                          <div>
+                            {/* Card Image with refined zoom in hover */}
+                            <div className="w-full aspect-video overflow-hidden relative bg-zinc-900 border-b border-zinc-100 dark:border-zinc-900/60">
+                              <img
+                                src={item.thumbnail || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800"}
+                                className="w-full h-full object-cover transition-transform duration-[1000ms] group-hover:scale-105"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800";
+                                }}
+                                alt={item.title}
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className="absolute top-4 left-4 z-20">
+                                <span className="inline-block bg-zinc-950/80 backdrop-blur-md text-white text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-wider select-none border border-white/10 shadow-lg">
+                                  {sanitizeDisplayCategory(item.category, item.title) || "일반"}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {/* Card Body */}
+                            <div className="p-5 sm:p-6 space-y-3">
+                              <h4 className="text-sm sm:text-[15.5px] font-black text-zinc-900 dark:text-white leading-snug line-clamp-2 group-hover:text-red-655 transition-colors tracking-tight font-sans">
+                                {item.title}
+                              </h4>
+                              <p className="text-[11.5px] sm:text-xs text-zinc-500 dark:text-zinc-400 line-clamp-3 leading-relaxed font-semibold">
+                                {item.content}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Card Footer */}
+                          <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-3.5 border-t border-zinc-100 dark:border-zinc-900/60 flex items-center justify-between text-[10px] font-extrabold text-zinc-450 dark:text-zinc-500">
+                            <div className="flex items-center gap-2">
+                              <div className="w-5 h-5 rounded-full bg-red-500/10 text-red-655 flex items-center justify-center text-[9px] font-black border border-red-200/30">
+                                {item.author ? item.author.substring(0, 1) : "솔"}
+                              </div>
+                              <span>{item.author || "시민"} 기자</span>
+                              <span className="w-0.5 h-0.5 rounded-full bg-zinc-350 dark:bg-zinc-700" />
+                              <span>{item.date}</span>
+                            </div>
+                            <span className="text-red-600 dark:text-red-400 font-black flex items-center gap-0.5">
+                              🔥 {item.likes || 0}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : activeCategory === "전체기사" || activeCategory === "속보" ? (
               <div className="space-y-10">
                 {/* 1. Large Landmark Feature Article for the Top-ranked news to feel highly editorial and professional */}
                 {activeCategory !== "전체기사" && displayFilteredNews.length > 0 && (
@@ -23315,7 +23404,7 @@ const AdminQuickActions = ({
   </div>
 );
 
-const HomeOverview = ({
+const CyberpunkDashboardUnused = ({
   news = [],
   citizenNews = [],
   reporters = [],
@@ -26897,7 +26986,10 @@ function App() {
       const isPhysicalMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
       );
-      setIsSimulatedMobileView(isPhysicalMobile || window.innerWidth < 1024);
+      const stored = localStorage.getItem("isSimulatedMobileView");
+      if (stored === null) {
+        setIsSimulatedMobileView(isPhysicalMobile);
+      }
     };
     
     handleResize();
@@ -26912,7 +27004,11 @@ function App() {
       const isPhysicalMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
         navigator.userAgent
       );
-      return isPhysicalMobile || window.innerWidth < 1024;
+      const stored = localStorage.getItem("isSimulatedMobileView");
+      if (stored !== null) {
+        return stored === "true";
+      }
+      return isPhysicalMobile;
     }
     return false;
   });
@@ -26950,7 +27046,7 @@ function App() {
     | "admin-news-center"
     | "community"
     | "hyeonwon-cinema"
-  >("home");
+  >("isol-post");
 
   const [windowScrollProgress, setWindowScrollProgress] = React.useState(0);
   React.useEffect(() => {
@@ -28716,6 +28812,15 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 selectedCharacterId={selectedCharacterId}
                 playHapticClick={playHapticClick}
                 deviceTime={deviceTime}
+                onProfessionalRegClick={() => {
+                  setRegisterTypeFromHeader("professional");
+                  setCurrentPage("soul-center");
+                }}
+                onSelectNews={(n: any) => {
+                  setSelectedNews(n);
+                  setSelectedNewsCategory(null);
+                  setCurrentPage("isol-post");
+                }}
               />
             </motion.div>
           )}
@@ -30211,7 +30316,8 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
               setSelectedWebtoon(null);
               setIsAdminView(false);
               setIsOmbudsmanModalOpen(false);
-              setCurrentPage("home");
+              setSelectedNewsCategory("전체기사");
+              setCurrentPage("isol-post");
             } 
           },
           { id: "isol-post", label: "포스트", icon: Newspaper, action: () => {
@@ -30286,43 +30392,6 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           <div className="w-28 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
         </div>
       )}
-    </div>
-
-    {/* Modern floating layout switcher for desktop web browsers */}
-    <div className="hidden lg:flex fixed bottom-8 left-8 z-[100] items-center gap-2.5 bg-zinc-950/90 dark:bg-zinc-900/90 backdrop-blur-md border border-white/10 px-4 py-2.5 rounded-full shadow-2xl shadow-red-500/10">
-      <span className="text-[10px] font-black text-red-500 uppercase tracking-widest select-none">VIEW MODE:</span>
-      <div className="flex bg-white/5 p-0.5 rounded-full border border-white/10">
-        <button
-          onClick={() => {
-            if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
-            setIsSimulatedMobileView(false);
-            localStorage.setItem("isSimulatedMobileView", "false");
-            toast.success("🖥️ 데스크톱 웹 최적화 모드로 전환되었습니다!");
-          }}
-          className={cn(
-            "px-3.5 py-1.5 rounded-full text-[10px] font-black transition-all flex items-center gap-1.5 cursor-pointer border border-transparent",
-            !isSimulatedMobileView ? "bg-red-650 text-white shadow-md shadow-red-500/25" : "text-zinc-400 hover:text-white"
-          )}
-        >
-          <Monitor size={12} />
-          <span>데스크톱 웹</span>
-        </button>
-        <button
-          onClick={() => {
-            if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
-            setIsSimulatedMobileView(true);
-            localStorage.setItem("isSimulatedMobileView", "true");
-            toast.success("📱 모바일 가상 체험 모드로 전환되었습니다!");
-          }}
-          className={cn(
-            "px-3.5 py-1.5 rounded-full text-[10px] font-black transition-all flex items-center gap-1.5 cursor-pointer border border-transparent",
-            isSimulatedMobileView ? "bg-red-650 text-white shadow-md shadow-red-500/25" : "text-zinc-400 hover:text-white"
-          )}
-        >
-          <Smartphone size={12} />
-          <span>모바일 가상</span>
-        </button>
-      </div>
     </div>
   </div>
 </div>
