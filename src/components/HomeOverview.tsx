@@ -20,7 +20,12 @@ import {
   Flame,
   Zap,
   UserCheck,
-  Volume2
+  Volume2,
+  Smartphone,
+  Laptop,
+  Search,
+  X,
+  Plus
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,6 +37,7 @@ interface HomeOverviewProps {
   user?: any;
   onPageChange?: (page: string, category?: string) => void;
   isSimulatedMobileView?: boolean;
+  onToggleSimulatedMobileView?: () => void;
   selectedCharacterId?: string;
   playHapticClick?: (frequency?: number, duration?: number, type?: string) => void;
   deviceTime?: string;
@@ -47,6 +53,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
   user = null,
   onPageChange = () => {},
   isSimulatedMobileView = false,
+  onToggleSimulatedMobileView = () => {},
   selectedCharacterId = "isol_bee",
   playHapticClick,
   deviceTime = "08:06",
@@ -77,14 +84,14 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
 
   const totalVotes = Object.values(pollVotes).reduce((a, b) => a + b, 0);
 
-  // Active Category Filtering
+  // Active Category & Local Search Filtering
   const [selectedCategory, setSelectedCategory] = useState<string>("전체");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const categories = ["전체", "사회/정치", "경제/문화", "복지/미래비전", "만평", "에세이", "리얼포토"];
 
   // Real data integration
   const combinedNews = useMemo(() => {
     const combined = [...news, ...citizenNews];
-    // Sort by likes or date
     return combined.sort((a, b) => {
       const dateA = new Date(a.date || "").getTime();
       const dateB = new Date(b.date || "").getTime();
@@ -93,9 +100,20 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
   }, [news, citizenNews]);
 
   const filteredNews = useMemo(() => {
-    if (selectedCategory === "전체") return combinedNews;
-    return combinedNews.filter((item) => item.category === selectedCategory);
-  }, [combinedNews, selectedCategory]);
+    let result = combinedNews;
+    if (selectedCategory !== "전체") {
+      result = result.filter((item) => item.category === selectedCategory);
+    }
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((item) => 
+        (item.title && item.title.toLowerCase().includes(q)) ||
+        (item.content && item.content.toLowerCase().includes(q)) ||
+        (item.authorName && item.authorName.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [combinedNews, selectedCategory, searchQuery]);
 
   const trendingNews = useMemo(() => {
     return [...combinedNews]
@@ -106,6 +124,17 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
   const featuredStory = useMemo(() => {
     return combinedNews.find(item => item.thumbnail) || combinedNews[0];
   }, [combinedNews]);
+
+  // Story reels data for mobile
+  const storyReels = useMemo(() => {
+    return [
+      { id: "s1", name: "속보 릴스", avatar: "🚨", active: true, label: "실시간 특보" },
+      { id: "s2", name: "시민기자", avatar: "🎙️", active: true, label: "오늘의 이슈" },
+      { id: "s3", name: "AI 만평", avatar: "🎨", active: false, label: "풍자 툰" },
+      { id: "s4", name: "리얼포토", avatar: "📷", active: false, label: "EXIF 실사" },
+      { id: "s5", name: "소통아고라", avatar: "⚖️", active: false, label: "배심원 투표" }
+    ];
+  }, []);
 
   // Mascot interaction
   const [mascotChatBubble, setMascotChatBubble] = useState("이솔뉴스에 오신 것을 환영합니다! 기사 작성이나 전문 언론사 등록을 도와드릴까요?");
@@ -133,9 +162,28 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
   // -------------------------------------------------------------
   if (isSimulatedMobileView) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 pb-24 font-sans select-none animate-in fade-in duration-300">
+      <div className="min-h-screen bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 pb-28 font-sans select-none animate-in fade-in duration-300 relative">
+        
+        {/* Mobile Top Viewport Switcher Banner */}
+        <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white px-4 py-2 flex items-center justify-between text-[10.5px] font-black shadow-md">
+          <div className="flex items-center gap-1.5">
+            <Smartphone size={14} className="animate-pulse" />
+            <span>📱 모바일 최적화 UX 모드 가동 중</span>
+          </div>
+          <button
+            onClick={() => {
+              if (typeof playHapticClick === "function") playHapticClick(700, 0.05);
+              onToggleSimulatedMobileView();
+            }}
+            className="bg-white/20 hover:bg-white/30 backdrop-blur-md px-2.5 py-1 rounded-full text-[9.5px] font-black flex items-center gap-1 cursor-pointer transition-all active:scale-95 border border-white/20"
+          >
+            <Laptop size={12} />
+            <span>노트북 웹 뷰로 보기</span>
+          </button>
+        </div>
+
         {/* Mobile Header Hero with Sleek Glassmorphism */}
-        <div className="relative overflow-hidden px-5 pt-8 pb-6 bg-gradient-to-b from-red-50/40 via-zinc-50/10 to-transparent dark:from-red-950/20 dark:via-zinc-900/10 dark:to-[#09090b] border-b border-zinc-100 dark:border-zinc-900/30">
+        <div className="relative overflow-hidden px-5 pt-5 pb-5 bg-gradient-to-b from-red-50/40 via-zinc-50/10 to-transparent dark:from-red-950/20 dark:via-zinc-900/10 dark:to-[#09090b] border-b border-zinc-100 dark:border-zinc-900/30">
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/10 rounded-full blur-3xl pointer-events-none -mr-4 -mt-4" />
           
           <div className="relative z-10 flex flex-col items-start gap-1.5">
@@ -145,7 +193,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
                 PORTAL LIVE
               </span>
               <span className="bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 text-[8px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
-                📱 모바일 전용 모드
+                📱 최신 트렌드 모바일 UX
               </span>
             </div>
             <h2 className="text-2xl font-black tracking-tight leading-none text-zinc-900 dark:text-white mt-1">
@@ -155,13 +203,67 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
               검증 완료 국영 통신 • 오감 감응형 소설 • 무결성 보도
             </p>
           </div>
+
+          {/* Mobile Instant Live Search Bar */}
+          <div className="mt-4 relative z-10">
+            <div className="relative flex items-center">
+              <Search size={14} className="absolute left-3.5 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="모바일 기사 빠른 필터 검색..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-white dark:bg-zinc-900/90 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl pl-9 pr-8 py-2.5 text-xs font-bold text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:border-red-500 transition-all shadow-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Story Reels (Instagram / TikTok Style) */}
+        <div className="mt-4 px-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-mono flex items-center gap-1">
+              <Sparkles size={11} className="text-red-500 animate-pulse" /> TODAY'S REELS & ISSUES
+            </span>
+            <span className="text-[8px] text-zinc-400 font-mono">SWIPE ▶</span>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
+            {storyReels.map((reel) => (
+              <button
+                key={reel.id}
+                onClick={() => {
+                  if (typeof playHapticClick === "function") playHapticClick(650, 0.04);
+                  toast.info(`📱 '${reel.name}' 스토리를 탐색합니다.`);
+                  if (reel.id === "s2") onPageChange("soul-center");
+                  else if (reel.id === "s3") onPageChange("webtoon");
+                  else if (reel.id === "s5") onPageChange("community");
+                }}
+                className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group active:scale-95 transition-transform"
+              >
+                <div className={`w-14 h-14 rounded-full p-0.5 bg-gradient-to-tr ${reel.active ? "from-red-500 via-rose-500 to-amber-500 animate-pulse" : "from-zinc-300 to-zinc-400 dark:from-zinc-800 dark:to-zinc-700"}`}>
+                  <div className="w-full h-full rounded-full bg-white dark:bg-zinc-950 flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform">
+                    {reel.avatar}
+                  </div>
+                </div>
+                <span className="text-[9px] font-black text-zinc-700 dark:text-zinc-300 max-w-[56px] truncate">{reel.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Mobile Onboarding Banner for Professional News Registration */}
-        <div className="px-4 mt-4">
-          <div className="bg-gradient-to-br from-red-50/60 to-zinc-50/80 dark:from-red-950/40 dark:to-zinc-900/60 border border-red-500/15 dark:border-red-500/25 rounded-2xl p-4.5 relative overflow-hidden shadow-sm dark:shadow-md">
+        <div className="px-4 mt-3">
+          <div className="bg-gradient-to-br from-red-50/60 to-zinc-50/80 dark:from-red-950/40 dark:to-zinc-900/60 border border-red-500/15 dark:border-red-500/25 rounded-2xl p-4 relative overflow-hidden shadow-sm dark:shadow-md">
             <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/10 rounded-full blur-2xl pointer-events-none" />
-            <div className="relative z-10 space-y-3">
+            <div className="relative z-10 space-y-2.5">
               <div className="flex items-center gap-2">
                 <span className="bg-red-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md tracking-wider">얼라이언스 모집</span>
                 <h4 className="text-xs font-black text-zinc-900 dark:text-white">이솔 전문 언론사 공식 뉴스룸 등록</h4>
@@ -248,7 +350,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
         {/* Category Horizontal Filter Chips */}
         <div className="mt-6">
           <div className="px-4 flex items-center justify-between mb-2">
-            <h3 className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-mono">NEWS CATEGORY</h3>
+            <h3 className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-mono">NEWS CATEGORY ({filteredNews.length})</h3>
           </div>
           <div className="flex gap-1.5 overflow-x-auto px-4 pb-2 scrollbar-none">
             {categories.map((cat) => (
@@ -260,7 +362,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
                 }}
                 className={`px-3.5 py-1.5 rounded-full text-[10.5px] font-black whitespace-nowrap border cursor-pointer transition-all ${
                   selectedCategory === cat
-                    ? "bg-red-650 border-red-500 text-white shadow-sm"
+                    ? "bg-red-600 border-red-500 text-white shadow-sm"
                     : "bg-zinc-100/80 dark:bg-zinc-900/50 border-zinc-200/55 dark:border-zinc-900 text-zinc-550 dark:text-zinc-400"
                 }`}
               >
@@ -343,6 +445,65 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
           </div>
         </div>
 
+        {/* Floating Mobile Bottom Glass Dock (Fixed position inside mobile container) */}
+        <div className="sticky bottom-3 inset-x-3 z-50 mt-8 px-2 pointer-events-auto">
+          <div className="bg-zinc-900/90 dark:bg-zinc-950/95 backdrop-blur-xl border border-zinc-700/50 dark:border-zinc-800 text-white rounded-3xl p-2.5 shadow-2xl flex items-center justify-around">
+            <button
+              onClick={() => {
+                if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                onPageChange("isol-post");
+              }}
+              className="flex flex-col items-center gap-1 text-zinc-300 hover:text-red-400 active:scale-90 transition-all cursor-pointer px-3 py-1"
+            >
+              <Newspaper size={18} />
+              <span className="text-[9px] font-bold">뉴스홈</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                onPageChange("webtoon");
+              }}
+              className="flex flex-col items-center gap-1 text-zinc-300 hover:text-amber-400 active:scale-90 transition-all cursor-pointer px-3 py-1"
+            >
+              <Tv size={18} />
+              <span className="text-[9px] font-bold">웹툰광장</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (typeof playHapticClick === "function") playHapticClick(800, 0.08);
+                onPageChange("soul-center");
+              }}
+              className="w-11 h-11 rounded-full bg-gradient-to-tr from-red-600 via-rose-600 to-amber-500 text-white flex items-center justify-center shadow-lg shadow-red-500/30 -mt-5 active:scale-90 transition-all cursor-pointer border-2 border-zinc-900"
+            >
+              <Plus size={22} className="stroke-[2.5]" />
+            </button>
+
+            <button
+              onClick={() => {
+                if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                onPageChange("soul-center");
+              }}
+              className="flex flex-col items-center gap-1 text-zinc-300 hover:text-emerald-400 active:scale-90 transition-all cursor-pointer px-3 py-1"
+            >
+              <Users size={18} />
+              <span className="text-[9px] font-bold">시민기자</span>
+            </button>
+
+            <button
+              onClick={() => {
+                if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                onPageChange("community");
+              }}
+              className="flex flex-col items-center gap-1 text-zinc-300 hover:text-purple-400 active:scale-90 transition-all cursor-pointer px-3 py-1"
+            >
+              <Scale size={18} />
+              <span className="text-[9px] font-bold">아고라</span>
+            </button>
+          </div>
+        </div>
+
       </div>
     );
   }
@@ -391,8 +552,19 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
               </span>
               <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                💻 노트북 웹 최적화 모드 가동 중
+                💻 노트북 웹 최적화 모드
               </span>
+              <button
+                onClick={() => {
+                  if (typeof playHapticClick === "function") playHapticClick(700, 0.05);
+                  onToggleSimulatedMobileView();
+                  toast.success("📱 모바일 전용 UX 화면으로 전환되었습니다.");
+                }}
+                className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-black px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer border border-zinc-700/30"
+              >
+                <Smartphone size={12} />
+                <span>📱 모바일 최적화 화면으로 전환</span>
+              </button>
             </div>
             
             <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-zinc-900 dark:text-white leading-[1.1]">
@@ -588,12 +760,31 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
             
             {/* News Filter Header */}
             <div className="bg-white dark:bg-zinc-900/10 border border-zinc-200/85 dark:border-zinc-900 rounded-3xl p-6 text-left space-y-4 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-900 pb-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-100 dark:border-zinc-900 pb-4">
                 <div className="flex items-center gap-2">
                   <Newspaper size={14} className="text-red-500" />
                   <h3 className="text-xs font-black text-zinc-800 dark:text-zinc-300 uppercase tracking-widest font-mono">ALL ALLIANCE ARTICLES</h3>
                 </div>
-                <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-bold">전체 {filteredNews.length}개의 정렬된 정론 보도</span>
+                
+                {/* Instant Search Bar for Desktop */}
+                <div className="relative flex items-center min-w-[240px]">
+                  <Search size={13} className="absolute left-3 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="노트북 기사 빠른 키워드 검색..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-8 pr-7 py-1.5 text-xs font-bold text-zinc-900 dark:text-white placeholder-zinc-400 outline-none focus:border-red-500 transition-all"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-0.5"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Category selector */}
@@ -607,7 +798,7 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
                     }}
                     className={`px-3.5 py-1.5 rounded-full text-[11px] font-black border transition-all cursor-pointer ${
                       selectedCategory === cat
-                        ? "bg-red-650 border-red-500 text-white shadow-md shadow-red-500/10"
+                        ? "bg-red-600 border-red-500 text-white shadow-md shadow-red-500/10"
                         : "bg-zinc-100/80 dark:bg-zinc-950/60 border-zinc-200/60 dark:border-zinc-900 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                     }`}
                   >

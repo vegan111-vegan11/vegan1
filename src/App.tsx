@@ -168,6 +168,9 @@ import CitizenAgora from "./components/CitizenAgora";
 import HyeonWonCinema from "./components/HyeonWonCinema";
 import { CorporateAdApplyModal } from "./components/CorporateAdApplyModal";
 import { AdminVerifiedPhotosDashboard } from "./components/AdminVerifiedPhotosDashboard";
+import { CommandPaletteModal } from "./components/CommandPaletteModal";
+import { UIUXImprovementsModal } from "./components/UIUXImprovementsModal";
+import { ArticleBottomSheetModal } from "./components/ArticleBottomSheetModal";
 import {
   RagDocument,
   chunkText,
@@ -19652,6 +19655,12 @@ const SoulCenter = ({
   const [lastSavedTime, setLastSavedTime] = useState<string>("");
   const [deletingNewsId, setDeletingNewsId] = useState<string | null>(null);
 
+  // 10대 보완점: 모바일 4단계 위저드 & 고밀도 관리 검색/필터 & 모바일 퀵 수정 바텀시트 상태
+  const [mobileWriteStep, setMobileWriteStep] = useState<number>(1);
+  const [myArticlesSearch, setMyArticlesSearch] = useState<string>("");
+  const [myArticlesCatFilter, setMyArticlesCatFilter] = useState<string>("전체");
+  const [quickEditArticle, setQuickEditArticle] = useState<any>(null);
+
   // 🛰️ 원래 SoulCenter 에서 유실되었던 기사 상태 및 에디터용 코어 상태/함수 목록 복원
   const Edit = PenTool; // Icon alias for Edit icon to resolve import errors
 
@@ -20458,6 +20467,42 @@ const SoulCenter = ({
                 세상을 바꾸는 시민의 목소리
               </p>
             </header>
+
+            {/* 📱 모바일 터치 최적화 4단계 집필 위저드 내비게이션 바 */}
+            <div className="mb-6 p-3.5 bg-zinc-950 text-white rounded-2xl border border-zinc-800 space-y-2.5 shadow-xl">
+              <div className="flex items-center justify-between text-xs font-black px-1">
+                <span className="text-orange-400 flex items-center gap-1.5">
+                  <Smartphone size={15} className="animate-pulse" />
+                  <span>스마트폰/노트북 통합 집필 위저드</span>
+                </span>
+                <span className="bg-orange-500/20 text-orange-400 px-2.5 py-0.5 rounded-md text-[10.5px] font-mono font-bold">
+                  단계 {mobileWriteStep} / 4
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { step: 1, title: "1. 헤드라인", desc: "제목/개요" },
+                  { step: 2, title: "2. 미디어", desc: "분류/사진" },
+                  { step: 3, title: "3. 본문/AI", desc: "원고/음성" },
+                  { step: 4, title: "4. 검토/발행", desc: "완성도/송고" }
+                ].map((s) => (
+                  <button
+                    key={s.step}
+                    type="button"
+                    onClick={() => setMobileWriteStep(s.step)}
+                    className={cn(
+                      "py-2 px-1 text-center rounded-xl transition-all cursor-pointer border flex flex-col items-center justify-center gap-0.5",
+                      mobileWriteStep === s.step
+                        ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white border-orange-400 shadow-md font-black"
+                        : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
+                    )}
+                  >
+                    <span className="text-[11px] font-extrabold leading-none">{s.title}</span>
+                    <span className="text-[8.5px] font-bold opacity-75 hidden sm:inline">{s.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* 📱 스마트폰 간편 작성 모드 전환 스위치 */}
             <div className="mb-8 p-4.5 bg-zinc-55 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 text-left shadow-sm">
@@ -21575,88 +21620,365 @@ const SoulCenter = ({
             </AnimatePresence>
           </>
         ) : (
-          <div className="space-y-6">
-            <header className="mb-12">
-              <h1 className="text-4xl font-black mb-2 tracking-tighter italic text-orange-600 uppercase">
-                My Articles
-              </h1>
-              <p className="text-zinc-500 font-bold tracking-widest uppercase text-xs">
-                내가 발행한 목소리들
-              </p>
+          <div className="space-y-6 text-left">
+            <header className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-6">
+              <div>
+                <h1 className="text-3xl sm:text-4xl font-black mb-1 tracking-tighter italic text-orange-600 uppercase">
+                  My Newsroom Hub
+                </h1>
+                <p className="text-zinc-500 font-bold tracking-widest uppercase text-xs">
+                  내가 집필·발행한 기사 및 투고 관리 데스크 ({myArticles.length}건)
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingArticle(null);
+                  setPostData({
+                    title: "",
+                    content: "",
+                    thumbnail: "",
+                    thumbnailName: "",
+                    category: "사회/정치",
+                    subCategory: "",
+                    pdfUrl: "",
+                    pdfName: "",
+                    authorName: "",
+                    authorBio: "",
+                    sourceAgency: "이솔 국영 종합 뉴스룸",
+                    pressSeal: "standard_citizen",
+                  });
+                  setActiveTab("write");
+                }}
+                className="px-5 py-2.5 bg-orange-600 hover:bg-orange-500 text-white font-black rounded-2xl text-xs flex items-center gap-2 shadow-lg shadow-orange-600/20 cursor-pointer self-start sm:self-auto"
+              >
+                <PenTool size={14} /> 새 기사 작성하기
+              </button>
             </header>
 
-            {myArticles.length > 0 ? (
-              <div className="grid gap-4">
-                {myArticles.map((article) => (
-                  <div
-                    key={article.id}
-                    className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex gap-6 items-center"
+            {/* 📊 통계 현황 오버뷰 패널 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">발행 기사</p>
+                <p className="text-2xl font-black text-zinc-900 dark:text-zinc-100">{myArticles.length} <span className="text-xs font-normal text-zinc-400">건</span></p>
+              </div>
+              <div className="p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">총 공감/좋아요</p>
+                <p className="text-2xl font-black text-red-500">
+                  {myArticles.reduce((acc, curr) => acc + (curr.likes || 0), 0)} <span className="text-xs font-normal text-zinc-400">개</span>
+                </p>
+              </div>
+              <div className="p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">평균 완성도</p>
+                <p className="text-2xl font-black text-emerald-500">
+                  {myArticles.length > 0
+                    ? Math.round(
+                        myArticles.reduce(
+                          (acc, curr) => acc + getArticleScore(curr.title || "", curr.content || "", curr.thumbnail).score,
+                          0
+                        ) / myArticles.length
+                      )
+                    : 0}
+                  <span className="text-xs font-normal text-zinc-400">점</span>
+                </p>
+              </div>
+              <div className="p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">기자 상태</p>
+                <p className="text-sm font-black text-purple-500 flex items-center gap-1 mt-1">
+                  <ShieldCheck size={16} /> {isUserRegistered ? "정식 승인" : "시민 기자"}
+                </p>
+              </div>
+            </div>
+
+            {/* 🔍 모바일/웹 최적화 검색 및 카테고리 필터 바 */}
+            <div className="flex flex-col md:flex-row gap-3 pt-2">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="text"
+                  value={myArticlesSearch}
+                  onChange={(e) => setMyArticlesSearch(e.target.value)}
+                  placeholder="기사 제목 또는 내용 검색..."
+                  className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl pl-10 pr-4 py-2.5 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-orange-500"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                {["전체", "사회/정치", "경제/문화", "복지/미래비전", "팩트체크", "리얼포토", "지역"].map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setMyArticlesCatFilter(cat)}
+                    className={cn(
+                      "px-3 py-2 rounded-xl text-xs font-extrabold transition-all shrink-0 cursor-pointer border",
+                      myArticlesCatFilter === cat
+                        ? "bg-orange-600 text-white border-orange-500 shadow-sm"
+                        : "bg-white dark:bg-zinc-900 text-zinc-500 border-zinc-200 dark:border-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-200"
+                    )}
                   >
-                    <img
-                      src={article.thumbnail}
-                      className="w-32 h-20 object-cover rounded-xl"
-                      alt={article.title}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-black bg-zinc-100 dark:bg-black/20 px-2 py-0.5 rounded text-zinc-400 capitalize">
-                          {article.category}
-                        </span>
-                        <span className="text-[10px] font-bold text-zinc-400">
-                          {article.date}
-                        </span>
-                      </div>
-                      <h4 className="font-bold text-xl">{article.title}</h4>
-                      <div className="flex items-center gap-4 mt-2">
-                        <span className="text-xs font-bold text-zinc-500 flex items-center gap-1">
-                          <Heart
-                            size={12}
-                            className="fill-red-500 text-red-500"
-                          />{" "}
-                          {article.likes}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setEditingArticle(article);
-                          setPostData({
-                            title: article.title,
-                            content: article.content,
-                            thumbnail: article.thumbnail,
-                            thumbnailName: (article as any).thumbnailName || (article.thumbnail ? "기존 대표 이미지" : ""),
-                            category: article.category,
-                            subCategory: article.subCategory || "",
-                            pdfUrl: article.pdfUrl || "",
-                            pdfName: article.pdfName || "",
-                            authorName: article.author || "",
-                            authorBio: (article as any).reporterBio || "",
-                            sourceAgency: (article as any).sourceAgency || "",
-                            pressSeal: (article as any).pressSeal || "standard_citizen",
-                          });
-                          setIsWriting(true);
-                          setActiveTab("write");
-                        }}
-                        className="p-2 text-zinc-400 hover:text-orange-500 transition-colors"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteNews(article.id)}
-                        className="p-2 text-zinc-400 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
+                    {cat}
+                  </button>
                 ))}
               </div>
-            ) : (
-              <div className="py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-[2rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-400 font-bold">
-                아직 발행한 기사가 없습니다. 첫 번째 기사를 작성해보세요!
-              </div>
-            )}
+            </div>
+
+            {/* 기사 목록 출력 */}
+            {(() => {
+              const filtered = myArticles.filter((article) => {
+                const matchesSearch =
+                  !myArticlesSearch ||
+                  article.title.toLowerCase().includes(myArticlesSearch.toLowerCase()) ||
+                  (article.content && article.content.toLowerCase().includes(myArticlesSearch.toLowerCase()));
+                const matchesCat = myArticlesCatFilter === "전체" || article.category === myArticlesCatFilter;
+                return matchesSearch && matchesCat;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="py-16 bg-zinc-50 dark:bg-zinc-900/50 rounded-[2rem] border-2 border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-400 font-bold text-center space-y-3">
+                    <p className="text-sm">검색 조건에 일치하는 기사가 없습니다.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMyArticlesSearch("");
+                        setMyArticlesCatFilter("전체");
+                      }}
+                      className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs font-bold cursor-pointer"
+                    >
+                      필터 초기화
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid gap-4">
+                  {filtered.map((article) => {
+                    const scoreObj = getArticleScore(article.title || "", article.content || "", article.thumbnail);
+                    return (
+                      <div
+                        key={article.id}
+                        className="bg-white dark:bg-zinc-900 p-4 sm:p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row gap-4 sm:items-center justify-between hover:border-orange-500/40 transition-all shadow-sm"
+                      >
+                        <div className="flex items-start sm:items-center gap-4 flex-1">
+                          <img
+                            src={article.thumbnail || "https://picsum.photos/200/120"}
+                            className="w-24 h-20 sm:w-32 sm:h-22 object-cover rounded-xl border border-zinc-200 dark:border-zinc-800 shrink-0"
+                            alt={article.title}
+                          />
+                          <div className="space-y-1.5 flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[10px] font-black bg-orange-500/10 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-md">
+                                {article.category}
+                              </span>
+                              <span className="text-[10px] font-bold text-zinc-400">
+                                {article.date}
+                              </span>
+                              <span className="text-[10px] font-extrabold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md">
+                                완성도 {scoreObj.score}점
+                              </span>
+                            </div>
+                            <h4 className="font-extrabold text-base sm:text-lg text-zinc-900 dark:text-zinc-100 truncate">
+                              {article.title}
+                            </h4>
+                            <p className="text-xs text-zinc-500 line-clamp-1 font-serif">
+                              {article.content ? article.content.substring(0, 80) : "본문 없음"}
+                            </p>
+                            <div className="flex items-center gap-3 text-xs font-bold text-zinc-400 pt-0.5">
+                              <span className="flex items-center gap-1 text-red-500">
+                                <Heart size={12} className="fill-red-500" /> {article.likes || 0}
+                              </span>
+                              <span>작성자: {article.author || "시민기자"}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 모바일/웹 겸용 액션 버트 모음 */}
+                        <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800 shrink-0 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingArticle(article);
+                              setPostData({
+                                title: article.title,
+                                content: article.content,
+                                thumbnail: article.thumbnail,
+                                thumbnailName: (article as any).thumbnailName || (article.thumbnail ? "기존 대표 이미지" : ""),
+                                category: article.category,
+                                subCategory: article.subCategory || "",
+                                pdfUrl: article.pdfUrl || "",
+                                pdfName: article.pdfName || "",
+                                authorName: article.author || "",
+                                authorBio: (article as any).reporterBio || "",
+                                sourceAgency: (article as any).sourceAgency || "",
+                                pressSeal: (article as any).pressSeal || "standard_citizen",
+                              });
+                              setIsWriting(true);
+                              setActiveTab("write");
+                            }}
+                            className="px-3 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-extrabold flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
+                            title="전체 에디터로 기사 수정"
+                          >
+                            <Edit2 size={13} />
+                            <span>상세 수정</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setQuickEditArticle(article)}
+                            className="px-3 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-200 rounded-xl text-xs font-extrabold flex items-center gap-1 cursor-pointer transition-colors"
+                            title="모바일 터치 퀵 수정"
+                          >
+                            <Smartphone size={13} />
+                            <span className="hidden sm:inline">퀵 수정</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPostData({
+                                title: article.title,
+                                content: article.content,
+                                thumbnail: article.thumbnail,
+                                thumbnailName: "",
+                                category: article.category,
+                                subCategory: article.subCategory || "",
+                                pdfUrl: "",
+                                pdfName: "",
+                                authorName: article.author || "",
+                                authorBio: "",
+                                sourceAgency: "",
+                                pressSeal: "standard_citizen"
+                              });
+                              setShowMobileSimulator(true);
+                            }}
+                            className="p-2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                            title="스마트폰 미리보기"
+                          >
+                            <Eye size={16} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteNews(article.id)}
+                            className="p-2 text-zinc-400 hover:text-red-500 rounded-xl hover:bg-red-500/10 cursor-pointer"
+                            title="기사 삭제"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* 📱 모바일 퀵 수정 바텀 시트 모달 (Quick Edit Bottom Sheet) */}
+            <AnimatePresence>
+              {quickEditArticle && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+                  <motion.div
+                    initial={{ opacity: 0, y: 100 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 100 }}
+                    className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto"
+                  >
+                    <div className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                      <div className="flex items-center gap-2">
+                        <Smartphone className="text-orange-500" size={18} />
+                        <h3 className="font-extrabold text-base text-zinc-900 dark:text-zinc-100">모바일 퀵 기사 수정</h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setQuickEditArticle(null)}
+                        className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 rounded-lg cursor-pointer"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3 text-left">
+                      <div>
+                        <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">
+                          기사 헤드라인
+                        </label>
+                        <input
+                          type="text"
+                          value={quickEditArticle.title}
+                          onChange={(e) => setQuickEditArticle({ ...quickEditArticle, title: e.target.value })}
+                          className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-orange-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">
+                          카테고리 지정
+                        </label>
+                        <select
+                          value={quickEditArticle.category}
+                          onChange={(e) => setQuickEditArticle({ ...quickEditArticle, category: e.target.value })}
+                          className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-orange-500 cursor-pointer"
+                        >
+                          <option value="사회/정치">사회/정치</option>
+                          <option value="경제/문화">경제/문화</option>
+                          <option value="복지/미래비전">복지/미래비전</option>
+                          <option value="팩트체크">팩트체크</option>
+                          <option value="리얼포토">리얼포토</option>
+                          <option value="지역">지역</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">
+                          보도 본문 내용
+                        </label>
+                        <textarea
+                          rows={6}
+                          value={quickEditArticle.content}
+                          onChange={(e) => setQuickEditArticle({ ...quickEditArticle, content: e.target.value })}
+                          className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 text-xs font-serif leading-relaxed text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-orange-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                      <button
+                        type="button"
+                        onClick={() => setQuickEditArticle(null)}
+                        className="flex-1 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-extrabold rounded-xl text-xs cursor-pointer"
+                      >
+                        취소
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const toastId = toast.loading("퀵 수정 내용 저장 중...");
+                          try {
+                            await setDoc(
+                              doc(db, "citizen_news", quickEditArticle.id),
+                              {
+                                title: quickEditArticle.title,
+                                category: quickEditArticle.category,
+                                content: quickEditArticle.content,
+                                updatedAt: new Date().toISOString(),
+                              },
+                              { merge: true }
+                            );
+                            toast.success("✨ 기사 내용이 성공적으로 업데이트되었습니다!", { id: toastId });
+                            setQuickEditArticle(null);
+                          } catch (err) {
+                            toast.error("저장 중 오류가 발생했습니다.", { id: toastId });
+                          }
+                        }}
+                        className="flex-1 py-3 bg-orange-600 hover:bg-orange-500 text-white font-extrabold rounded-xl text-xs cursor-pointer shadow-md shadow-orange-600/20"
+                      >
+                        💾 퀵 수정 저장
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </div>
@@ -26983,15 +27305,16 @@ function App() {
   React.useEffect(() => {
     if (typeof window === "undefined") return;
     const handleResize = () => {
-      const isPhysicalMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
+      const isPhysicalMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        ) || window.innerWidth < 768;
       const stored = localStorage.getItem("isSimulatedMobileView");
       if (stored === null) {
         setIsSimulatedMobileView(isPhysicalMobile);
       }
     };
-    
+
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -27001,9 +27324,10 @@ function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
   const [isSimulatedMobileView, setIsSimulatedMobileView] = React.useState<boolean>(() => {
     if (typeof window !== "undefined") {
-      const isPhysicalMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      );
+      const isPhysicalMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        ) || window.innerWidth < 768;
       const stored = localStorage.getItem("isSimulatedMobileView");
       if (stored !== null) {
         return stored === "true";
@@ -27029,6 +27353,36 @@ function App() {
   const [isTermsOfServiceModalOpen, setIsTermsOfServiceModalOpen] = React.useState(false);
   const [isOmbudsmanModalOpen, setIsOmbudsmanModalOpen] = React.useState(false);
   const [isAdApplyModalOpen, setIsAdApplyModalOpen] = React.useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = React.useState(false);
+  const [is10ImprovementsModalOpen, setIs10ImprovementsModalOpen] = React.useState(false);
+  const [bottomSheetArticle, setBottomSheetArticle] = React.useState<any | null>(null);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  React.useEffect(() => {
+    const handleOpenCommandPalette = () => setIsCommandPaletteOpen(true);
+    const handleOpen10Improvements = () => setIs10ImprovementsModalOpen(true);
+    const handleOpenBottomSheet = (e: any) => setBottomSheetArticle(e.detail);
+
+    window.addEventListener("open_command_palette", handleOpenCommandPalette);
+    window.addEventListener("open_10_improvements", handleOpen10Improvements);
+    window.addEventListener("open_article_bottom_sheet", handleOpenBottomSheet as any);
+
+    return () => {
+      window.removeEventListener("open_command_palette", handleOpenCommandPalette);
+      window.removeEventListener("open_10_improvements", handleOpen10Improvements);
+      window.removeEventListener("open_article_bottom_sheet", handleOpenBottomSheet as any);
+    };
+  }, []);
   const [unityGameUrl, setUnityGameUrl] = React.useState("");
   const [refreshCycle, setRefreshCycle] = React.useState("weekly");
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -30186,6 +30540,65 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 <span className={cn("w-2 h-2 rounded-full", eyeProtectionMode ? "bg-amber-500 animate-pulse" : "bg-zinc-300")} />
               </button>
 
+              {/* 뷰포트 최적화 수동 토글 버튼 (📱 모바일 ↔ 💻 노트북/웹) */}
+              <button
+                onClick={() => {
+                  playHapticClick(800, 0.05);
+                  setIsFabMenuOpen(false);
+                  setIsSimulatedMobileView(!isSimulatedMobileView);
+                  toast.success(
+                    !isSimulatedMobileView
+                      ? "📱 1:1 모바일 최적화 UI/UX 화면으로 전환되었습니다."
+                      : "💻 노트북/웹 대화면 최적화 UI/UX 화면으로 전환되었습니다."
+                  );
+                }}
+                className="flex items-center justify-between p-2 rounded-xl text-xs font-black border bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:from-blue-500/20 hover:to-purple-500/20 transition-all cursor-pointer shadow-sm"
+              >
+                <div className="flex items-center gap-1.5">
+                  {isSimulatedMobileView ? <Laptop size={14} className="text-indigo-500 shrink-0" /> : <Smartphone size={14} className="text-blue-500 shrink-0" />}
+                  <span>{isSimulatedMobileView ? "💻 노트북/웹 화면으로 전환" : "📱 모바일 화면으로 전환"}</span>
+                </div>
+                <span className="text-[9px] bg-blue-600 text-white font-mono font-black px-1.5 py-0.5 rounded-full">
+                  {isSimulatedMobileView ? "DESKTOP" : "MOBILE"}
+                </span>
+              </button>
+
+              {/* 10대 UI/UX 보완점 리스트 모달 버튼 */}
+              <button
+                onClick={() => {
+                  playHapticClick(800, 0.05);
+                  setIsFabMenuOpen(false);
+                  setIs10ImprovementsModalOpen(true);
+                }}
+                className="flex items-center justify-between p-2 rounded-xl text-xs font-bold border bg-gradient-to-r from-red-500/10 to-amber-500/10 border-red-500/30 text-red-600 dark:text-red-400 hover:from-red-500/20 hover:to-amber-500/20 transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Sparkles size={12} className="text-amber-500 animate-pulse" />
+                  <span>10대 UI/UX 보완점 적용현황</span>
+                </div>
+                <span className="text-[9px] bg-red-600 text-white font-mono font-black px-1.5 py-0.2 rounded-full">
+                  10/10
+                </span>
+              </button>
+
+              {/* Cmd+K 커맨드 팔레트 버튼 */}
+              <button
+                onClick={() => {
+                  playHapticClick(800, 0.05);
+                  setIsFabMenuOpen(false);
+                  setIsCommandPaletteOpen(true);
+                }}
+                className="flex items-center justify-between p-2 rounded-xl text-xs font-bold border bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200 transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Search size={12} className="text-zinc-500" />
+                  <span>커맨드 팔레트</span>
+                </div>
+                <span className="text-[9px] font-mono font-black bg-zinc-200 dark:bg-zinc-700 px-1.5 py-0.2 rounded text-zinc-600 dark:text-zinc-300">
+                  ⌘K
+                </span>
+              </button>
+
               {/* Bookmark Storage Drawer Trigger Button */}
               <button
                 onClick={() => {
@@ -30309,7 +30722,12 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
       </div>
 
       {/* Sticky Bottom Navigation Bar for Mobile Thumbs */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[80] bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border-t border-gray-100 dark:border-white/5 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] px-2 py-1.5 flex justify-around items-center">
+      <div className={cn(
+        "fixed bottom-0 z-[80] bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border-t border-gray-100 dark:border-white/5 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] px-2 py-1.5 flex justify-around items-center transition-all",
+        isSimulatedMobileView
+          ? "w-full lg:max-w-[420px] left-1/2 -translate-x-1/2 rounded-b-[36px]"
+          : "left-0 right-0 w-full lg:hidden"
+      )}>
         {[
           { id: "home", label: "홈", icon: Globe, action: () => {
               setSelectedNews(null);
@@ -30392,6 +30810,66 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           <div className="w-28 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
         </div>
       )}
+
+      {/* 🚀 10대 UI/UX 보완점 및 최신 트렌드 리포트 모달 */}
+      <UIUXImprovementsModal
+        isOpen={is10ImprovementsModalOpen}
+        onClose={() => setIs10ImprovementsModalOpen(false)}
+        isSimulatedMobileView={isSimulatedMobileView}
+        onToggleSimulatedMobileView={() => setIsSimulatedMobileView(!isSimulatedMobileView)}
+        onOpenCommandPalette={() => {
+          setIs10ImprovementsModalOpen(false);
+          setIsCommandPaletteOpen(true);
+        }}
+        onOpenMobileArticleWriter={() => {
+          setIs10ImprovementsModalOpen(false);
+          setCurrentPage("soul-center");
+          toast.success("📱 모바일 기사 작성 스튜디오로 이동했습니다!");
+        }}
+        onOpenMobileAdminPad={() => {
+          setIs10ImprovementsModalOpen(false);
+          setIsAdmin(true);
+          setIsAdminView(true);
+          toast.success("📱 모바일 관리자 Quick-Edit 조작창이 열렸습니다!");
+        }}
+      />
+
+      {/* ⌨️ 최신 트렌드 Cmd+K 커맨드 팔레트 */}
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onSelectNews={(n) => {
+          setSelectedNews(n);
+          setSelectedNewsCategory(null);
+          setCurrentPage("isol-post");
+        }}
+        onSelectCategory={(cat) => {
+          setSelectedNews(null);
+          setSelectedNewsCategory(cat);
+          setCurrentPage("isol-post");
+        }}
+        onPageChange={(page) => {
+          setSelectedNews(null);
+          setSelectedWebtoon(null);
+          setCurrentPage(page as any);
+        }}
+        onToggleSimulatedMobileView={() => setIsSimulatedMobileView(!isSimulatedMobileView)}
+        isSimulatedMobileView={isSimulatedMobileView}
+        onOpen10Improvements={() => setIs10ImprovementsModalOpen(true)}
+      />
+
+      {/* 📱 모바일 최적화 기사 바텀시트 리더 */}
+      <ArticleBottomSheetModal
+        article={bottomSheetArticle}
+        isOpen={!!bottomSheetArticle}
+        onClose={() => setBottomSheetArticle(null)}
+        onReadFull={(art) => {
+          setBottomSheetArticle(null);
+          setSelectedNews(art);
+          setSelectedNewsCategory(null);
+          setCurrentPage("isol-post");
+        }}
+      />
     </div>
   </div>
 </div>
