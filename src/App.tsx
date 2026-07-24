@@ -13206,6 +13206,7 @@ const Navbar = ({
   onSearchClick,
   onToggleSimulatedMobileView,
   isSimulatedMobileView = false,
+  onOpen10Improvements,
 }: any) => {
   const [localMobileMenuOpen, setLocalMobileMenuOpen] = React.useState(false);
   const isMobileMenuOpen = parentMobileMenuOpen !== undefined ? parentMobileMenuOpen : localMobileMenuOpen;
@@ -13476,6 +13477,19 @@ const Navbar = ({
             <span>로그인</span>
           </button>
         )}
+
+        {/* 4. 10대 UI/UX 보완점 리포트 모달 */}
+        <button
+          onClick={() => {
+            playHapticClick(800, 0.05);
+            onOpen10Improvements?.();
+          }}
+          className="py-2 px-2.5 bg-gradient-to-r from-amber-500/15 to-red-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 rounded-xl flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs text-[11px] font-extrabold shrink-0"
+          title="10대 UI/UX 보완점 리포트"
+        >
+          <Sparkles size={12} className="text-amber-500 animate-pulse shrink-0" />
+          <span>10대 보완점</span>
+        </button>
       </div>
 
       {/* 
@@ -13555,7 +13569,7 @@ const Navbar = ({
       */}
       <div className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:flex", "bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-200/50 dark:border-zinc-850/50 select-none font-sans py-2.5 px-4 md:px-8 justify-between items-center text-xs text-zinc-500")}>
         {/* Left Side: Premium Interactive Layout & Trend Controller HUD */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px] uppercase tracking-wider">
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -13563,8 +13577,30 @@ const Navbar = ({
             </span>
             🖥️ Laptop Web Optimized
           </div>
-          
 
+          <button
+            onClick={() => {
+              playHapticClick(800, 0.05);
+              onToggleSimulatedMobileView?.();
+            }}
+            className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 hover:from-blue-500/20 hover:to-indigo-500/20 border border-blue-500/30 text-blue-600 dark:text-blue-400 rounded-full text-[10px] font-black cursor-pointer transition-all active:scale-95 shadow-xs"
+            title="1:1 모바일 최적화 화면으로 전환"
+          >
+            <Smartphone size={12} className="shrink-0" />
+            <span>📱 모바일 뷰 전환</span>
+          </button>
+
+          <button
+            onClick={() => {
+              playHapticClick(800, 0.05);
+              onOpen10Improvements?.();
+            }}
+            className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-500/10 to-red-500/10 hover:from-amber-500/20 hover:to-red-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 rounded-full text-[10px] font-black cursor-pointer transition-all active:scale-95 shadow-xs"
+            title="10대 UI/UX 보완점 리포트 열기"
+          >
+            <Sparkles size={12} className="text-amber-500 animate-pulse shrink-0" />
+            <span>✨ 10대 UI/UX 보완점 리포트 (10/10)</span>
+          </button>
         </div>
 
         {/* Right Side: High-Visibility Row 0 Primary Actions (로그아웃, 데스크, 기사제보) */}
@@ -14561,6 +14597,7 @@ const IsolPost = ({
   setCitizenNews,
   onToggleSimulatedMobileView,
   isSimulatedMobileView,
+  onOpen10Improvements,
 }: any) => {
   const [activeCategory, setActiveCategory] = React.useState("전체기사");
   const [workshopSubCategory, setWorkshopSubCategory] = React.useState("전체");
@@ -15205,6 +15242,7 @@ const IsolPost = ({
         currentPage={activeCategory}
         isSimulatedMobileView={isSimulatedMobileView}
         onToggleSimulatedMobileView={onToggleSimulatedMobileView}
+        onOpen10Improvements={onOpen10Improvements}
         onAdminClick={onPageChange ? () => onPageChange("admin") : undefined}
         onProfessionalRegClick={onProfessionalRegClick}
         onManualClick={onManualClick}
@@ -29036,6 +29074,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           onThemeToggle={() => setTheme(theme === "dark" ? "light" : "dark")}
           isSimulatedMobileView={isSimulatedMobileView}
           onToggleSimulatedMobileView={() => setIsSimulatedMobileView(!isSimulatedMobileView)}
+          onOpen10Improvements={() => setIs10ImprovementsModalOpen(true)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           currentPage={currentPage}
@@ -29233,6 +29272,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 setCitizenNews={setCitizenNews}
                 onToggleSimulatedMobileView={() => setIsSimulatedMobileView(!isSimulatedMobileView)}
                 isSimulatedMobileView={isSimulatedMobileView}
+                onOpen10Improvements={() => setIs10ImprovementsModalOpen(true)}
               />
             </motion.div>
           )}
