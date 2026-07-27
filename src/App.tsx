@@ -113,6 +113,7 @@ import {
   List,
   CheckSquare,
   Smartphone,
+  Laptop,
   Monitor,
   Award,
   Printer,
@@ -13477,19 +13478,6 @@ const Navbar = ({
             <span>로그인</span>
           </button>
         )}
-
-        {/* 4. 10대 UI/UX 보완점 리포트 모달 */}
-        <button
-          onClick={() => {
-            playHapticClick(800, 0.05);
-            onOpen10Improvements?.();
-          }}
-          className="py-2 px-2.5 bg-gradient-to-r from-amber-500/15 to-red-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 rounded-xl flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs text-[11px] font-extrabold shrink-0"
-          title="10대 UI/UX 보완점 리포트"
-        >
-          <Sparkles size={12} className="text-amber-500 animate-pulse shrink-0" />
-          <span>10대 보완점</span>
-        </button>
       </div>
 
       {/* 
@@ -13588,18 +13576,6 @@ const Navbar = ({
           >
             <Smartphone size={12} className="shrink-0" />
             <span>📱 모바일 뷰 전환</span>
-          </button>
-
-          <button
-            onClick={() => {
-              playHapticClick(800, 0.05);
-              onOpen10Improvements?.();
-            }}
-            className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-500/10 to-red-500/10 hover:from-amber-500/20 hover:to-red-500/20 border border-amber-500/30 text-amber-600 dark:text-amber-400 rounded-full text-[10px] font-black cursor-pointer transition-all active:scale-95 shadow-xs"
-            title="10대 UI/UX 보완점 리포트 열기"
-          >
-            <Sparkles size={12} className="text-amber-500 animate-pulse shrink-0" />
-            <span>✨ 10대 UI/UX 보완점 리포트 (10/10)</span>
           </button>
         </div>
 
@@ -14817,7 +14793,9 @@ const IsolPost = ({
 
   React.useEffect(() => {
     const handleResize = () => {
-      setIsMobile(true);
+      if (typeof window !== "undefined") {
+        setIsMobile(window.innerWidth < 1024);
+      }
     };
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -17425,49 +17403,69 @@ const IsolPost = ({
       </main>
 
       {/* 📱 Mobile Bottom Navigation Bar (Sticky, only visible on mobile `lg:hidden`) */}
-      <div className={cn(isSimulatedMobileView ? "fixed" : "lg:hidden fixed", "bottom-0 left-0 right-0 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200/50 dark:border-zinc-800/40 py-2.5 px-4 flex items-center justify-around z-[100] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] pb-[max(12px,env(safe-area-inset-bottom))]" )}>
+      <div className={cn(isSimulatedMobileView ? "fixed" : "lg:hidden fixed", "bottom-0 left-0 right-0 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200/50 dark:border-zinc-800/40 py-2 px-2 flex items-center justify-around z-[100] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] pb-[max(12px,env(safe-area-inset-bottom))]" )}>
         <button
           onClick={() => {
             if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+            if (activeCategory === "이솔공방") setActiveCategory("전체기사");
             setMobileTab("feed");
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           className={cn(
-            "flex flex-col items-center gap-1 cursor-pointer transition-all duration-200",
-            mobileTab === "feed" ? "text-red-655 scale-105 font-black" : "text-zinc-400 hover:text-zinc-600"
+            "flex flex-col items-center gap-1 cursor-pointer transition-all duration-200 px-2 py-1 rounded-xl",
+            mobileTab === "feed" && activeCategory !== "이솔공방" ? "text-red-655 scale-105 font-black bg-red-50/60 dark:bg-red-950/20" : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
           )}
         >
-          <Newspaper size={18} className={cn("transition-transform duration-200", mobileTab === "feed" ? "stroke-[2.5]" : "stroke-2")} />
+          <Newspaper size={18} className={cn("transition-transform duration-200", mobileTab === "feed" && activeCategory !== "이솔공방" ? "stroke-[2.5]" : "stroke-2")} />
           <span className="text-[10px] font-bold">뉴스피드</span>
         </button>
 
         <button
           onClick={() => {
             if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+            if (activeCategory === "이솔공방") setActiveCategory("전체기사");
             setMobileTab("hotclicks");
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           className={cn(
-            "flex flex-col items-center gap-1 cursor-pointer transition-all duration-200",
-            mobileTab === "hotclicks" ? "text-red-655 scale-105 font-black" : "text-zinc-400 hover:text-zinc-600"
+            "flex flex-col items-center gap-1 cursor-pointer transition-all duration-200 px-2 py-1 rounded-xl",
+            mobileTab === "hotclicks" && activeCategory !== "이솔공방" ? "text-red-655 scale-105 font-black bg-red-50/60 dark:bg-red-950/20" : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
           )}
         >
-          <TrendingUp size={18} className={cn("transition-transform duration-200", mobileTab === "hotclicks" ? "stroke-[2.5]" : "stroke-2")} />
+          <TrendingUp size={18} className={cn("transition-transform duration-200", mobileTab === "hotclicks" && activeCategory !== "이솔공방" ? "stroke-[2.5]" : "stroke-2")} />
           <span className="text-[10px] font-bold">실시간인기</span>
         </button>
 
         <button
           onClick={() => {
             if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+            setActiveCategory("이솔공방");
+            setMobileTab("feed");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          className={cn(
+            "flex flex-col items-center gap-1 cursor-pointer transition-all duration-200 px-2 py-1 rounded-xl relative",
+            activeCategory === "이솔공방" ? "text-pink-600 dark:text-pink-400 scale-105 font-black bg-pink-50/60 dark:bg-pink-950/20" : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+          )}
+        >
+          <Palette size={18} className={cn("transition-transform duration-200", activeCategory === "이솔공방" ? "stroke-[2.5]" : "stroke-2")} />
+          <span className="text-[10px] font-bold">이솔공방</span>
+          <span className="absolute top-1 right-1.5 w-1.5 h-1.5 rounded-full bg-pink-500 animate-pulse" />
+        </button>
+
+        <button
+          onClick={() => {
+            if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+            if (activeCategory === "이솔공방") setActiveCategory("전체기사");
             setMobileTab("community");
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           className={cn(
-            "flex flex-col items-center gap-1 cursor-pointer transition-all duration-200",
-            mobileTab === "community" ? "text-red-655 scale-105 font-black" : "text-zinc-400 hover:text-zinc-600"
+            "flex flex-col items-center gap-1 cursor-pointer transition-all duration-200 px-2 py-1 rounded-xl",
+            mobileTab === "community" && activeCategory !== "이솔공방" ? "text-red-655 scale-105 font-black bg-red-50/60 dark:bg-red-950/20" : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
           )}
         >
-          <Users size={18} className={cn("transition-transform duration-200", mobileTab === "community" ? "text-red-655" : "")} />
+          <Users size={18} className={cn("transition-transform duration-200", mobileTab === "community" && activeCategory !== "이솔공방" ? "text-red-655" : "")} />
           <span className="text-[10px] font-bold">시민소모임</span>
         </button>
 
@@ -17476,7 +17474,7 @@ const IsolPost = ({
             if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
             setIsMobileMenuOpen(true);
           }}
-          className="flex flex-col items-center gap-1 cursor-pointer text-zinc-400 hover:text-zinc-600"
+          className="flex flex-col items-center gap-1 cursor-pointer text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 px-2 py-1 rounded-xl"
         >
           <Menu size={18} className="stroke-2" />
           <span className="text-[10px] font-bold">전체메뉴</span>
@@ -30603,24 +30601,6 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 </span>
               </button>
 
-              {/* 10대 UI/UX 보완점 리스트 모달 버튼 */}
-              <button
-                onClick={() => {
-                  playHapticClick(800, 0.05);
-                  setIsFabMenuOpen(false);
-                  setIs10ImprovementsModalOpen(true);
-                }}
-                className="flex items-center justify-between p-2 rounded-xl text-xs font-bold border bg-gradient-to-r from-red-500/10 to-amber-500/10 border-red-500/30 text-red-600 dark:text-red-400 hover:from-red-500/20 hover:to-amber-500/20 transition-all cursor-pointer"
-              >
-                <div className="flex items-center gap-1.5">
-                  <Sparkles size={12} className="text-amber-500 animate-pulse" />
-                  <span>10대 UI/UX 보완점 적용현황</span>
-                </div>
-                <span className="text-[9px] bg-red-600 text-white font-mono font-black px-1.5 py-0.2 rounded-full">
-                  10/10
-                </span>
-              </button>
-
               {/* Cmd+K 커맨드 팔레트 버튼 */}
               <button
                 onClick={() => {
@@ -30868,7 +30848,6 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
         }}
         onOpenMobileAdminPad={() => {
           setIs10ImprovementsModalOpen(false);
-          setIsAdmin(true);
           setIsAdminView(true);
           toast.success("📱 모바일 관리자 Quick-Edit 조작창이 열렸습니다!");
         }}

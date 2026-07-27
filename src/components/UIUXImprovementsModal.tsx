@@ -12,7 +12,6 @@ import {
   Moon,
   TrendingUp,
   Sliders,
-  SlidersHorizontal,
   ChevronRight,
   Layers,
   Edit3,
@@ -21,7 +20,13 @@ import {
   Check,
   ListOrdered,
   Search,
-  Filter
+  BookOpen,
+  Building2,
+  Share2,
+  Eye,
+  BarChart3,
+  FileText,
+  SlidersHorizontal
 } from "lucide-react";
 
 interface UIUXImprovementsModalProps {
@@ -43,14 +48,15 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
   onOpenMobileArticleWriter,
   onOpenMobileAdminPad,
 }) => {
-  const [activeTab, setActiveTab] = useState<"top10" | "mobile" | "web" | "admin" | "trend" | "list100">("top10");
+  const [activeTab, setActiveTab] = useState<"top10" | "menu10" | "list100" | "admin">("top10");
   const [selectedItem, setSelectedItem] = useState<number | null>(null);
-  const [checklistFilterCategory, setChecklistFilterCategory] = useState<"all" | "mobile" | "web" | "admin" | "trend">("all");
+  const [selectedMenuIndex, setSelectedMenuIndex] = useState<number>(0);
+  const [checklistFilterCategory, setChecklistFilterCategory] = useState<string>("all");
   const [checklistSearch, setChecklistSearch] = useState("");
 
   if (!isOpen) return null;
 
-  // 10대 핵심 보완점
+  // 1. 10대 핵심 종합 보완점
   const top10Improvements = [
     {
       id: 1,
@@ -191,12 +197,12 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
       id: 10,
       category: "trend",
       categoryName: "⚡ 최신 트렌드",
-      title: "관성 스크롤 태그 & UI/UX 100가지 보완 종합 관리 모달",
-      desc: "모든 보완 항목 100가지를 사용자가 분야별로 한눈에 확인하고 모바일/웹 최적화 모드를 직접 체감할 수 있는 센터.",
+      title: "메뉴별 10대 보완점 & UI/UX 100가지 보완 종합 센터",
+      desc: "10개 메뉴별 10가지 보완점(총 100개)을 사용자가 분야별로 한눈에 확인하고 모바일/웹 최적화 모드를 직접 체감하는 센터.",
       details: [
-        "100가지 항목 분야별 필터링 검색 시스템",
-        "모바일 스크린 관성 터치 카테고리 태그 칩",
-        "상단 네비게이션 배지 및 하단 FAB 즉시 접속"
+        "10개 메뉴별 10가지 세부 보완점 데이터베이스 완비",
+        "100가지 전체 체크리스트 실시간 검색 및 필터링",
+        "모바일 / 노트북 뷰포트 인스턴트 전환 지원"
       ],
       icon: Sparkles,
       status: "완료",
@@ -204,131 +210,208 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
     }
   ];
 
-  // 100가지 보완점 종합 리스트 생성 (4개 분야 x 25개 = 100개)
-  const mobileList = [
-    "한 손 조작 영역(Thumb Zone) 최적화 바텀 내비게이션",
-    "Swipe-to-Dismiss 모바일 드로어 닫기 제스처",
-    "터치 터치 타겟 48px 이상 크기 확보",
-    "모바일 카메라 즉시 연동 사진 첨부 스튜디오",
-    "Web Speech API 기반 모바일 음성 취재/작성 기능",
-    "풀 스크린 모바일 Bottom Sheet 모달 레이아웃",
-    "관성 가로 스크롤 태그 카테고리 바",
-    "OLED Pure Black 모바일 배터리 절약 모드",
-    "모바일 진동 API (Navigator.vibrate) 햅틱 반응",
-    "모바일 화면 대칭 마진 및 여백 보정",
-    "한 손 터치용 다이렉트 카테고리 필터링",
-    "모바일 전용 간편 3초 AI 요약 아코디언",
-    "기사 본문 모바일 폰트 스케일러 (A+ / A-)",
-    "모바일 가로 회전(Landscape) 대응 레이아웃",
-    "Pull-to-Refresh 스타일 모바일 새로고침",
-    "모바일 전용 플로팅 Quick-Edit 패널",
-    "카톡/라인 1-Tap 간편 모바일 기사 공유",
-    "모바일 네트워크 저용량 모드 패스트 로딩",
-    "모바일 브라우저 주소창 스크롤 연동 자동 숨김",
-    "터치 시 Ripple 물결 인디케이터 반응",
-    "모바일 한 손 엄지 전용 뒤로가기 Floating버튼",
-    "모바일 기사 읽기 진행률(Reading Progress) 상단 바",
-    "모바일 북마크 & 나중에 읽기 1-Tap 저장",
-    "모바일 다크모드 가독성 고대비 폰트 컬러 매핑",
-    "모바일 전용 홈 화면 PWA 앱 설치 프로모트"
+  // 2. 10개 메뉴별 10가지 보완점 구조 (10 메뉴 x 10 항목 = 100개)
+  const menuCategories = [
+    {
+      id: "m_main",
+      name: "📱 모바일 메인 뷰",
+      icon: Smartphone,
+      color: "from-blue-500 to-indigo-600",
+      items: [
+        "한 손 엄지 최적화 48px+ 하단 고정 Sticky Bottom Navigation Bar",
+        "터치 제스처 슬라이드업 모바일 Bottom Sheet 드로어 모달",
+        "관성 가로 스크롤 카테고리 태그 칩 터치 스와이퍼",
+        "Pull-to-Refresh 상단 끌어당겨 새로고침 인터랙션 피드백",
+        "모바일 3초 AI 핵심 요약 (3-Line Summary) 카드 접기/펼치기",
+        "한 손 조작 전용 모바일 퀵 에디트 & 플로팅 (+) FAB 버튼",
+        "모바일 배터리 절약 전용 OLED Pure Black 다크 테마",
+        "상단 스마트 스크롤 연동 주소창 및 헤더 자동 숨김",
+        "카카오톡/라인 1-Tap 터치 모바일 기사 간편 공유 시트",
+        "모바일 PWA 홈 화면 추가 프로모트 안내 팝업"
+      ]
+    },
+    {
+      id: "w_desktop",
+      name: "💻 웹/노트북 대화면",
+      icon: Laptop,
+      color: "from-indigo-500 to-purple-600",
+      items: [
+        "대화면 비대칭 Bento Grid 속보 및 주요 기사 카드 배치",
+        "1280px+ Dual-Pane Split Reader (목록과 본문 동시 열람)",
+        "Ctrl + K / Cmd + K 키보드 핫키 커맨드 팔레트 검색",
+        "우측 고정 실시간 인기 검색어 TOP 10 & 핫 트렌드 위젯",
+        "기사 카드 마우스 호버 입체 3D Lift & 마이크로 글로우 효과",
+        "키보드 방향키(Arrow Key) 기사 즉시 탐색 및 Esc 창닫기",
+        "온에어 팟캐스트 / 미디어 실시간 슬라이더 플로팅 플레이어",
+        "대화면 가독성 최적화 max-w-7xl 중앙 정렬 및 여백 밸런스",
+        "기사 본문 이미지 Lightbox 확장 및 HD 레티나 화질 제공",
+        "인쇄 및 PDF 다운로드 전용 웹 클린 스티키 레이아웃"
+      ]
+    },
+    {
+      id: "a_reader",
+      name: "📰 기사 본문 & 리더",
+      icon: BookOpen,
+      color: "from-emerald-500 to-teal-600",
+      items: [
+        "AI Web Speech API 기반 실시간 TTS 오디오 기사 낭독",
+        "상단 기사 독서 진행률 (Reading Progress) 프로그래스 바",
+        "가독성 폰트 스케일러 (A+ / A- 5단계 글자 크기 조절)",
+        "핵심 주제 키워드 자동 하이라이트 & 스마트 툴팁",
+        "시력보호 야간독서 눈부심 방지 오프라이트 세피아/다크 모드",
+        "예상 독서 잔여 시간(Reading Time) 실시간 자동 계산",
+        "관련 기사 타임라인 AI 추천 및 연관 뉴스 릴레이",
+        "기사 스크랩 & 나중에 읽기 1-Tap 개인 북마크 저장",
+        "언론사 공식 가입 및 출처 저작권 신뢰성 검증 배지",
+        "기사 본문 내 인포그래픽 및 데이터 차트 인터랙티브 뷰어"
+      ]
+    },
+    {
+      id: "m_writer",
+      name: "✍️ 모바일 기사 작성기",
+      icon: Edit3,
+      color: "from-amber-500 to-orange-600",
+      items: [
+        "모바일 핸드폰 전용 한 손 기사 작성 퀵 스튜디오",
+        "기사 카드 및 읽기 화면 상단 1-Tap Quick-Edit 패널",
+        "AI 헤드라인 3가지 자동 추출 및 제목 교정 엔진",
+        "모바일 카메라 직접 촬영 및 사진 자동 압축 업로드",
+        "취재 기자 현장 음성 취재 메모 자동 텍스트 변환 (STT)",
+        "1-Tap 기사 승인 / 보류 / 임시저장 상태 즉시 토글",
+        "기사 엠바고(발행 예약) 및 중요도(Primary/Breaking) 슬라이더",
+        "모바일 기사 작성 중 10초 주기 실시간 Auto Save 복구",
+        "오탈자 및 문맥 AI Compliance 검수 자동 피드백",
+        "현장 사진 워터마크 자동 삽입 및 기자 서명 자동 바인딩"
+      ]
+    },
+    {
+      id: "m_registry",
+      name: "🏛️ 언론사 제휴/등록",
+      icon: Building2,
+      color: "from-sky-500 to-blue-600",
+      items: [
+        "사업자 등록증 / 신문사업 등록증 AI OCR 1-Click 자동입력",
+        "매체 등록 전용 4단계 반응형 위저드 (Wizard) 가이드",
+        "공식 도메인 HTTPS 보안 인증 및 DNS MX 레코드 자동 조회",
+        "실시간 승인 심사 타임라인 & 단계별 진행 현황 프로그래스",
+        "언론 설립일, 상주기자 수 및 발행 주기 자동 자격 스코어링",
+        "등록 완료 시 공식 제휴 및 가입 인증서 팝업 발행",
+        "시민기자 vs 전문 언론사 혜택 비교 매트릭스 테이블",
+        "전국 50+ 연동 매체망 실시간 트래픽 상태 모니터링 로그",
+        "매체별 고유 RSS / API 연동 키 자동 발급 시스템",
+        "제휴 신청서 임시저장 및 모바일 바텀시트 빠른 수정"
+      ]
+    },
+    {
+      id: "ai_search",
+      name: "🔍 AI 검색 & 커맨드",
+      icon: Command,
+      color: "from-purple-500 to-pink-600",
+      items: [
+        "Ctrl + K / Cmd + K 단축키 글로벌 커맨드 팔레트",
+        "초성 검색 및 초고속 인스턴트 연관 키워드 자동완성",
+        "최근 검색어 자동 저장 및 1-Tap 삭제 관리",
+        "카테고리별 / 언론사별 / 날짜별 고밀도 스마트 필터",
+        "AI 기반 자연어 맥락 탐색 (\"최근 경제 이슈 요약해줘\")",
+        "키보드 Arrow Key 및 Enter 키 기반 빠른 항목 선택",
+        "검색 결과 트렌드 히트맵 & 키워드 구름 태그 제공",
+        "팩트체크 완료 기사만 골라보기 필터링 스위치",
+        "모바일 음성 검색 (STT) 마이크 즉시 연동",
+        "검색어 입력 시 200ms 디바운스 실시간 결과 프리뷰"
+      ]
+    },
+    {
+      id: "live_trend",
+      name: "⚡ 실시간 트렌드/온에어",
+      icon: Zap,
+      color: "from-rose-500 to-red-600",
+      items: [
+        "1초 단위 실시간 트래픽 집계 핫 키워드 TOP 10 랭킹",
+        "긴급 속보 실시간 무한 롤링 티커 배너",
+        "라이브 팟캐스트 / 온에어 미디어 1-Click 오디오 플레이어",
+        "시민 여론조사 팩트체크 실시간 이모지 투표 보드",
+        "트렌드 키워드 변동 추이 실시간 상승/하강 인디케이터",
+        "이슈별 관련 속보 묶어보기 클러스터링 카드",
+        "실시간 뉴스 알림 구독 1-Tap 팝업 신청",
+        "카드별 실시간 조회수 & 댓글 수 모니터링 스파크라인",
+        "라이브 방송 제보 영상 미디어 플레이어",
+        "트렌드 핫이슈 SNS 인스타그램/X 스타일 공유 모듈"
+      ]
+    },
+    {
+      id: "fact_check",
+      name: "🛡️ AI 팩트체크/신고",
+      icon: ShieldCheck,
+      color: "from-cyan-500 to-blue-600",
+      items: [
+        "AI 딥러닝 문장 허위성 및 가짜뉴스 가능성 지수 표시",
+        "익명성 보장 100% 암호화 시청자 기사 제보 센터",
+        "팩트체크 원본 근거 문헌 및 언론사 보도 비교 매트릭스",
+        "허위 사실 유포 기사 1-Tap 시정 요청 및 댓글 블라인드",
+        "AI 팩트체커 검증 완료 인증 배지 및 신뢰도 마크",
+        "제보 첨부파일 보안 스캔 및 메타데이터 자동 제거",
+        "언론 윤리 강령 준수 여부 자동 스코어링",
+        "팩트체크 요청 결과 실시간 카카오톡 알림톡 연동",
+        "이슈별 찬반 전문가 의견 서머리 탭",
+        "시민 참전 팩트체크 토론장 및 투표 시스템"
+      ]
+    },
+    {
+      id: "theme_access",
+      name: "🌙 테마 & 가독성",
+      icon: Moon,
+      color: "from-violet-500 to-indigo-600",
+      items: [
+        "System / Light / Dark / OLED Pure Black 4단계 테마",
+        "WCAG AA 표준 4.5:1 이상 고대비 텍스트 서식",
+        "야간 독서용 난반사 방지 오프라이트 웜 세피아 필터",
+        "OS 단말기 시스템 테마 자동 동기화 센서",
+        "색맹/약시 유저를 위한 색상 반전 및 명암 대비 강화",
+        "화면 확대 시 깨짐 없는 SVG 전용 백터 아이콘",
+        "애니메이션 최소화(Reduce Motion) 접근성 옵션",
+        "가독성 특화 Plus Jakarta Sans & 본문 서체 매핑",
+        "테마 변경 시 300ms 부드러운 컬러 크로스페이드",
+        "테마 상태 LocalStorage 지속 보존 및 즉시 적용"
+      ]
+    },
+    {
+      id: "admin_desk",
+      name: "📊 관리자 데스크",
+      icon: BarChart3,
+      color: "from-emerald-600 to-green-700",
+      items: [
+        "실시간 매체 트래픽 및 기사 읽기 체류시간 분석 차트",
+        "모바일/웹 접속 기기 비율 실시간 원형 그래프",
+        "카테고리별 기사 생산량 및 승인 대기 목록 그리드",
+        "기자별 단독 기사 랭킹 & 기여도 스코어보드",
+        "긴급 푸시 알림 타겟팅 발송 및 수신율 리포트",
+        "부적절 댓글 자동 AI 필터링 및 1-Tap 블라인드",
+        "기사 수정 이력(Revision History) 타임라인 추적",
+        "광고 및 제휴 배너 클릭률(CTR) 모니터링 패널",
+        "매체 서버 CPU / Memory 상태 실시간 시스템 헤리티지",
+        "CSV / Excel 지원 뉴스 통계 데이터 1-Click 내보내기"
+      ]
+    }
   ];
 
-  const webList = [
-    "노트북 대화면 비대칭 Bento Grid 레이아웃",
-    "1280px 이상 가로 Split-Pane 기사 이중 뷰어",
-    "Ctrl + K / Cmd + K 키보드 스마트 커맨드 팔레트",
-    "우측 고정 실시간 인기 검색어 & 핫 트렌드 위젯",
-    "마우스 호버 카드 입체 3D Lift 효과",
-    "멀티 모니터 가로 폭 대응 max-w-7xl 중앙 정렬",
-    "데스크톱 멀티 탭 기사 관리 및 세션 유지",
-    "노트북 키보드 Arrow Key 기사 탐색 지원",
-    "상단 롤링 뉴스 티커 한눈에 보기 패널",
-    "웹 브라우저 마우스 우클릭 팩트체크 컨텍스트 메뉴",
-    "기사 본문 이미지 줌 및 라이트박스 (Lightbox) 크기 확대",
-    "기사 작성 웹 마크다운 레디 텍스트 에디터",
-    "실시간 미디어 온에어 위젯 슬라이더",
-    "웹 화면 전용 고해상도 그래픽 차트 데이터 모듈",
-    "멀티 칼럼 속보 카드 그리드 응답성",
-    "웹 관리자 대시보드 통계 차트 보드",
-    "데스크톱 드래그 앤 드롭 이미지 업로드",
-    "노트북 가로 화면 패널 가분성 조절 핸들",
-    "키보드 Esc 키 즉시 창 닫기 핸들링",
-    "다채로운 카테고리 서브 네비게이션 드롭다운",
-    "기사 내 키워드 하이라이트 툴팁 호버",
-    "웹 브라우저 사이드바 토글 및 고정 모드",
-    "노트북 트랙패드 두 손가락 제스처 스와이프",
-    "대화면 시력 보호 라이트/다크/세피아 3컬러 모드",
-    "웹 전용 인쇄 및 PDF 저장 레이아웃 최적화"
-  ];
-
-  const adminList = [
-    "모바일 기사 작성 핸드폰 1-Tap 스마트 스튜디오",
-    "핸드폰 화면 전용 모바일 1-Tap 기사 Quick-Edit 패널",
-    "AI 자동 헤드라인 추출 및 문장 교정 엔진",
-    "기사 엠바고 및 예약 발행 시간 설정 모듈",
-    "모바일 카메라 직접 사진 촬영 및 캡션 자동 입력",
-    "1-Tap 기사 승인 / 보류 / 임시저장 상태 변경",
-    "기사 카테고리 & 태그 원터치 모바일 드롭다운",
-    "취재 기자 현장 음성 메모 자동 텍스트 변환(STT)",
-    "모바일 관리자 뉴스 팩트체크 검증 승인 도구",
-    "모바일 현장 취재 기사 GPS 위치 태깅",
-    "실시간 조회수 및 모바일 독자 반응 분석 지표",
-    "기사 수정 이력(Revision History) 모바일 모니터링",
-    "모바일 썸네일 이미지 자동 비율 크롭 도구",
-    "댓글 관리 및 모바일 부적절 댓글 1-Tap 블라인드",
-    "속보(Breaking News) 모바일 1-Tap 긴급 푸시 알림",
-    "기자별 단독/특집 라벨링 Quick 선택기",
-    "모바일 음성 기사 낭독(TTS) 미리듣기 테스트",
-    "모바일 단독 기사 핀(Pin) 상단 고정 제어",
-    "관련 기사 링크 추천 자동 매칭 시스템",
-    "저작권 및 인용 출처 자동 하단 생성기",
-    "기사 작성 중 모바일 자동 임시 저장(Auto Save)",
-    "모바일 현장 취재 사진 워터마크 자동 삽입",
-    "관리자 전용 비공개 모바일 미리보기 URL 생성",
-    "기사 별 중요도(Primary/Secondary) 슬라이더 조절",
-    "모바일 다중 기자 공동 작성 권한 부여"
-  ];
-
-  const trendList = [
-    "3초 AI 핵심 요약 (3-Line Executive Summary)",
-    "Web Audio API 기반 합성 햅틱 클라우드 사운드",
-    "유리질감 글래스모피즘(Glassmorphism) 카드 디자인",
-    "framer-motion spring physics 미세 애니메이션",
-    "WCAG AA 준수 4.5:1 이상 고대비 텍스트 서식",
-    "Dynamic Haptic Vibration 피드백 체계",
-    "네온 오라 아우라(Glow Accent) 하이라이트",
-    "스마트 Web Speech API AI TTS 음성 플레이어",
-    "모바일/웹 뷰포트 인스턴트 시뮬레이션 시스템",
-    "Bento Box 가변 그리드 모듈 구조",
-    "아이콘 모션 반응형 200ms 터치 피드백",
-    "최신 Neo-Brutalism + Clean Minimal 퓨전 UI",
-    "단말기 시스템 테마 자동 동기화 센서",
-    "인스턴트 Toast 메시지 유저 피드백 통지",
-    "Skeleton Loading 방지 가짜 데이터 펄스 효과",
-    "마이크로 그래디언트 테두리(Border Accent)",
-    "텍스트 가독성 최적화 Plus Jakarta Sans 폰트",
-    "이미지 레티나 디스플레이 고해상도 매핑",
-    "스마트 검색 자동 완성 카테고리 태그",
-    "콘텐츠 독서 잔여 시간(Reading Time) 계산기",
-    "다크모드 오프라이트 순수 딥 블랙 아키텍처",
-    "네이티브 모바일 앱 스타일 Smooth Curve 모서리",
-    "인터랙티브 투표 및 실시간 반응 이모지 패널",
-    "AI 에이전트 다이얼로그 챗봇 플로팅 도구",
-    "전역 상태 보존 UI/UX 100가지 보완 센터"
-  ];
-
-  const all100Items = [
-    ...mobileList.map((title, i) => ({ id: `m-${i}`, cat: "mobile", catName: "📱 모바일", title })),
-    ...webList.map((title, i) => ({ id: `w-${i}`, cat: "web", catName: "💻 노트북/웹", title })),
-    ...adminList.map((title, i) => ({ id: `a-${i}`, cat: "admin", catName: "✍️ 기사작성/관리자", title })),
-    ...trendList.map((title, i) => ({ id: `t-${i}`, cat: "trend", catName: "⚡ 최신 트렌드", title }))
-  ];
+  // 전체 100가지 항목 플랫 배열 (검색 및 전체 리스트용)
+  const all100Items = menuCategories.flatMap((menu, mIdx) =>
+    menu.items.map((title, iIdx) => ({
+      id: `${menu.id}-${iIdx}`,
+      menuId: menu.id,
+      menuName: menu.name,
+      index: mIdx * 10 + iIdx + 1,
+      title
+    }))
+  );
 
   const filtered100Items = all100Items.filter((item) => {
-    const matchCat = checklistFilterCategory === "all" || item.cat === checklistFilterCategory;
+    const matchCat = checklistFilterCategory === "all" || item.menuId === checklistFilterCategory;
     const matchSearch = item.title.toLowerCase().includes(checklistSearch.toLowerCase());
     return matchCat && matchSearch;
   });
+
+  const selectedMenuData = menuCategories[selectedMenuIndex] || menuCategories[0];
 
   return (
     <AnimatePresence>
@@ -341,12 +424,12 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
           className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] sm:rounded-[2.5rem] max-w-5xl w-full max-h-[92vh] overflow-hidden shadow-2xl flex flex-col text-left"
         >
           {/* Header */}
-          <div className="p-5 sm:p-6 md:p-8 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-start bg-zinc-50/50 dark:bg-zinc-900/30">
+          <div className="p-5 sm:p-6 md:p-7 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-start bg-zinc-50/50 dark:bg-zinc-900/30">
             <div>
-              <div className="flex flex-wrap items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 <span className="bg-amber-500/10 text-amber-500 border border-amber-500/20 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
                   <Sparkles size={12} />
-                  2026 UI/UX 100가지 보완 완성
+                  2026 메뉴별 10대 보완점 (총 100가지) 적용 리포트
                 </span>
                 <span className="text-[10px] font-mono text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full font-bold flex items-center gap-1">
                   <CheckCircle2 size={12} />
@@ -357,7 +440,7 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
                 모바일 & 노트북/웹 최적화 UI/UX 보완 센터
               </h2>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-1">
-                모바일 한 손 최적화, 웹 대화면 Bento Grid, 모바일 기사 작성/관리자 전용 UX 및 최신 트렌드가 모두 적용되었습니다.
+                10개 주요 메뉴별로 추출된 10가지 세부 보완점(총 100개)과 최신 트렌드 UI/UX 요소가 완벽 적용되었습니다.
               </p>
             </div>
             <button
@@ -369,10 +452,10 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
           </div>
 
           {/* Top Banner: Real-time Viewport & Quick Actions */}
-          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-5 sm:px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-bold shadow-inner">
+          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-5 sm:px-6 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs font-bold shadow-inner">
             <div className="flex items-center gap-2">
-              <Layers size={16} />
-              <span>현재 화면 뷰포트: <strong className="underline underline-offset-2">{isSimulatedMobileView ? "📱 모바일 최적화 시뮬레이터 모드" : "💻 노트북/웹 데스크톱 대화면 모드"}</strong></span>
+              <Layers size={15} />
+              <span>현재 뷰포트 상태: <strong className="underline underline-offset-2">{isSimulatedMobileView ? "📱 모바일 최적화 시뮬레이터 모드" : "💻 노트북/웹 데스크톱 대화면 모드"}</strong></span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -403,7 +486,8 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
           <div className="flex px-4 sm:px-6 pt-3 border-b border-zinc-100 dark:border-zinc-800 gap-1.5 overflow-x-auto bg-zinc-50/50 dark:bg-zinc-900/20 no-scrollbar">
             {[
               { id: "top10", label: "🌟 10대 핵심 보완점", icon: Sparkles },
-              { id: "list100", label: "💯 100가지 세부 보완 리스트", icon: ListOrdered },
+              { id: "menu10", label: "📌 메뉴별 10대 보완점 (10개 메뉴 x 10개)", icon: FileText },
+              { id: "list100", label: "💯 100가지 전체 체크리스트", icon: ListOrdered },
               { id: "admin", label: "✍️ 모바일 기사작성/관리자 UX", icon: ShieldCheck }
             ].map((tab) => {
               const Icon = tab.icon;
@@ -499,29 +583,128 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
             </div>
           )}
 
-          {/* Tab 2: 100가지 보완점 종합 체크리스트 */}
+          {/* Tab 2: 메뉴별 10대 보완점 (10개 메뉴 x 10개) */}
+          {activeTab === "menu10" && (
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+              {/* Menu Selector Chips (10 Menus) */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
+                    <SlidersHorizontal size={14} />
+                    보완 항목을 확인할 메뉴를 선택하세요 (총 10개 주요 메뉴)
+                  </h3>
+                  <span className="text-[11px] font-mono font-bold text-amber-500">
+                    메뉴 #{selectedMenuIndex + 1} / 10
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {menuCategories.map((menu, idx) => {
+                    const MenuIcon = menu.icon;
+                    const isSelected = selectedMenuIndex === idx;
+                    return (
+                      <button
+                        key={menu.id}
+                        onClick={() => setSelectedMenuIndex(idx)}
+                        className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          isSelected
+                            ? "bg-amber-500 text-black border-amber-500 shadow-md font-black"
+                            : "bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-amber-500/50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <MenuIcon size={16} className={isSelected ? "text-black" : "text-amber-500"} />
+                          <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-full ${isSelected ? "bg-black/20 text-black" : "bg-zinc-200 dark:bg-zinc-800 text-zinc-500"}`}>
+                            10/10
+                          </span>
+                        </div>
+                        <span className="text-xs font-extrabold truncate">{menu.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Selected Menu Details Header */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-purple-500/10 border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500 text-black flex items-center justify-center font-black shadow">
+                    {React.createElement(selectedMenuData.icon, { size: 20 })}
+                  </div>
+                  <div>
+                    <h4 className="text-sm sm:text-base font-black text-zinc-900 dark:text-white flex items-center gap-2">
+                      <span>{selectedMenuData.name}</span>
+                      <span className="text-xs bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-2 py-0.5 rounded-full font-bold">
+                        10대 보완점 적용 완료
+                      </span>
+                    </h4>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">
+                      해당 메뉴에 특화된 최신 트렌드 및 UI/UX 보완 항목 10가지 리스트입니다.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0 text-xs font-mono font-bold text-amber-500">
+                  항목 #{selectedMenuIndex * 10 + 1} ~ #{selectedMenuIndex * 10 + 10}
+                </div>
+              </div>
+
+              {/* 10 Items for Selected Menu */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {selectedMenuData.items.map((itemTitle, iIdx) => (
+                  <div
+                    key={iIdx}
+                    className="p-3.5 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl flex items-start gap-3 hover:border-amber-500/60 transition-all text-left shadow-xs"
+                  >
+                    <span className="w-6 h-6 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 font-mono font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
+                      {String(iIdx + 1).padStart(2, "0")}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-extrabold text-zinc-400">
+                          {selectedMenuData.name} 특화 보완
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.2 rounded-full flex items-center gap-1">
+                          <Check size={10} className="stroke-[3]" /> 적용됨
+                        </span>
+                      </div>
+                      <p className="text-xs font-black text-zinc-800 dark:text-zinc-100 leading-snug">
+                        {itemTitle}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tab 3: 100가지 보완점 종합 체크리스트 */}
           {activeTab === "list100" && (
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
               {/* Category Filter & Search */}
               <div className="flex flex-col sm:flex-row gap-2 justify-between items-center bg-zinc-100/70 dark:bg-zinc-900/80 p-3 rounded-2xl border border-zinc-200 dark:border-zinc-800">
                 <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto no-scrollbar">
-                  {[
-                    { id: "all", label: "전체 (100)" },
-                    { id: "mobile", label: "📱 모바일 (25)" },
-                    { id: "web", label: "💻 노트북/웹 (25)" },
-                    { id: "admin", label: "✍️ 기사작성/관리자 (25)" },
-                    { id: "trend", label: "⚡ 최신트렌드 (25)" }
-                  ].map((f) => (
+                  <button
+                    onClick={() => setChecklistFilterCategory("all")}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                      checklistFilterCategory === "all"
+                        ? "bg-amber-500 text-black shadow-sm font-black"
+                        : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+                    }`}
+                  >
+                    전체 (100)
+                  </button>
+                  {menuCategories.map((m) => (
                     <button
-                      key={f.id}
-                      onClick={() => setChecklistFilterCategory(f.id as any)}
-                      className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer whitespace-nowrap ${
-                        checklistFilterCategory === f.id
+                      key={m.id}
+                      onClick={() => setChecklistFilterCategory(m.id)}
+                      className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer whitespace-nowrap ${
+                        checklistFilterCategory === m.id
                           ? "bg-amber-500 text-black shadow-sm font-black"
                           : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
                       }`}
                     >
-                      {f.label}
+                      {m.name}
                     </button>
                   ))}
                 </div>
@@ -540,7 +723,7 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
 
               {/* 100 List Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                {filtered100Items.map((item, index) => (
+                {filtered100Items.map((item) => (
                   <div
                     key={item.id}
                     className="p-3 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl flex items-start gap-2.5 hover:border-amber-500/50 transition-all text-left group"
@@ -551,10 +734,10 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-[9px] font-mono font-bold text-amber-500 bg-amber-500/10 px-1.5 py-0.2 rounded">
-                          #{index + 1}
+                          #{item.index}
                         </span>
-                        <span className="text-[9px] font-bold text-zinc-400">
-                          {item.catName}
+                        <span className="text-[9px] font-bold text-zinc-400 truncate">
+                          {item.menuName}
                         </span>
                       </div>
                       <p className="text-xs font-extrabold text-zinc-800 dark:text-zinc-200 group-hover:text-amber-500 transition-colors truncate">
@@ -567,7 +750,7 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
             </div>
           )}
 
-          {/* Tab 3: 모바일 기사작성 & 관리자 메뉴 상세 안내 및 빠른 조작 */}
+          {/* Tab 4: 모바일 기사작성 & 관리자 메뉴 상세 안내 및 빠른 조작 */}
           {activeTab === "admin" && (
             <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 text-left">
               <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-purple-500/10 p-6 rounded-3xl border border-amber-500/20">
@@ -679,7 +862,7 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
           {/* Footer */}
           <div className="p-5 sm:p-6 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-xs text-zinc-500 font-semibold text-center sm:text-left">
-              💡 오른쪽 하단 <strong>'📱/💻 뷰 전환'</strong> 버튼으로 모바일 & 웹 최적화 모드를 직접 체감해보세요.
+              💡 상단 <strong>'📱/💻 뷰 전환'</strong> 버튼으로 모바일 & 웹 최적화 화면을 직접 체감해보세요.
             </p>
             <button
               onClick={onClose}
@@ -693,4 +876,3 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
     </AnimatePresence>
   );
 };
-
