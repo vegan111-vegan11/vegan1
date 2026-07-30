@@ -30601,6 +30601,24 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 </span>
               </button>
 
+              {/* 10대 UI/UX 보완점 & 리포트 모달 버튼 */}
+              <button
+                onClick={() => {
+                  playHapticClick(800, 0.05);
+                  setIsFabMenuOpen(false);
+                  setIs10ImprovementsModalOpen(true);
+                }}
+                className="flex items-center justify-between p-2 rounded-xl text-xs font-black border bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer shadow-xs"
+              >
+                <div className="flex items-center gap-1.5">
+                  <Sparkles size={12} className="text-amber-500" />
+                  <span>10대 UI/UX 보완점 센터</span>
+                </div>
+                <span className="text-[9px] bg-amber-500 text-black font-mono font-black px-1.5 py-0.2 rounded-full">
+                  100%
+                </span>
+              </button>
+
               {/* Cmd+K 커맨드 팔레트 버튼 */}
               <button
                 onClick={() => {

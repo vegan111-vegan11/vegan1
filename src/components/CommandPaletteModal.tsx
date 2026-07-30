@@ -252,8 +252,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                 <button
                   key={i}
                   onClick={() => {
-                    onSearchSubmit(term);
-                    onNavigatePage("isol-post");
+                    if (onSearchSubmit) onSearchSubmit(term);
+                    navigateTo("isol-post");
                     onClose();
                   }}
                   className="px-2.5 py-1 text-[11px] font-bold text-zinc-600 dark:text-zinc-300 hover:text-amber-500 dark:hover:text-amber-400 bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-lg shrink-0 transition-colors cursor-pointer"
@@ -272,8 +272,8 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                 <p className="text-xs font-bold">'{query}'에 대한 커맨드를 찾을 수 없습니다.</p>
                 <button
                   onClick={() => {
-                    onSearchSubmit(query);
-                    onNavigatePage("isol-post");
+                    if (onSearchSubmit) onSearchSubmit(query);
+                    navigateTo("isol-post");
                     onClose();
                   }}
                   className="px-4 py-2 bg-amber-500 text-black font-black text-xs rounded-xl shadow mt-2 cursor-pointer"

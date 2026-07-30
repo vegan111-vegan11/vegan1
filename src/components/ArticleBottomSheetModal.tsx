@@ -44,6 +44,14 @@ export const ArticleBottomSheetModal: React.FC<ArticleBottomSheetModalProps> = (
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
   const [showAiSummary, setShowAiSummary] = useState(true);
 
+  const handleClose = () => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsPlayingTTS(false);
+    onClose();
+  };
+
   if (!article) return null;
 
   const handleSpeakSummary = () => {
@@ -67,7 +75,7 @@ export const ArticleBottomSheetModal: React.FC<ArticleBottomSheetModalProps> = (
     <AnimatePresence>
       <div className="fixed inset-0 z-[270] flex items-end justify-center bg-black/70 backdrop-blur-sm lg:hidden">
         {/* Backdrop click */}
-        <div className="absolute inset-0" onClick={onClose} />
+        <div className="absolute inset-0" onClick={handleClose} />
 
         <motion.div
           initial={{ y: "100%" }}
@@ -81,7 +89,7 @@ export const ArticleBottomSheetModal: React.FC<ArticleBottomSheetModalProps> = (
 
           {/* Close button */}
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute top-5 right-5 p-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white rounded-full bg-zinc-100 dark:bg-zinc-800 transition-colors"
           >
             <X size={18} />
