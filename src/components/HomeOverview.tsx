@@ -158,30 +158,14 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
 
   // -------------------------------------------------------------
   // -------------------------------------------------------------
-  // RENDER OPTION A: 📱 MOBILE OPTIMIZED UI/UX (Latest Premium)
+  // RESPONSIVE HOME OVERVIEW:
+  // - Mobile screens (lg:hidden): clean touch-friendly mobile layout
+  // - Desktop/Laptop screens (hidden lg:block): full bento media dashboard
   // -------------------------------------------------------------
-  if (isSimulatedMobileView) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 pb-28 font-sans select-none animate-in fade-in duration-300 relative">
-        
-        {/* Mobile Top Viewport Switcher Banner */}
-        <div className="bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white px-4 py-2 flex items-center justify-between text-[10.5px] font-black shadow-md">
-          <div className="flex items-center gap-1.5">
-            <Smartphone size={14} className="animate-pulse" />
-            <span>📱 모바일 최적화 UX 모드 가동 중</span>
-          </div>
-          <button
-            onClick={() => {
-              if (typeof playHapticClick === "function") playHapticClick(700, 0.05);
-              onToggleSimulatedMobileView();
-            }}
-            className="bg-white/20 hover:bg-white/30 backdrop-blur-md px-2.5 py-1 rounded-full text-[9.5px] font-black flex items-center gap-1 cursor-pointer transition-all active:scale-95 border border-white/20"
-          >
-            <Laptop size={12} />
-            <span>노트북 웹 뷰로 보기</span>
-          </button>
-        </div>
-
+  return (
+    <>
+      {/* 📱 MOBILE VIEW (Visible on mobile/tablet screens only) */}
+      <div className="block lg:hidden min-h-screen bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 pb-20 font-sans select-none animate-in fade-in duration-300 relative">
         {/* Mobile Header Hero with Sleek Glassmorphism */}
         <div className="relative overflow-hidden px-5 pt-5 pb-5 bg-gradient-to-b from-red-50/40 via-zinc-50/10 to-transparent dark:from-red-950/20 dark:via-zinc-900/10 dark:to-[#09090b] border-b border-zinc-100 dark:border-zinc-900/30">
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/10 rounded-full blur-3xl pointer-events-none -mr-4 -mt-4" />
@@ -503,13 +487,10 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
             </button>
           </div>
         </div>
-
       </div>
-    );
-  }
 
-  return (
-    <div className="min-h-screen bg-transparent text-zinc-900 dark:text-zinc-100 font-sans pb-24 select-none animate-in fade-in duration-300">
+      {/* 💻 DESKTOP VIEW (Visible on desktop/laptop screens only) */}
+      <div className="hidden lg:block min-h-screen bg-transparent text-zinc-900 dark:text-zinc-100 font-sans pb-24 select-none animate-in fade-in duration-300">
       
       {/* Editorial Premium Top Line */}
       <div className="border-b border-zinc-200/60 dark:border-zinc-900/50 py-3 px-8 bg-zinc-50/85 dark:bg-zinc-950/40 backdrop-blur-md">
@@ -540,32 +521,21 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
       </div>
 
       {/* Hero Header block */}
-      <div className="relative overflow-hidden px-8 py-10 bg-gradient-to-b from-zinc-50 via-white to-transparent dark:from-[#0e0e11] dark:via-zinc-950/20 dark:to-transparent">
-        <div className="absolute top-0 right-10 w-[450px] h-[450px] bg-red-650/5 rounded-full blur-[140px] pointer-events-none" />
-        
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end md:justify-between gap-6 relative z-10">
-          <div className="text-left space-y-3.5 max-w-2xl">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-500 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
-                <Sparkles size={11} className="text-red-500 animate-pulse" />
-                프리미엄 미디어 게이트웨이
-              </span>
-              <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                💻 노트북 웹 최적화 모드
-              </span>
-              <button
-                onClick={() => {
-                  if (typeof playHapticClick === "function") playHapticClick(700, 0.05);
-                  onToggleSimulatedMobileView();
-                  toast.success("📱 모바일 전용 UX 화면으로 전환되었습니다.");
-                }}
-                className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-black px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm hover:scale-105 active:scale-95 transition-all cursor-pointer border border-zinc-700/30"
-              >
-                <Smartphone size={12} />
-                <span>📱 모바일 최적화 화면으로 전환</span>
-              </button>
-            </div>
+        <div className="relative overflow-hidden px-8 py-10 bg-gradient-to-b from-zinc-50 via-white to-transparent dark:from-[#0e0e11] dark:via-zinc-950/20 dark:to-transparent">
+          <div className="absolute top-0 right-10 w-[450px] h-[450px] bg-red-650/5 rounded-full blur-[140px] pointer-events-none" />
+          
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-end md:justify-between gap-6 relative z-10">
+            <div className="text-left space-y-3.5 max-w-2xl">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-500 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                  <Sparkles size={11} className="text-red-500 animate-pulse" />
+                  프리미엄 미디어 게이트웨이
+                </span>
+                <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  포털 실시간 연동
+                </span>
+              </div>
             
             <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-zinc-900 dark:text-white leading-[1.1]">
               이솔뉴스 <span className="text-red-500">포털 얼라이언스</span>
@@ -936,5 +906,6 @@ export const HomeOverview: React.FC<HomeOverviewProps> = ({
       </div>
 
     </div>
+    </>
   );
 };

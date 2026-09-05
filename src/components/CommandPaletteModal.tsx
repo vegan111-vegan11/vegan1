@@ -144,16 +144,6 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
       },
     },
     {
-      id: "toggle_viewport",
-      title: isSimulatedMobileView ? "💻 노트북/웹 화면으로 전환" : "📱 모바일 화면으로 전환",
-      subtitle: "접속 단말기 최적화 스마트 뷰포트 변경",
-      icon: isSimulatedMobileView ? Laptop : Smartphone,
-      action: () => {
-        if (onToggleSimulatedMobileView) onToggleSimulatedMobileView();
-        onClose();
-      },
-    },
-    {
       id: "toggle_theme",
       title: theme === "dark" ? "☀️ 라이트 모드로 전환" : "🌙 다크 모드로 전환",
       subtitle: "눈이 편안한 디스플레이 테마 모드 토글",

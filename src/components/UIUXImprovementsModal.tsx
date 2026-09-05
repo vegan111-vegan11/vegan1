@@ -62,12 +62,13 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
       id: 1,
       category: "mobile",
       categoryName: "📱 모바일 최적화",
-      title: "1손 엄지 터치 내비게이션 & 바텀 시트 (Bottom Sheet) 모달",
-      desc: "모바일 화면 전용 Sticky Bottom Bar와 iOS/Android 스타일 하단 슬라이드업 드로어로 한 손 조작성을 극대화했습니다.",
+      title: "모바일 헤더 겹침 제로화 & 언론사 표준 기사 페이징 (2개 모아보기/6개 표준)",
+      desc: "모바일에서 메뉴가 아래 콘텐츠를 가리던 문제를 Sticky 구조로 완벽 해소하고, 끝없는 스크롤 대신 2개씩 모아보기 및 언론사 표준 페이징으로 푸터 접근성을 혁신했습니다.",
       details: [
-        "48px 이상 엄지 친화적 터치 피드백 영역 확보",
-        "기사 빠른 보기 시 하단에서 부드럽게 올라오는 Bottom Sheet 적용",
-        "활성 탭 물결 인디케이터 애니메이션 지원"
+        "Sticky 헤더 전환 및 자연스러운 콘텐츠 배치로 모바일 메뉴 가림 현상 원천 해결",
+        "언론사 표준 페이징 (◀ 이전 / 번호 / 다음 ▶) 및 '2개씩 보기 (포커스)' 모드 탑재",
+        "긴 스크롤 없이 1-클릭으로 즉시 이동 가능한 '⬇️ 바닥글(푸터) 바로가기' 연동",
+        "가로 스크롤 메뉴 우측 그라데이션 페이드 인디케이터로 다음 메뉴 시각적 힌트 제공"
       ],
       icon: Smartphone,
       status: "완료",
@@ -451,22 +452,13 @@ export const UIUXImprovementsModal: React.FC<UIUXImprovementsModalProps> = ({
             </button>
           </div>
 
-          {/* Top Banner: Real-time Viewport & Quick Actions */}
-          <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white px-5 sm:px-6 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs font-bold shadow-inner">
+          {/* Top Banner: Device Responsive Status & Quick Actions */}
+          <div className="bg-gradient-to-r from-zinc-850 via-zinc-900 to-black text-white px-5 sm:px-6 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs font-bold shadow-inner">
             <div className="flex items-center gap-2">
-              <Layers size={15} />
-              <span>현재 뷰포트 상태: <strong className="underline underline-offset-2">{isSimulatedMobileView ? "📱 모바일 최적화 시뮬레이터 모드" : "💻 노트북/웹 데스크톱 대화면 모드"}</strong></span>
+              <Layers size={15} className="text-red-500" />
+              <span>자동 반응형 최적화: <strong className="text-emerald-400">⚡ 스마트폰 ↔ 태블릿 ↔ 노트북 단말 자동 100% 감응</strong></span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => {
-                  onToggleSimulatedMobileView();
-                }}
-                className="bg-black/80 hover:bg-black text-white px-3 py-1.5 rounded-xl text-[11px] font-black tracking-wider uppercase transition-all shadow cursor-pointer active:scale-95 flex items-center gap-1.5"
-              >
-                {isSimulatedMobileView ? <Laptop size={14} className="text-indigo-400" /> : <Smartphone size={14} className="text-blue-400" />}
-                <span>{isSimulatedMobileView ? "💻 노트북/웹 화면으로 전환" : "📱 모바일 화면으로 전환"}</span>
-              </button>
               {onOpenMobileArticleWriter && (
                 <button
                   onClick={() => {

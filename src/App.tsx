@@ -13369,7 +13369,7 @@ const Navbar = ({
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-[60] bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md border-b border-gray-100/50 dark:border-zinc-800/30 flex flex-col shadow-sm transition-colors duration-500 select-none">
+    <nav className="sticky top-0 left-0 right-0 z-[60] bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-b border-gray-100/50 dark:border-zinc-800/30 flex flex-col shadow-sm transition-colors duration-500 select-none">
       {/* 🌟 보완 1: 실시간 글로벌 스크롤 진척도 레이저 인디케이터 (Global Scroll Laser Indicator) */}
       <div 
         className="fixed top-0 left-0 h-[3.5px] bg-gradient-to-r from-red-500 via-rose-500 to-amber-500 z-[100] transition-all duration-75 shadow-[0_0_10px_#ef4444] pointer-events-none"
@@ -13518,6 +13518,8 @@ const Navbar = ({
               );
             })}
           </div>
+          {/* Subtle scroll gradient hint on right edge */}
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-zinc-50 dark:from-zinc-950/90 to-transparent" />
         </div>
       )}
 
@@ -13526,7 +13528,7 @@ const Navbar = ({
         Always visible under Channel Desk with icons. Scrollable horizontally.
       */}
       {!isWorkshopActive && (
-        <div className={cn(isSimulatedMobileView ? "block" : "lg:hidden block", "relative pill-scroll-track bg-white/75 dark:bg-zinc-950/75 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-800/30")}>
+        <div className={cn(isSimulatedMobileView ? "block" : "lg:hidden block", "relative pill-scroll-track bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-b border-zinc-200/50 dark:border-zinc-800/30")}>
           <div className="py-2.5 overflow-x-auto scrollbar-none scroll-smooth flex items-center gap-3.5 whitespace-nowrap px-4 select-none touch-pan-x" style={{ WebkitOverflowScrolling: "touch" }}>
             <span className="text-[9px] font-black text-red-500 uppercase tracking-widest block shrink-0 italic mr-0.5">전체메뉴:</span>
             {mainNavItems.map((item) => {
@@ -13548,6 +13550,8 @@ const Navbar = ({
               );
             })}
           </div>
+          {/* Subtle scroll gradient hint on right edge */}
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white dark:from-zinc-950/90 to-transparent" />
         </div>
       )}
 
@@ -13555,28 +13559,16 @@ const Navbar = ({
         🌟 Desktop Row 0 (상단 줄바꿈 특수 배치!): High-Visibility Premium Desktop Action Belt
         Provides instant access to Logout, Admin Desk, and Article Writing on a separate top line as requested!
       */}
-      <div className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:flex", "bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-200/50 dark:border-zinc-850/50 select-none font-sans py-2.5 px-4 md:px-8 justify-between items-center text-xs text-zinc-500")}>
-        {/* Left Side: Premium Interactive Layout & Trend Controller HUD */}
+      <div className="hidden lg:flex bg-zinc-50 dark:bg-zinc-900/40 border-b border-zinc-200/50 dark:border-zinc-850/50 select-none font-sans py-2.5 px-4 md:px-8 justify-between items-center text-xs text-zinc-500">
+        {/* Left Side: Edition Date & Editorial Slogan */}
         <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full text-emerald-600 dark:text-emerald-400 font-extrabold text-[10px] uppercase tracking-wider">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-            </span>
-            🖥️ Laptop Web Optimized
-          </div>
-
-          <button
-            onClick={() => {
-              playHapticClick(800, 0.05);
-              onToggleSimulatedMobileView?.();
-            }}
-            className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 hover:from-blue-500/20 hover:to-indigo-500/20 border border-blue-500/30 text-blue-600 dark:text-blue-400 rounded-full text-[10px] font-black cursor-pointer transition-all active:scale-95 shadow-xs"
-            title="1:1 모바일 최적화 화면으로 전환"
-          >
-            <Smartphone size={12} className="shrink-0" />
-            <span>📱 모바일 뷰 전환</span>
-          </button>
+          <span className="font-black text-zinc-800 dark:text-zinc-200 text-[11px] tracking-tight">
+            {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" })}
+          </span>
+          <span className="text-zinc-300 dark:text-zinc-700">|</span>
+          <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+            정론직필 독립 시민 저널리즘 포털
+          </span>
         </div>
 
         {/* Right Side: High-Visibility Row 0 Primary Actions (로그아웃, 데스크, 기사제보) */}
@@ -13643,10 +13635,10 @@ const Navbar = ({
 
       {/* 
         Desktop Top Bar (Row 1): 
-        Logo + Portal Navigation + Search + Premium Utilities
+        Logo + Search + Premium Utilities
       */}
-      <div className={cn(isSimulatedMobileView ? "hidden" : "hidden lg:flex", "max-w-7xl mx-auto w-full px-4 md:px-8 py-2.5 items-center justify-between gap-4 border-b border-gray-100/50 dark:border-zinc-800/30 bg-transparent transition-colors duration-500")}>
-        {/* Left: Compact Brand Logo & Page Tabs */}
+      <div className="hidden lg:flex max-w-7xl mx-auto w-full px-4 md:px-8 py-3 items-center justify-between gap-4 border-b border-gray-100/50 dark:border-zinc-800/30 bg-transparent transition-colors duration-500">
+        {/* Left: Brand Logo */}
         <div className="flex items-center gap-5 shrink-0">
           <div
             onClick={() => onPageChange("isol-post", "전체기사")}
@@ -13660,38 +13652,6 @@ const Navbar = ({
                 모든 시민은 기자다
               </p>
             </div>
-          </div>
-
-          {/* Portal Navigation Tabs */}
-          <div className="hidden xl:flex items-center gap-1 font-sans">
-            {topNavItems.map((item) => {
-              const isActive = currentPage === item.id || (item.id === "이솔공방" && currentPage.startsWith("이솔공방"));
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    if (item.id === "hyeonwon-cinema") {
-                      onPageChange("hyeonwon-cinema");
-                    } else if (item.id === "manual") {
-                      onManualClick();
-                    } else if (item.id === "aegis-ai-lab") {
-                      onPageChange("aegis-ai-lab");
-                    } else {
-                      onPageChange("isol-post", item.id);
-                    }
-                  }}
-                  className={cn(
-                    "px-3.5 py-1 text-xs font-black tracking-tight rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 h-8.5 hover:-translate-y-0.5 active:translate-y-0 active:scale-95",
-                    isActive
-                      ? "bg-red-50 dark:bg-red-950/20 text-red-655 dark:text-red-400 font-black uppercase text-[11px] border border-red-100 dark:border-red-900/30 shadow-[0_2px_8px_rgba(239,68,68,0.05)]"
-                      : "text-zinc-600 dark:text-zinc-400 hover:text-red-655 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 border border-transparent"
-                  )}
-                >
-                  {renderIcon(item.id, "w-3 h-3 shrink-0")}
-                  <span>{getCleanLabel(item.label)}</span>
-                </button>
-              );
-            })}
           </div>
         </div>
 
@@ -14328,7 +14288,7 @@ const Navbar = ({
       )}
 
       {!isWorkshopActive && (
-        <div className="hidden md:block">
+        <div className="block">
           <BreakingNewsTicker
             articles={breakingArticles || []}
             onHeadlineClick={onHeadlineClick || (() => {})}
@@ -14581,6 +14541,16 @@ const IsolPost = ({
   const [hoveredDesc, setHoveredDesc] = React.useState<{ name: string; desc: string } | null>(null);
   const [featuredSelectedCategory, setFeaturedSelectedCategory] = React.useState("사회/정치");
   const [activeHotClickTab, setActiveHotClickTab] = React.useState<"popular" | "trending">("popular");
+
+  // 📰 언론사 표준 기사 페이징 & 2개씩 모아보기 모드 상태 (Smart Article Pagination)
+  const [timelinePage, setTimelinePage] = React.useState<number>(1);
+  const [articlesPerPage, setArticlesPerPage] = React.useState<number>(2); // 기본 2개 노출 (언론사 표준 콤팩트 뷰)
+  const [expandedTimelineCount, setExpandedTimelineCount] = React.useState<number>(0);
+  const [categoryPage, setCategoryPage] = React.useState<number>(1);
+
+  React.useEffect(() => {
+    setCategoryPage(1);
+  }, [activeCategory]);
 
   // Photography (리얼포토) states
   const [photoBrandFilter, setPhotoBrandFilter] = React.useState<string>("all");
@@ -15142,6 +15112,11 @@ const IsolPost = ({
     }
   }, [initialCategory, clearInitialCategory]);
 
+  React.useEffect(() => {
+    setTimelinePage(1);
+    setExpandedTimelineCount(0);
+  }, [activeCategory, workshopSubCategory, newsSearchQuery]);
+
   const isAdmin = !!(user && checkIsAdmin(user.email));
 
   const filteredNews = citizenNews.filter((item) => {
@@ -15332,15 +15307,7 @@ const IsolPost = ({
         </div>
       </div>
 
-      <main className={
-        activeCategory === "이솔공방"
-          ? (isSimulatedMobileView 
-              ? "pt-[60px] sm:pt-[65px] pb-28 sm:pb-16" 
-              : "pt-[60px] sm:pt-[65px] md:pt-[70px] lg:pt-[115px] pb-28 sm:pb-16")
-          : (isSimulatedMobileView 
-              ? "pt-[140px] sm:pt-[150px] pb-28 sm:pb-16" 
-              : "pt-[140px] sm:pt-[150px] md:pt-[160px] lg:pt-[205px] pb-28 sm:pb-16")
-      }>
+      <main className="pt-2 sm:pt-4 pb-6 sm:pb-10 flex-1">
         {/* GNB Top Ad Banner */}
         <div className="max-w-7xl mx-auto px-4 md:px-6 mb-6">
           <AdBannerWidget position="gnb_top" banners={banners} setBanners={setBanners} onPageChange={onPageChange} onAdApplyClick={onAdApplyClick} />
@@ -15711,89 +15678,233 @@ const IsolPost = ({
             {activeCategory === "전체기사" && !newsSearchQuery.trim() ? (
               <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {/* Modern Trend-aligned Full Article Stream */}
-                <div className="border-t border-zinc-150 dark:border-zinc-850/80 pt-10 mt-6 text-left">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-                    <div className="flex items-center gap-3">
-                      <span className="w-1.5 h-6 bg-red-655 rounded-full" />
-                      <h3 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-white tracking-tight">
-                        실시간 뉴스 타임라인
-                      </h3>
-                      <span className="text-[10px] font-black bg-red-500/10 text-red-655 px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
-                        {filteredNews.length} ARTICLES
-                      </span>
-                    </div>
-                    <div className="text-[11px] font-black text-zinc-450 dark:text-zinc-500 font-mono uppercase tracking-wider bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/40 dark:border-zinc-800/80 px-3 py-1.5 rounded-xl">
-                      ⚡ 실시간 여론 진작 & 정보 수렴 시스템
-                    </div>
-                  </div>
-                  
-                  {/* Grid of articles */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                    {filteredNews.map((item) => {
-                      if (!item) return null;
-                      return (
-                        <div
-                          key={item.id}
-                          className="group relative flex flex-col justify-between overflow-hidden rounded-[1.75rem] bg-white dark:bg-zinc-950 border border-zinc-150/80 dark:border-zinc-900/90 shadow-[0_4px_24px_rgba(0,0,0,0.02)] hover:shadow-2xl hover:shadow-zinc-200/30 dark:hover:shadow-red-550/5 hover:-translate-y-1.5 transition-all duration-350 w-full cursor-pointer"
-                          onClick={() => {
-                            if (typeof playHapticClick === "function") {
-                              playHapticClick(600, 0.03);
-                            }
-                            setSelectedNews(item);
-                            setTimeout(() => {
-                              document.getElementById("inline-news-reader-container")?.scrollIntoView({ behavior: "smooth" });
-                            }, 50);
-                          }}
-                        >
-                          <div>
-                            {/* Card Image with refined zoom in hover */}
-                            <div className="w-full aspect-video overflow-hidden relative bg-zinc-900 border-b border-zinc-100 dark:border-zinc-900/60">
-                              <img
-                                src={item.thumbnail || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800"}
-                                className="w-full h-full object-cover transition-transform duration-[1000ms] group-hover:scale-105"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800";
-                                }}
-                                alt={item.title}
-                                referrerPolicy="no-referrer"
-                              />
-                              <div className="absolute top-4 left-4 z-20">
-                                <span className="inline-block bg-zinc-950/80 backdrop-blur-md text-white text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-wider select-none border border-white/10 shadow-lg">
-                                  {sanitizeDisplayCategory(item.category, item.title) || "일반"}
-                                </span>
-                              </div>
-                            </div>
-                            
-                            {/* Card Body */}
-                            <div className="p-5 sm:p-6 space-y-3">
-                              <h4 className="text-sm sm:text-[15.5px] font-black text-zinc-900 dark:text-white leading-snug line-clamp-2 group-hover:text-red-655 transition-colors tracking-tight font-sans">
-                                {item.title}
-                              </h4>
-                              <p className="text-[11.5px] sm:text-xs text-zinc-500 dark:text-zinc-400 line-clamp-3 leading-relaxed font-semibold">
-                                {item.content}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          {/* Card Footer */}
-                          <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-3.5 border-t border-zinc-100 dark:border-zinc-900/60 flex items-center justify-between text-[10px] font-extrabold text-zinc-450 dark:text-zinc-500">
-                            <div className="flex items-center gap-2">
-                              <div className="w-5 h-5 rounded-full bg-red-500/10 text-red-655 flex items-center justify-center text-[9px] font-black border border-red-200/30">
-                                {item.author ? item.author.substring(0, 1) : "솔"}
-                              </div>
-                              <span>{item.author || "시민"} 기자</span>
-                              <span className="w-0.5 h-0.5 rounded-full bg-zinc-350 dark:bg-zinc-700" />
-                              <span>{item.date}</span>
-                            </div>
-                            <span className="text-red-600 dark:text-red-400 font-black flex items-center gap-0.5">
-                              🔥 {item.likes || 0}
+                <div id="realtime-news-timeline" className="border-t border-zinc-150 dark:border-zinc-850/80 pt-10 mt-6 text-left scroll-mt-28">
+                  {(() => {
+                    const totalTimelineCount = filteredNews.length;
+                    const effectivePageSize = articlesPerPage;
+                    const totalTimelinePages = Math.max(1, Math.ceil(totalTimelineCount / effectivePageSize));
+                    const safeCurrentPage = Math.min(timelinePage, totalTimelinePages);
+                    const startIdx = (safeCurrentPage - 1) * effectivePageSize;
+                    const endIdx = Math.min(totalTimelineCount, startIdx + effectivePageSize + expandedTimelineCount);
+                    const paginatedArticles = filteredNews.slice(startIdx, endIdx);
+
+                    const scrollToTimeline = () => {
+                      document.getElementById("realtime-news-timeline")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    };
+
+                    return (
+                      <>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="w-1.5 h-6 bg-red-655 rounded-full" />
+                            <h3 className="text-xl sm:text-2xl font-black text-zinc-900 dark:text-white tracking-tight">
+                              실시간 뉴스 타임라인
+                            </h3>
+                            <span className="text-[10px] font-black bg-red-500/10 text-red-655 px-2.5 py-1 rounded-full uppercase tracking-wider font-mono">
+                              {totalTimelineCount} ARTICLES
+                            </span>
+                            <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-2 py-0.5 rounded-md">
+                              페이지 {safeCurrentPage} / {totalTimelinePages}
                             </span>
                           </div>
+
+                          {/* 📰 언론사 노출 단위 컨트롤러 (2개 모아보기 / 6개 표준 / 12개 와이드) */}
+                          <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl border border-zinc-200/50 dark:border-zinc-800 self-start md:self-auto">
+                            <span className="text-[9px] font-black text-zinc-500 px-2 select-none">표시:</span>
+                            {[
+                              { count: 2, label: "2개씩 (포커스)" },
+                              { count: 6, label: "6개씩 (언론사 표준)" },
+                              { count: 12, label: "12개씩 (와이드)" },
+                            ].map((opt) => (
+                              <button
+                                key={opt.count}
+                                onClick={() => {
+                                  if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                                  setArticlesPerPage(opt.count);
+                                  setTimelinePage(1);
+                                  setExpandedTimelineCount(0);
+                                  scrollToTimeline();
+                                }}
+                                className={cn(
+                                  "px-2.5 py-1 rounded-lg text-[10.5px] font-black transition-all cursor-pointer",
+                                  articlesPerPage === opt.count
+                                    ? "bg-white dark:bg-zinc-800 text-red-655 dark:text-red-400 shadow-sm border border-zinc-200/60 dark:border-zinc-700"
+                                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                                )}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                        
+                        {/* Grid of articles */}
+                        <div className={cn(
+                          "gap-6 sm:gap-8",
+                          articlesPerPage === 2
+                            ? "grid grid-cols-1 md:grid-cols-2"
+                            : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                        )}>
+                          {paginatedArticles.map((item) => {
+                            if (!item) return null;
+                            return (
+                              <div
+                                key={item.id}
+                                className="group relative flex flex-col justify-between overflow-hidden rounded-[1.75rem] bg-white dark:bg-zinc-950 border border-zinc-150/80 dark:border-zinc-900/90 shadow-[0_4px_24px_rgba(0,0,0,0.02)] hover:shadow-2xl hover:shadow-zinc-200/30 dark:hover:shadow-red-550/5 hover:-translate-y-1.5 transition-all duration-350 w-full cursor-pointer"
+                                onClick={() => {
+                                  if (typeof playHapticClick === "function") {
+                                    playHapticClick(600, 0.03);
+                                  }
+                                  setSelectedNews(item);
+                                  setTimeout(() => {
+                                    document.getElementById("inline-news-reader-container")?.scrollIntoView({ behavior: "smooth" });
+                                  }, 50);
+                                }}
+                              >
+                                <div>
+                                  {/* Card Image with refined zoom in hover */}
+                                  <div className="w-full aspect-video overflow-hidden relative bg-zinc-900 border-b border-zinc-100 dark:border-zinc-900/60">
+                                    <img
+                                      src={item.thumbnail || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800"}
+                                      className="w-full h-full object-cover transition-transform duration-[1000ms] group-hover:scale-105"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800";
+                                      }}
+                                      alt={item.title}
+                                      referrerPolicy="no-referrer"
+                                    />
+                                    <div className="absolute top-4 left-4 z-20">
+                                      <span className="inline-block bg-zinc-950/80 backdrop-blur-md text-white text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-wider select-none border border-white/10 shadow-lg">
+                                        {sanitizeDisplayCategory(item.category, item.title) || "일반"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Card Body */}
+                                  <div className="p-5 sm:p-6 space-y-3">
+                                    <h4 className="text-sm sm:text-[15.5px] font-black text-zinc-900 dark:text-white leading-snug line-clamp-2 group-hover:text-red-655 transition-colors tracking-tight font-sans">
+                                      {item.title}
+                                    </h4>
+                                    <p className="text-[11.5px] sm:text-xs text-zinc-500 dark:text-zinc-400 line-clamp-3 leading-relaxed font-semibold">
+                                      {item.content}
+                                    </p>
+                                  </div>
+                                </div>
+                                
+                                {/* Card Footer */}
+                                <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-3.5 border-t border-zinc-100 dark:border-zinc-900/60 flex items-center justify-between text-[10px] font-extrabold text-zinc-450 dark:text-zinc-500">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-5 h-5 rounded-full bg-red-500/10 text-red-655 flex items-center justify-center text-[9px] font-black border border-red-200/30">
+                                      {item.author ? item.author.substring(0, 1) : "솔"}
+                                    </div>
+                                    <span>{item.author || "시민"} 기자</span>
+                                    <span className="w-0.5 h-0.5 rounded-full bg-zinc-350 dark:bg-zinc-700" />
+                                    <span>{item.date}</span>
+                                  </div>
+                                  <span className="text-red-600 dark:text-red-400 font-black flex items-center gap-0.5">
+                                    🔥 {item.likes || 0}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* 📰 언론사 표준 페이징 내비게이션 */}
+                        <div className="mt-8 pt-6 border-t border-zinc-150 dark:border-zinc-850/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+                          {/* Left: Article Page Indicator */}
+                          <div className="text-xs font-bold text-zinc-500 dark:text-zinc-400">
+                            전체 기사 <span className="text-red-600 dark:text-red-400 font-mono font-black">{safeCurrentPage}</span> / <span className="font-mono">{totalTimelinePages}</span> 페이지 (총 {totalTimelineCount}건)
+                          </div>
+
+                          {/* Center: Pagination Bar */}
+                          <div className="flex items-center gap-1 sm:gap-2">
+                            {/* Previous Button (뒤로가기) */}
+                            <button
+                              disabled={safeCurrentPage <= 1}
+                              onClick={() => {
+                                if (safeCurrentPage > 1) {
+                                  if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                                  setTimelinePage(safeCurrentPage - 1);
+                                  setExpandedTimelineCount(0);
+                                  scrollToTimeline();
+                                }
+                              }}
+                              className={cn(
+                                "px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 border",
+                                safeCurrentPage <= 1
+                                  ? "opacity-30 border-transparent text-zinc-400 cursor-not-allowed"
+                                  : "border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer active:scale-97"
+                              )}
+                            >
+                              <span>◀ 뒤로가기</span>
+                            </button>
+
+                            {/* Page numbers */}
+                            <div className="flex items-center gap-1">
+                              {Array.from({ length: totalTimelinePages }, (_, i) => i + 1).slice(
+                                Math.max(0, safeCurrentPage - 3),
+                                Math.min(totalTimelinePages, safeCurrentPage + 2)
+                              ).map((pg) => (
+                                <button
+                                  key={pg}
+                                  onClick={() => {
+                                    if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                                    setTimelinePage(pg);
+                                    setExpandedTimelineCount(0);
+                                    scrollToTimeline();
+                                  }}
+                                  className={cn(
+                                    "w-8 h-8 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center border",
+                                    pg === safeCurrentPage
+                                      ? "bg-red-655 text-white border-red-500 shadow-md scale-105"
+                                      : "border-zinc-200/50 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                  )}
+                                >
+                                  {pg}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* Next Button (앞으로가기) */}
+                            <button
+                              disabled={safeCurrentPage >= totalTimelinePages}
+                              onClick={() => {
+                                if (safeCurrentPage < totalTimelinePages) {
+                                  if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                                  setTimelinePage(safeCurrentPage + 1);
+                                  setExpandedTimelineCount(0);
+                                  scrollToTimeline();
+                                }
+                              }}
+                              className={cn(
+                                "px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 border",
+                                safeCurrentPage >= totalTimelinePages
+                                  ? "opacity-30 border-transparent text-zinc-400 cursor-not-allowed"
+                                  : "border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer active:scale-97"
+                              )}
+                            >
+                              <span>앞으로가기 ▶</span>
+                            </button>
+                          </div>
+
+                          {/* Right: Inline Load More Button */}
+                          {endIdx < totalTimelineCount && (
+                            <button
+                              onClick={() => {
+                                if (typeof playHapticClick === "function") playHapticClick(600, 0.04);
+                                setExpandedTimelineCount((prev) => prev + effectivePageSize);
+                              }}
+                              className="text-xs font-black text-red-655 dark:text-red-400 hover:underline px-3 py-1.5 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200/50 dark:border-red-900/50 cursor-pointer"
+                            >
+                              + {effectivePageSize}개 추가보기
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             ) : activeCategory === "전체기사" || activeCategory === "속보" ? (
@@ -17112,82 +17223,122 @@ const IsolPost = ({
               </div>
             ) : (
               <div className="space-y-6">
-                {/* 2 Category Articles in Place of the Redundant Header Space, Styled compact */}
-                <div className="grid grid-cols-2 gap-3 md:gap-4 w-full">
-                  {filteredNews.slice(0, 2).map((item) => {
-                    if (!item) return null;
+                {(() => {
+                  const categoryPageSize = 2;
+                  const totalCategoryArticles = filteredNews.length;
+                  const totalCategoryPages = Math.max(1, Math.ceil(totalCategoryArticles / categoryPageSize));
+                  const safeCategoryPage = Math.min(categoryPage, totalCategoryPages);
+                  const currentCategoryArticles = filteredNews.slice(
+                    (safeCategoryPage - 1) * categoryPageSize,
+                    safeCategoryPage * categoryPageSize
+                  );
+
+                  if (totalCategoryArticles === 0) {
                     return (
-                      <div
-                        key={item.id}
-                        className="group relative cursor-pointer overflow-hidden rounded-2xl bg-zinc-950 border border-zinc-900 shadow-md hover:shadow-xl transition-all duration-300 w-full h-[105px] sm:h-[150px] md:h-[220px]"
-                        onClick={() => setSelectedNews(item)}
-                      >
-                        {/* Background Image */}
-                        <img
-                          src={item.thumbnail || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800"}
-                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-[700ms] group-hover:scale-[1.03]"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800";
-                          }}
-                          alt={item.title}
-                          referrerPolicy="no-referrer"
-                        />
-                        {/* Category Badge overlay on absolute Top-Left */}
-                        <div className="absolute top-2 left-2 z-20">
-                          <span className="inline-block bg-red-655 text-white text-[7.5px] md:text-[10px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider select-none border border-red-500/30 shadow-md">
-                            {sanitizeDisplayCategory(item.category, item.title) || "일반"}
-                          </span>
-                        </div>
-                        {/* Dark Gradient Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/100 via-black/45 to-transparent p-2.5 md:p-4 flex flex-col justify-end z-10 w-full h-full text-left">
-                          <h4 className="text-white text-[10.5px] sm:text-[14px] font-black line-clamp-2 leading-snug tracking-tight group-hover:text-red-350 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">
-                            {highlightMatch(item.title, newsSearchQuery)}
-                          </h4>
-                          <p className="text-zinc-450 text-[8px] sm:text-[10px] font-bold mt-0.5">
-                            {item.date} {item.author && `| ${item.author} 기자`}
-                          </p>
-                        </div>
+                      <div className="py-16 text-center bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-200/60 dark:border-zinc-800">
+                        <p className="text-sm font-bold text-zinc-500">
+                          선택하신 &apos;{activeCategory}&apos; 분야에 등록된 기사가 없습니다.
+                        </p>
                       </div>
                     );
-                  })}
-                </div>
+                  }
 
-                {/* Remaining Articles in Category, rendered as a compact clean list to save screen space */}
-                {filteredNews.length > 2 && (
-                  <div className="border-t border-zinc-100 dark:border-zinc-900 pt-5">
-                    <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-3">그 외 관련 소식</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {filteredNews.slice(2, 8).map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center gap-3 group cursor-pointer border-b border-zinc-50 dark:border-zinc-900/60 pb-3 last:border-0 hover:bg-zinc-50/50 p-2 rounded-xl transition-colors text-left"
-                          onClick={() => setSelectedNews(item)}
+                  return (
+                    <div className="space-y-5">
+                      {/* 2 Category Articles per page */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 w-full">
+                        {currentCategoryArticles.map((item) => {
+                          if (!item) return null;
+                          return (
+                            <div
+                              key={item.id}
+                              className="group relative cursor-pointer overflow-hidden rounded-2xl bg-zinc-950 border border-zinc-900 shadow-md hover:shadow-xl transition-all duration-300 w-full h-[145px] sm:h-[180px] md:h-[220px]"
+                              onClick={() => setSelectedNews(item)}
+                            >
+                              {/* Background Image */}
+                              <img
+                                src={item.thumbnail || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800"}
+                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-[700ms] group-hover:scale-[1.03]"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800";
+                                }}
+                                alt={item.title}
+                                referrerPolicy="no-referrer"
+                              />
+                              {/* Category Badge overlay on absolute Top-Left */}
+                              <div className="absolute top-2.5 left-2.5 z-20">
+                                <span className="inline-block bg-red-655 text-white text-[8px] md:text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider select-none border border-red-500/30 shadow-md">
+                                  {sanitizeDisplayCategory(item.category, item.title) || activeCategory}
+                                </span>
+                              </div>
+                              {/* Dark Gradient Overlay */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent p-3 sm:p-4 flex flex-col justify-end z-10 w-full h-full text-left">
+                                <h4 className="text-white text-xs sm:text-sm md:text-base font-black line-clamp-2 leading-snug tracking-tight group-hover:text-red-300 transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]">
+                                  {highlightMatch(item.title, newsSearchQuery)}
+                                </h4>
+                                <p className="text-zinc-400 text-[9px] sm:text-[11px] font-bold mt-1">
+                                  {item.date} {item.author && `| ${item.author} 기자`}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* 📰 언론사 표준 뒤로가기 / 앞으로가기 기사 이동 바 */}
+                      <div className="py-2.5 px-4 bg-zinc-50 dark:bg-zinc-900/70 rounded-2xl border border-zinc-200/70 dark:border-zinc-800/80 shadow-xs flex items-center justify-between gap-2">
+                        {/* ◀ 뒤로가기 (이전 기사) */}
+                        <button
+                          disabled={safeCategoryPage <= 1}
+                          onClick={() => {
+                            if (safeCategoryPage > 1) {
+                              if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                              setCategoryPage(safeCategoryPage - 1);
+                            }
+                          }}
+                          className={cn(
+                            "px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 border cursor-pointer",
+                            safeCategoryPage <= 1
+                              ? "opacity-35 border-transparent text-zinc-400 cursor-not-allowed"
+                              : "border-zinc-200 dark:border-zinc-750 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-97"
+                          )}
                         >
-                          <div className="w-16 h-12 rounded-lg overflow-hidden bg-zinc-950 border border-zinc-900 shrink-0 relative">
-                            <img
-                              src={item.thumbnail}
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=400";
-                              }}
-                              alt="thumb"
-                              referrerPolicy="no-referrer"
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <span className="text-[8px] font-black text-zinc-400">{sanitizeDisplayCategory(item.category, item.title)}</span>
-                            <h5 className="text-[11px] sm:text-xs font-bold text-zinc-900 dark:text-zinc-100 line-clamp-1 leading-tight group-hover:text-red-750 transition-colors">
-                              {highlightMatch(item.title, newsSearchQuery)}
-                            </h5>
-                            <p className="text-[8px] text-zinc-400 mt-0.5">{item.date} | {item.author}</p>
-                          </div>
+                          <span>◀ 뒤로가기 (이전)</span>
+                        </button>
+
+                        {/* Page Indicator */}
+                        <div className="flex items-center gap-1.5 text-xs font-black font-mono">
+                          <span className="text-red-600 dark:text-red-400">{safeCategoryPage}</span>
+                          <span className="text-zinc-400">/</span>
+                          <span className="text-zinc-600 dark:text-zinc-300">{totalCategoryPages}</span>
+                          <span className="text-[10px] text-zinc-400 font-sans font-bold ml-1 hidden sm:inline">
+                            (총 {totalCategoryArticles}건)
+                          </span>
                         </div>
-                      ))}
+
+                        {/* 앞으로가기 (다음 기사) ▶ */}
+                        <button
+                          disabled={safeCategoryPage >= totalCategoryPages}
+                          onClick={() => {
+                            if (safeCategoryPage < totalCategoryPages) {
+                              if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
+                              setCategoryPage(safeCategoryPage + 1);
+                            }
+                          }}
+                          className={cn(
+                            "px-3.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1 border cursor-pointer",
+                            safeCategoryPage >= totalCategoryPages
+                              ? "opacity-35 border-transparent text-zinc-400 cursor-not-allowed"
+                              : "border-zinc-200 dark:border-zinc-750 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-97"
+                          )}
+                        >
+                          <span>앞으로가기 (다음) ▶</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             )}
 
@@ -27338,40 +27489,9 @@ function App() {
     return () => clearInterval(interval);
   }, []);
 
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-    const handleResize = () => {
-      const isPhysicalMobile =
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-          navigator.userAgent
-        ) || window.innerWidth < 768;
-      const stored = localStorage.getItem("isSimulatedMobileView");
-      if (stored === null) {
-        setIsSimulatedMobileView(isPhysicalMobile);
-      }
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
+  const isSimulatedMobileView = false;
   const [isAdminView, setIsAdminView] = React.useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
-  const [isSimulatedMobileView, setIsSimulatedMobileView] = React.useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const isPhysicalMobile =
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-          navigator.userAgent
-        ) || window.innerWidth < 768;
-      const stored = localStorage.getItem("isSimulatedMobileView");
-      if (stored !== null) {
-        return stored === "true";
-      }
-      return isPhysicalMobile;
-    }
-    return false;
-  });
   const [registerTypeFromHeader, setRegisterTypeFromHeader] = React.useState<"citizen" | "professional" | null>(null);
   const [theme, setTheme] = React.useState(
     () => localStorage.getItem("theme") || "light",
@@ -28979,75 +29099,9 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
   }
 
   return (
-    <div className={cn(
-      "min-h-screen text-white font-sans selection:bg-red-655 selection:text-white flex flex-col relative overflow-hidden transition-colors duration-500",
-      isSimulatedMobileView ? "bg-[#09090b] items-center justify-center lg:py-6" : "w-full bg-white dark:bg-[#09090b]"
-    )}>
-      {/* Ambient background glow */}
-      {isSimulatedMobileView && (
-        <>
-          <div className="absolute top-1/3 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-650/10 rounded-full blur-[140px] pointer-events-none z-0 hidden lg:block" />
-          <div className="absolute bottom-1/4 right-1/4 translate-x-1/3 translate-y-1/3 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none z-0 hidden lg:block" />
-        </>
-      )}
-      
-      {/* Minimal sandbox header */}
-      {isSimulatedMobileView && (
-        <div className="hidden lg:flex flex-col items-center gap-1 mb-4 z-10 select-none text-center">
-          <div className="flex items-center gap-2">
-            <span className="flex h-1.5 w-1.5 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-600"></span>
-            </span>
-            <span className="text-[9px] font-black text-red-500 uppercase tracking-widest bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">IsolNara Mobile Sandbox</span>
-          </div>
-          <h1 className="text-base font-extrabold tracking-tight text-zinc-100">이솔나라 실시간 모바일 체험존</h1>
-          <p className="text-[10px] text-zinc-400 font-semibold">데스크톱에서도 고품격 모바일 전용 UI/UX를 1:1 인터랙티브로 감상하세요.</p>
-        </div>
-      )}
-
-      {/* Main Google Pixel/iPhone style chassis */}
-      <div 
-        className={cn(
-          "w-full flex-1 flex flex-col relative select-none",
-          isSimulatedMobileView 
-            ? "h-screen lg:max-w-[420px] lg:h-[880px] lg:rounded-[44px] lg:border-[10px] lg:border-zinc-850 lg:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] lg:bg-white lg:dark:bg-zinc-950 lg:ring-1 lg:ring-white/10 z-10 mobile-force overflow-hidden" 
-            : "min-h-screen w-full lg:max-w-none lg:h-auto lg:rounded-none lg:border-0 lg:shadow-none lg:bg-transparent lg:dark:bg-transparent z-10"
-        )} 
-        style={isSimulatedMobileView ? { transform: 'translate3d(0,0,0)' } : undefined}
-      >
-        
-        {/* Realism: Top device status bar */}
-        {isSimulatedMobileView && (
-          <div className="hidden lg:flex justify-between items-center px-6 py-2.5 bg-white dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-900 text-[10.5px] font-black text-zinc-800 dark:text-zinc-200 select-none shrink-0 relative">
-            <div className="font-mono flex items-center gap-1">
-              <span className="animate-pulse text-red-500">●</span>
-              <span>{deviceTime}</span>
-            </div>
-            {/* Simulated notch */}
-            <div className="w-20 h-4 bg-black rounded-full absolute left-1/2 -translate-x-1/2 top-2 flex items-center justify-center border border-white/5 shadow-inner">
-              <div className="w-1.5 h-1.5 rounded-full bg-zinc-900/40 border border-white/5 ml-auto mr-3 animate-pulse" />
-            </div>
-            <div className="flex items-center gap-1.5 font-mono text-[9px]">
-              <span className="text-[8px] px-1 bg-red-500/10 text-red-500 rounded border border-red-500/15 font-sans">LIVE</span>
-              <span>5G</span>
-              <span className="flex items-center gap-0.5">
-                <span className="w-0.5 h-1.5 bg-current rounded-3xs" />
-                <span className="w-0.5 h-2 bg-current rounded-3xs" />
-                <span className="w-0.5 h-2.5 bg-current rounded-3xs" />
-              </span>
-              <div className="w-5 h-2.5 border border-current rounded-xs p-0.5 flex items-center">
-                <div className="w-full h-full bg-current rounded-3xs" />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Scrollable core web app wrapper */}
-        <div className={cn(
-          "flex-1 w-full relative flex flex-col bg-bg dark:bg-zinc-950",
-          isSimulatedMobileView ? "h-full overflow-y-auto overflow-x-hidden no-scrollbar" : "min-h-screen"
-        )}>
+    <div className="min-h-screen w-full bg-white dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 font-sans selection:bg-red-655 selection:text-white flex flex-col relative transition-colors duration-500">
+      <div className="w-full flex-1 flex flex-col relative select-none">
+        <div className="flex-1 w-full relative flex flex-col bg-white dark:bg-zinc-950 min-h-screen">
           <AnimatePresence>
             {isLoading && <NeuralLoader key="app-loader" />}
           </AnimatePresence>
@@ -29070,8 +29124,6 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           onLogout={handleLogout}
           theme={theme}
           onThemeToggle={() => setTheme(theme === "dark" ? "light" : "dark")}
-          isSimulatedMobileView={isSimulatedMobileView}
-          onToggleSimulatedMobileView={() => setIsSimulatedMobileView(!isSimulatedMobileView)}
           onOpen10Improvements={() => setIs10ImprovementsModalOpen(true)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -29115,67 +29167,9 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
         />
       )}
 
-      {/* 📰 이솔 국영 뉴스룸 초강도 실시간 속보 무한 롤링 티커 바 */}
-      <style>{`
-        @keyframes tickerMarquee {
-          0% { transform: translate3d(0, 0, 0); }
-          100% { transform: translate3d(-50%, 0, 0); }
-        }
-        .animate-ticker-marquee {
-          display: flex;
-          width: max-content;
-          animation: tickerMarquee 40s linear infinite;
-        }
-        .animate-ticker-marquee:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
-      
-      <div className="w-full bg-red-600/95 dark:bg-red-750 text-white py-2.5 px-4 overflow-hidden border-b border-red-500/30 flex items-center gap-3 select-none text-xs font-sans z-40 relative">
-        <span className="bg-black text-red-500 font-black text-[10px] px-2 py-0.5 rounded-md uppercase tracking-wider animate-pulse flex items-center gap-1 shrink-0 shadow-sm border border-red-500/20">
-          <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
-          FLASH
-        </span>
-        <div className="flex-1 overflow-hidden relative">
-          <div className="animate-ticker-marquee flex gap-12 whitespace-nowrap">
-            {[
-              { text: "📢 [속보] 이솔나라 중앙은행, 인공지능 주도형 핀테크 공적 자금 무한 제휴 체결!", query: "중앙은행" },
-              { text: "🔥 [특보] 시민기자 소울센터, 독립 저널리즘 기사 발행량 역대 최고 누적 기록 돌파!", query: "소울센터" },
-              { text: "⚖️ [팩트체크] 이솔광장 소강의 여론조사 '정의 주권 비율 98.7%' 무결성 검정 완료", query: "여론조사" },
-              { text: "🚀 [AI 연구소] 차세대 국산 언어모델 이솔AI 엔진 4.0 전격 상용화 선포!", query: "이솔AI" },
-              { text: "🧸 [웹툰마당] 오리지널 메타버스 캐릭터 IP 및 오감 일러스트 대왕 공모전 성황리 개최", query: "웹툰마당" },
-              // Loop cloning items for seamless infinite rolling
-              { text: "📢 [속보] 이솔나라 중앙은행, 인공지능 주도형 핀테크 공적 자금 무한 제휴 체결!", query: "중앙은행" },
-              { text: "🔥 [특보] 시민기자 소울센터, 독립 저널리즘 기사 발행량 역대 최고 누적 기록 돌파!", query: "소울센터" },
-              { text: "⚖️ [팩트체크] 이솔광장 소강의 여론조사 '정의 주권 비율 98.7%' 무결성 검정 완료", query: "여론조사" },
-              { text: "🚀 [AI 연구소] 차세대 국산 언어모델 이솔AI 엔진 4.0 전격 상용화 선포!", query: "이솔AI" },
-              { text: "🧸 [웹툰마당] 오리지널 메타버스 캐릭터 IP 및 오감 일러스트 대왕 공모전 성황리 개최", query: "웹툰마당" }
-            ].map((item, idx) => (
-              <span
-                key={idx}
-                onClick={() => {
-                  if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
-                  setSearchQuery(item.query);
-                  setSelectedNewsCategory("전체기사");
-                  setCurrentPage("isol-post");
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                  toast.success(`🔍 속보 검색 연동: '${item.query}' 정밀 관측 필터가 발동되었습니다!`);
-                }}
-                className="font-extrabold flex items-center gap-2 hover:text-[#fee500] cursor-pointer transition-colors text-[11px]"
-              >
-                {item.text}
-              </span>
-            ))}
-          </div>
-        </div>
-        <span className="text-[10px] opacity-80 font-black hidden sm:inline-block border-l border-white/20 pl-3 whitespace-nowrap shrink-0">
-          {new Date().toLocaleDateString("ko-KR", { month: "short", day: "numeric" })} 실시간 특보
-        </span>
-      </div>
-
       <AdminQuickActions onSeed={handleSeedDB} onAI={handleAIDailyGenerate} />
 
-      <main className="pt-0">
+      <main className="pt-0 flex-1 flex flex-col">
         <AnimatePresence mode="wait">
           {currentPage === "home" && (
             <motion.div
@@ -29218,6 +29212,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           {currentPage === "isol-post" && (
             <motion.div
               key="isol-post"
+              className="flex-1 flex flex-col"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -29268,8 +29263,6 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 setBanners={setBanners}
                 onAdApplyClick={() => setIsAdApplyModalOpen(true)}
                 setCitizenNews={setCitizenNews}
-                onToggleSimulatedMobileView={() => setIsSimulatedMobileView(!isSimulatedMobileView)}
-                isSimulatedMobileView={isSimulatedMobileView}
                 onOpen10Improvements={() => setIs10ImprovementsModalOpen(true)}
               />
             </motion.div>
@@ -29473,21 +29466,23 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
         />
       </div>
 
-      <Footer
-        onAdminClick={() => setIsAdminView(true)}
-        onGrievanceClick={() => setIsGrievanceModalOpen(true)}
-        onPressRegClick={() => setIsPressRegistrationModalOpen(true)}
-        onEditorialPolicyClick={() => setIsEditorialPolicyModalOpen(true)}
-        onPrivacyPolicyClick={() => setIsPrivacyPolicyModalOpen(true)}
-        onTermsOfServiceClick={() => setIsTermsOfServiceModalOpen(true)}
-        onOmbudsmanClick={() => setIsOmbudsmanModalOpen(true)}
-        onAdApplyClick={() => setIsAdApplyModalOpen(true)}
-        isAdmin={true}
-        isNewsPage={
-          currentPage === "isol-post" || currentPage === "admin-news-center"
-        }
-        siteSettings={siteSettings}
-      />
+      <div id="isol-global-footer" className="scroll-mt-10 mt-auto">
+        <Footer
+          onAdminClick={() => setIsAdminView(true)}
+          onGrievanceClick={() => setIsGrievanceModalOpen(true)}
+          onPressRegClick={() => setIsPressRegistrationModalOpen(true)}
+          onEditorialPolicyClick={() => setIsEditorialPolicyModalOpen(true)}
+          onPrivacyPolicyClick={() => setIsPrivacyPolicyModalOpen(true)}
+          onTermsOfServiceClick={() => setIsTermsOfServiceModalOpen(true)}
+          onOmbudsmanClick={() => setIsOmbudsmanModalOpen(true)}
+          onAdApplyClick={() => setIsAdApplyModalOpen(true)}
+          isAdmin={true}
+          isNewsPage={
+            currentPage === "isol-post" || currentPage === "admin-news-center"
+          }
+          siteSettings={siteSettings}
+        />
+      </div>
 
       <CorporateAdApplyModal
         isOpen={isAdApplyModalOpen}
@@ -30483,49 +30478,6 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 ⚙️ Quick Accessibility
               </p>
 
-              {/* Layout Mode Row */}
-              <div className="flex flex-col gap-1.5 border-b border-gray-100 dark:border-white/5 pb-2 select-none">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-bold text-zinc-500">화면 레이아웃 (Layout Mode)</span>
-                </div>
-                <div className="grid grid-cols-2 gap-1 bg-gray-100 dark:bg-zinc-900 rounded-lg p-1">
-                  <button
-                    onClick={() => {
-                      if (typeof playHapticClick === "function") playHapticClick(600, 0.04);
-                      setIsSimulatedMobileView(false);
-                      localStorage.setItem("isSimulatedMobileView", "false");
-                      toast.success("🖥️ 데스크톱 웹 최적화 모드로 전환되었습니다!");
-                    }}
-                    className={cn(
-                      "py-1 text-[9.5px] font-black rounded transition-all flex items-center justify-center gap-1 cursor-pointer",
-                      !isSimulatedMobileView
-                        ? "bg-red-650 text-white shadow-sm"
-                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
-                    )}
-                  >
-                    <Monitor size={11} />
-                    <span>데스크톱 웹</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (typeof playHapticClick === "function") playHapticClick(600, 0.04);
-                      setIsSimulatedMobileView(true);
-                      localStorage.setItem("isSimulatedMobileView", "true");
-                      toast.success("📱 모바일 가상 체험 모드로 전환되었습니다!");
-                    }}
-                    className={cn(
-                      "py-1 text-[9.5px] font-black rounded transition-all flex items-center justify-center gap-1 cursor-pointer",
-                      isSimulatedMobileView
-                        ? "bg-red-650 text-white shadow-sm"
-                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
-                    )}
-                  >
-                    <Smartphone size={11} />
-                    <span>모바일 가상</span>
-                  </button>
-                </div>
-              </div>
-              
               {/* Font Resizing Row */}
               <div className="flex flex-col gap-1.5">
                 <div className="flex justify-between items-center">
@@ -30576,29 +30528,6 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
               >
                 <span>야간 시력보호 필터</span>
                 <span className={cn("w-2 h-2 rounded-full", eyeProtectionMode ? "bg-amber-500 animate-pulse" : "bg-zinc-300")} />
-              </button>
-
-              {/* 뷰포트 최적화 수동 토글 버튼 (📱 모바일 ↔ 💻 노트북/웹) */}
-              <button
-                onClick={() => {
-                  playHapticClick(800, 0.05);
-                  setIsFabMenuOpen(false);
-                  setIsSimulatedMobileView(!isSimulatedMobileView);
-                  toast.success(
-                    !isSimulatedMobileView
-                      ? "📱 1:1 모바일 최적화 UI/UX 화면으로 전환되었습니다."
-                      : "💻 노트북/웹 대화면 최적화 UI/UX 화면으로 전환되었습니다."
-                  );
-                }}
-                className="flex items-center justify-between p-2 rounded-xl text-xs font-black border bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400 hover:from-blue-500/20 hover:to-purple-500/20 transition-all cursor-pointer shadow-sm"
-              >
-                <div className="flex items-center gap-1.5">
-                  {isSimulatedMobileView ? <Laptop size={14} className="text-indigo-500 shrink-0" /> : <Smartphone size={14} className="text-blue-500 shrink-0" />}
-                  <span>{isSimulatedMobileView ? "💻 노트북/웹 화면으로 전환" : "📱 모바일 화면으로 전환"}</span>
-                </div>
-                <span className="text-[9px] bg-blue-600 text-white font-mono font-black px-1.5 py-0.5 rounded-full">
-                  {isSimulatedMobileView ? "DESKTOP" : "MOBILE"}
-                </span>
               </button>
 
               {/* 10대 UI/UX 보완점 & 리포트 모달 버튼 */}
@@ -30691,7 +30620,12 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           whileTap={{ scale: 0.9 }}
           onClick={() => {
             if (typeof playHapticClick === "function") playHapticClick(500, 0.04);
-            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+            const footerEl = document.getElementById("isol-global-footer");
+            if (footerEl) {
+              footerEl.scrollIntoView({ behavior: "smooth" });
+            } else {
+              window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+            }
           }}
           className="w-12 h-12 rounded-full bg-zinc-950 dark:bg-zinc-900 border border-red-550/30 dark:border-red-500/30 flex items-center justify-center text-white shadow-[0_0_15px_rgba(239,68,68,0.3)] hover:shadow-[0_0_20px_rgba(239,68,68,0.5)] transition-all cursor-pointer"
           title="맨 아래로 가기 (Scroll To Bottom)"
@@ -30841,20 +30775,13 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           );
         })}
       </div>
-      
-      {/* On Desktop, render a simulated virtual home indicator bar at the bottom for realism */}
-      {isSimulatedMobileView && (
-        <div className="hidden lg:flex justify-center items-center py-2 bg-white dark:bg-zinc-950 shrink-0 select-none border-t border-zinc-100 dark:border-zinc-900 relative z-[100]">
-          <div className="w-28 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full" />
-        </div>
-      )}
 
       {/* 🚀 10대 UI/UX 보완점 및 최신 트렌드 리포트 모달 */}
       <UIUXImprovementsModal
         isOpen={is10ImprovementsModalOpen}
         onClose={() => setIs10ImprovementsModalOpen(false)}
         isSimulatedMobileView={isSimulatedMobileView}
-        onToggleSimulatedMobileView={() => setIsSimulatedMobileView(!isSimulatedMobileView)}
+        onToggleSimulatedMobileView={() => {}}
         onOpenCommandPalette={() => {
           setIs10ImprovementsModalOpen(false);
           setIsCommandPaletteOpen(true);
@@ -30890,7 +30817,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           setSelectedWebtoon(null);
           setCurrentPage(page as any);
         }}
-        onToggleSimulatedMobileView={() => setIsSimulatedMobileView(!isSimulatedMobileView)}
+        onToggleSimulatedMobileView={() => {}}
         isSimulatedMobileView={isSimulatedMobileView}
         onOpen10Improvements={() => setIs10ImprovementsModalOpen(true)}
       />
