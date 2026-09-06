@@ -124,6 +124,7 @@ import {
   Bookmark,
   Film,
   Clapperboard,
+  MoreHorizontal,
 } from "lucide-react";
 import { GoogleGenAI, Type } from "@google/genai";
 import { QRCodeSVG } from "qrcode.react";
@@ -4395,6 +4396,7 @@ const AdminDashboard: React.FC<{
   setRagTopK: React.Dispatch<React.SetStateAction<number>>;
   isLoading?: boolean;
   isSimulatedMobileView?: boolean;
+  initialTab?: string;
 }> = ({
   webtoons,
   news,
@@ -4429,6 +4431,7 @@ const AdminDashboard: React.FC<{
   setRagTopK,
   isLoading = false,
   isSimulatedMobileView = false,
+  initialTab = "editorial",
 }) => {
   // 1. All State declarations at the top to avoid hoisting issues
   const [activeTab, setActiveTab] = useState<
@@ -4445,7 +4448,13 @@ const AdminDashboard: React.FC<{
     | "hyeonwon_cinema"
     | "aegis-ai-lab"
     | "manual"
-  >("stats");
+  >((initialTab as any) || "editorial");
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab as any);
+    }
+  }, [initialTab]);
   const [activeEditorialSubTab, setActiveEditorialSubTab] = useState<
     "pending" | "published" | "scraped" | "revisions" | "all"
   >("pending");
@@ -4506,6 +4515,9 @@ const AdminDashboard: React.FC<{
     profileImage: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300",
   });
   const [selectedPressCardReporter, setSelectedPressCardReporter] = useState<any | null>(null);
+  // Mobile simplified admin navigation & card action states
+  const [showOtherAdminMenus, setShowOtherAdminMenus] = useState(false);
+  const [mobileCardMenuId, setMobileCardMenuId] = useState<string | null>(null);
 
   // Hyeonwon Cinema Admin State
   const [adminComments, setAdminComments] = useState<any[]>([]);
@@ -6190,35 +6202,110 @@ const AdminDashboard: React.FC<{
           </div>
         </header>
 
-        {/* Mobile Horizontal Sub-Navigation Tab Bar for Admin Ease */}
-        <div className="lg:hidden bg-zinc-950/40 border-b border-white/5 py-3 overflow-x-auto no-scrollbar scroll-smooth flex items-center gap-2 px-6 h-14 sticky top-[80px] z-30 overflow-y-hidden">
-          {[
-            { id: "stats", icon: LayoutDashboard, label: "종합" },
-            { id: "editorial", icon: Newspaper, label: "검토대" },
-            { id: "direct_publish", icon: Zap, label: "속보" },
-            { id: "webtoons", icon: Tv, label: "문화" },
-            { id: "reporters", icon: Users, label: "기자단" },
-            { id: "ai", icon: Brain, label: "AI로버" },
-            { id: "aegis-ai-lab", icon: Brain, label: "AI랩" },
-            { id: "manual", icon: BookOpen, label: "설명서" },
-            { id: "site_config", icon: Settings, label: "시스템" },
-            { id: "compliance", icon: ShieldCheck, label: "강령" },
-            { id: "grievance", icon: Scale, label: "고충처리" },
-          ].map((item) => (
+        {/* 📱 모바일 관리자 간편 네비게이션: 기사 관리/수정 중심 4대 핵심 메뉴 + 기타 도구 */}
+        <div className="lg:hidden bg-zinc-950/95 backdrop-blur-md border-b border-white/10 px-3.5 py-2.5 sticky top-[80px] z-30 space-y-2">
+          {/* 핵심 기사 관리 바로가기 4대 탭 */}
+          <div className="grid grid-cols-4 gap-1.5">
             <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id as any)}
+              onClick={() => {
+                setActiveTab("editorial");
+                setShowOtherAdminMenus(false);
+              }}
               className={cn(
-                "text-[10px] px-4 py-2 font-black rounded-xl transition-all relative whitespace-nowrap shrink-0 uppercase tracking-widest border flex items-center gap-2 min-h-[36px]",
-                activeTab === item.id
-                  ? "bg-white text-black border-white shadow-lg"
-                  : "bg-white/5 text-white/40 border-white/5 hover:text-white hover:bg-white/10"
+                "py-2 px-1 rounded-xl font-black text-xs transition-all flex flex-col items-center justify-center gap-1 border relative cursor-pointer",
+                activeTab === "editorial"
+                  ? "bg-red-650 text-white border-red-500 shadow-md shadow-red-650/20"
+                  : "bg-white/5 text-white/75 border-white/10 hover:bg-white/10"
               )}
             >
-              <item.icon size={12} />
-              <span>{item.label}</span>
+              <Newspaper size={16} />
+              <span className="text-[10px] tracking-tight font-black">기사관리/수정</span>
+              {citizenNews.filter((n) => !n.isApproved && n.status !== "revision").length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black min-w-4 h-4 px-1 rounded-full flex items-center justify-center border-2 border-zinc-950 animate-pulse">
+                  {citizenNews.filter((n) => !n.isApproved && n.status !== "revision").length}
+                </span>
+              )}
             </button>
-          ))}
+
+            <button
+              onClick={() => {
+                setActiveTab("direct_publish");
+                setShowOtherAdminMenus(false);
+              }}
+              className={cn(
+                "py-2 px-1 rounded-xl font-black text-xs transition-all flex flex-col items-center justify-center gap-1 border cursor-pointer",
+                activeTab === "direct_publish"
+                  ? "bg-amber-600 text-white border-amber-500 shadow-md shadow-amber-600/20"
+                  : "bg-white/5 text-white/75 border-white/10 hover:bg-white/10"
+              )}
+            >
+              <Zap size={16} />
+              <span className="text-[10px] tracking-tight font-black">긴급 속보</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab("stats");
+                setShowOtherAdminMenus(false);
+              }}
+              className={cn(
+                "py-2 px-1 rounded-xl font-black text-xs transition-all flex flex-col items-center justify-center gap-1 border cursor-pointer",
+                activeTab === "stats"
+                  ? "bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/20"
+                  : "bg-white/5 text-white/75 border-white/10 hover:bg-white/10"
+              )}
+            >
+              <LayoutDashboard size={16} />
+              <span className="text-[10px] tracking-tight font-black">종합 현황</span>
+            </button>
+
+            <button
+              onClick={() => setShowOtherAdminMenus(!showOtherAdminMenus)}
+              className={cn(
+                "py-2 px-1 rounded-xl font-black text-xs transition-all flex flex-col items-center justify-center gap-1 border cursor-pointer",
+                showOtherAdminMenus || (activeTab !== "editorial" && activeTab !== "direct_publish" && activeTab !== "stats")
+                  ? "bg-zinc-800 text-white border-white/30 shadow-md"
+                  : "bg-white/5 text-white/50 border-white/10 hover:bg-white/10"
+              )}
+            >
+              <MoreHorizontal size={16} />
+              <span className="text-[10px] tracking-tight font-black">기타 도구</span>
+            </button>
+          </div>
+
+          {/* 접이식 기타 관리 메뉴 (원터치 전환) */}
+          {showOtherAdminMenus && (
+            <div className="p-2.5 bg-zinc-900 border border-white/15 rounded-2xl grid grid-cols-3 gap-1.5 animate-in fade-in slide-in-from-top-2 shadow-2xl">
+              {[
+                { id: "reporters", icon: Users, label: "기자단 관리" },
+                { id: "webtoons", icon: Tv, label: "문화/만평" },
+                { id: "ai", icon: Sparkles, label: "AI 기사작성" },
+                { id: "aegis-ai-lab", icon: Brain, label: "AI 랩실" },
+                { id: "site_config", icon: Settings, label: "시스템 설정" },
+                { id: "grievance", icon: Scale, label: "고충처리" },
+                { id: "compliance", icon: ShieldCheck, label: "윤리강령" },
+                { id: "manual", icon: BookOpen, label: "사용설명서" },
+                { id: "hyeonwon_cinema", icon: Film, label: "현원시네마" },
+              ].map((sub) => (
+                <button
+                  key={sub.id}
+                  onClick={() => {
+                    setActiveTab(sub.id as any);
+                    setShowOtherAdminMenus(false);
+                  }}
+                  className={cn(
+                    "p-2 rounded-xl text-[10.5px] font-black flex items-center justify-center gap-1.5 border transition-all cursor-pointer",
+                    activeTab === sub.id
+                      ? "bg-white text-zinc-950 border-white"
+                      : "bg-white/5 text-white/70 border-white/5 hover:bg-white/10"
+                  )}
+                >
+                  <sub.icon size={12} />
+                  <span>{sub.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <main className="relative z-10 p-6 lg:p-12 pb-32 lg:pb-12">
@@ -7497,128 +7584,168 @@ const AdminDashboard: React.FC<{
                               </div>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-white/5">
+                            {/* 📱 모바일/PC 겸용 직관적 기사 관리 액션 바 */}
+                            <div className="pt-3 border-t border-white/10 space-y-2">
                               {activeEditorialSubTab === "scraped" ? (
                                 <button
                                   onClick={() => setNewsUrl(item.link)}
-                                  className="flex-1 py-3 bg-cyan-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2"
+                                  className="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
                                 >
-                                  <Zap size={14} /> 스캔 상세 보기
+                                  <Zap size={14} /> 스캔 기사 상세 보기
                                 </button>
                               ) : (
                                 <>
-                                  <button
-                                    onClick={() =>
-                                      toggleApproval(item.id, !!item.isApproved)
-                                    }
-                                    className={cn(
-                                      "flex-1 h-11 rounded-xl border flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all",
-                                      item.isApproved
-                                        ? "bg-red-500/10 border-red-500/20 text-red-500"
-                                        : "bg-emerald-500/10 border-emerald-500/20 text-emerald-500",
-                                    )}
-                                  >
-                                    {item.isApproved ? (
-                                      <>
-                                        <XCircle size={14} /> 중단
-                                      </>
-                                    ) : (
-                                      <>
-                                        <CheckCircle2 size={14} /> 승인
-                                      </>
-                                    )}
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      toggleFeatured(item.id, !!item.isFeatured)
-                                    }
-                                    className={cn(
-                                      "h-11 px-4 rounded-xl border flex items-center justify-center gap-2 text-[10px] font-black uppercase transition-all",
-                                      item.isFeatured
-                                        ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
-                                        : "bg-white/5 border-white/10 text-white/20",
-                                    )}
-                                  >
-                                    <Star
-                                      size={14}
-                                      fill={
-                                        item.isFeatured
-                                          ? "currentColor"
-                                          : "none"
-                                      }
-                                    />{" "}
-                                    {item.isFeatured ? "고정됨" : "고정"}
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setFactCheckNews(item);
-                                      setEditorForm({
-                                        factCheckStatus:
-                                          item.factCheckStatus || "none",
-                                        factCheckNotes:
-                                          item.factCheckNotes || "",
-                                        editorComment:
-                                          item.editorComment || "",
-                                        priority:
-                                          item.priority || "general",
-                                      });
-                                    }}
-                                    className={cn(
-                                      "h-11 px-4 rounded-xl border flex items-center justify-center gap-2 text-[10px] font-black uppercase transition-all",
-                                      item.factCheckStatus &&
-                                        item.factCheckStatus !== "none"
-                                        ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-400 font-extrabold"
-                                        : "bg-white/5 border-white/10 text-white/30",
-                                    )}
-                                  >
-                                    <ShieldAlert size={14} /> 검토
-                                  </button>
-                                  <button
-                                    onClick={() => startInlineEdit(item)}
-                                    className="h-11 px-6 rounded-xl bg-white text-black font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-xl"
-                                  >
-                                    <Edit2 size={14} /> 수정하기
-                                  </button>
-                                  <button
-                                    onClick={() => setPreviewNews(item)}
-                                    className="h-11 px-4 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center gap-2 transition-all font-black text-[10px] uppercase"
-                                  >
-                                    <Eye size={14} /> 미리보기
-                                  </button>
-                                  <button
-                                    onClick={() => duplicateArticle(item)}
-                                    className="h-11 px-4 rounded-xl bg-white/5 border border-white/10 text-white flex items-center justify-center gap-2 transition-all font-black text-[10px] uppercase"
-                                    title="기사 복제하기"
-                                  >
-                                    <Copy size={14} /> 복제
-                                  </button>
-                                  <button
-                                    onClick={() => handleAiAmplification(item)}
-                                    className="h-11 px-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center gap-2 transition-all font-black text-[10px] uppercase hover:bg-purple-500 hover:text-white"
-                                    title="AI 2차 가공 (심층 기획 생성)"
-                                  >
-                                    <Sparkles size={14} /> AI 2차 가공
-                                  </button>
-                                  {activeEditorialSubTab === "revisions" && (
+                                  {/* 1열: 가장 많이 쓰는 핵심 3대 액션 (원터치) */}
+                                  <div className="grid grid-cols-3 gap-1.5">
                                     <button
-                                      onClick={() => approveRevision(item)}
-                                      className="h-11 px-4 rounded-xl bg-emerald-500 text-white flex items-center justify-center gap-2 font-black text-[10px] uppercase"
+                                      onClick={() =>
+                                        toggleApproval(item.id, !!item.isApproved)
+                                      }
+                                      className={cn(
+                                        "h-10 sm:h-11 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-black transition-all cursor-pointer",
+                                        item.isApproved
+                                          ? "bg-red-500/15 border-red-500/30 text-red-400 hover:bg-red-500/25"
+                                          : "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25",
+                                      )}
                                     >
-                                      <CheckCircle2 size={14} /> 수정 반영
+                                      {item.isApproved ? (
+                                        <>
+                                          <XCircle size={15} /> <span>중단</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <CheckCircle2 size={15} /> <span>승인</span>
+                                        </>
+                                      )}
                                     </button>
+
+                                    <button
+                                      onClick={() => startInlineEdit(item)}
+                                      className="h-10 sm:h-11 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-red-600/20 transition-all cursor-pointer"
+                                    >
+                                      <Edit2 size={14} /> <span>기사 수정</span>
+                                    </button>
+
+                                    <button
+                                      onClick={() => setPreviewNews(item)}
+                                      className="h-10 sm:h-11 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white flex items-center justify-center gap-1.5 transition-all font-black text-xs cursor-pointer"
+                                    >
+                                      <Eye size={14} /> <span>미리보기</span>
+                                    </button>
+                                  </div>
+
+                                  {/* 2열: 보조 관리 툴바 & [··· 더보기] */}
+                                  <div className="flex items-center justify-between gap-1.5 pt-1">
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        onClick={() =>
+                                          toggleFeatured(item.id, !!item.isFeatured)
+                                        }
+                                        className={cn(
+                                          "h-8 px-2.5 rounded-lg border flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer",
+                                          item.isFeatured
+                                            ? "bg-amber-500/20 border-amber-500/40 text-amber-400"
+                                            : "bg-white/5 border-white/10 text-white/50 hover:text-white",
+                                        )}
+                                      >
+                                        <Star
+                                          size={12}
+                                          fill={item.isFeatured ? "currentColor" : "none"}
+                                        />
+                                        <span>{item.isFeatured ? "헤드라인" : "고정"}</span>
+                                      </button>
+
+                                      <button
+                                        onClick={() => {
+                                          setFactCheckNews(item);
+                                          setEditorForm({
+                                            factCheckStatus: item.factCheckStatus || "none",
+                                            factCheckNotes: item.factCheckNotes || "",
+                                            editorComment: item.editorComment || "",
+                                            priority: item.priority || "general",
+                                          });
+                                        }}
+                                        className={cn(
+                                          "h-8 px-2.5 rounded-lg border flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer",
+                                          item.factCheckStatus && item.factCheckStatus !== "none"
+                                            ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-400 font-extrabold"
+                                            : "bg-white/5 border-white/10 text-white/50 hover:text-white",
+                                        )}
+                                      >
+                                        <ShieldAlert size={12} />
+                                        <span>검토/팩트</span>
+                                      </button>
+                                    </div>
+
+                                    {/* [··· 더보기] 토글 버튼 */}
+                                    <button
+                                      onClick={() =>
+                                        setMobileCardMenuId(
+                                          mobileCardMenuId === item.id ? null : item.id
+                                        )
+                                      }
+                                      className={cn(
+                                        "h-8 px-3 rounded-lg border text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer",
+                                        mobileCardMenuId === item.id
+                                          ? "bg-white text-zinc-950 border-white"
+                                          : "bg-white/5 border-white/10 text-white/60 hover:text-white"
+                                      )}
+                                    >
+                                      <MoreHorizontal size={13} />
+                                      <span>기능 더보기</span>
+                                    </button>
+                                  </div>
+
+                                  {/* [··· 더보기] 확장 패널 */}
+                                  {mobileCardMenuId === item.id && (
+                                    <div className="p-2.5 bg-zinc-900 border border-white/15 rounded-2xl grid grid-cols-2 gap-1.5 animate-in fade-in slide-in-from-top-1 text-left">
+                                      <button
+                                        onClick={() => {
+                                          duplicateArticle(item);
+                                          setMobileCardMenuId(null);
+                                        }}
+                                        className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-white/5"
+                                      >
+                                        <Copy size={13} /> 기사 복제
+                                      </button>
+
+                                      <button
+                                        onClick={() => {
+                                          handleAiAmplification(item);
+                                          setMobileCardMenuId(null);
+                                        }}
+                                        className="p-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-bold flex items-center gap-1.5 cursor-pointer border border-purple-500/20"
+                                      >
+                                        <Sparkles size={13} /> AI 2차 가공
+                                      </button>
+
+                                      {activeEditorialSubTab === "revisions" && (
+                                        <button
+                                          onClick={() => {
+                                            approveRevision(item);
+                                            setMobileCardMenuId(null);
+                                          }}
+                                          className="col-span-2 p-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-500/30"
+                                        >
+                                          <CheckCircle2 size={13} /> 수정 요청 즉시 반영
+                                        </button>
+                                      )}
+
+                                      <button
+                                        onClick={() => {
+                                          setItemToDelete({
+                                            id: item.id,
+                                            title: item.title,
+                                            type: "news",
+                                          });
+                                          setMobileCardMenuId(null);
+                                        }}
+                                        className="col-span-2 p-2 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-300 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-red-500/30"
+                                      >
+                                        <Trash2 size={13} /> 기사 영구 삭제
+                                      </button>
+                                    </div>
                                   )}
-                                  <button
-                                    onClick={() =>
-                                      setItemToDelete({
-                                        id: item.id,
-                                        title: item.title,
-                                        type: "news",
-                                      })
-                                    }
-                                    className="h-11 px-4 rounded-xl bg-red-600 text-white flex items-center justify-center gap-2 font-black text-[10px] uppercase"
-                                  >
-                                    <Trash2 size={14} /> 영구 삭제
-                                  </button>
                                 </>
                               )}
                             </div>
@@ -10702,38 +10829,38 @@ const AdminDashboard: React.FC<{
 
             {/* 3. Article Quick Editor Modal */}
             {inlineEditingArticle && (
-              <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto no-scrollbar">
+              <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto no-scrollbar">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className="bg-[#08080a] border border-white/10 rounded-[2.5rem] w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col my-8"
+                  className="bg-[#08080a] border border-white/15 rounded-3xl sm:rounded-[2.5rem] w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col my-2 sm:my-8 max-h-[95vh]"
                 >
                   {/* Header */}
-                  <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-red-600/10 border border-red-600/20 flex items-center justify-center text-red-500">
-                        <Edit3 size={18} />
+                  <div className="px-4 sm:px-8 py-3.5 sm:py-6 border-b border-white/10 flex items-center justify-between bg-white/[0.03] shrink-0">
+                    <div className="flex items-center gap-2.5 sm:gap-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-red-600/10 border border-red-600/20 flex items-center justify-center text-red-500 shrink-0">
+                        <Edit3 size={16} />
                       </div>
                       <div>
-                        <h3 className="text-lg font-black text-white italic tracking-tighter uppercase">
-                          기사 교정 및 저널 편집실
+                        <h3 className="text-sm sm:text-lg font-black text-white italic tracking-tight uppercase">
+                          기사 교정 및 관리자 편집
                         </h3>
-                        <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest mt-0.5">
-                          Professional Article Editorial Box
+                        <p className="text-[8px] sm:text-[9px] font-bold text-white/40 uppercase tracking-widest">
+                          스마트폰 터치 최적화 편집기
                         </p>
                       </div>
                     </div>
                     <button
                       onClick={() => setInlineEditingArticle(null)}
-                      className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-white/40 hover:text-white transition-all cursor-pointer"
+                      className="p-2 sm:p-3 bg-white/5 hover:bg-white/10 rounded-xl text-white/50 hover:text-white transition-all cursor-pointer"
                     >
-                      <X size={18} />
+                      <X size={16} />
                     </button>
                   </div>
 
                   {/* Body Form */}
-                  <form onSubmit={handleSaveInlineEdit} className="p-8 space-y-6 overflow-y-auto max-h-[75vh] no-scrollbar text-left scroll-smooth">
+                  <form onSubmit={handleSaveInlineEdit} className="p-4 sm:p-8 space-y-4 sm:space-y-6 overflow-y-auto max-h-[75vh] no-scrollbar text-left scroll-smooth flex-1">
                     {/* Article Headline */}
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
@@ -10813,18 +10940,69 @@ const AdminDashboard: React.FC<{
 
                     {/* Media Content and FactCheck status */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">
-                          대표 미디어 썸네일 경로 (Photo URL)
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={inlineForm.thumbnail}
-                          onChange={(e) => setInlineForm({ ...inlineForm, thumbnail: e.target.value })}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold text-xs text-white outline-none focus:border-red-500 transition-colors"
-                          placeholder="대표 이미지 URL 경로 기재..."
-                        />
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                            대표 미디어 썸네일 (Photo / Media)
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const randomId = Math.floor(Math.random() * 1000) + 1;
+                              const autoImg = `https://picsum.photos/seed/${encodeURIComponent(inlineForm.category || "news")}-${randomId}/800/500`;
+                              setInlineForm((prev) => ({ ...prev, thumbnail: autoImg }));
+                              toast.success("✨ 카테고리에 맞는 사진이 자동 추천되었습니다!");
+                            }}
+                            className="px-2 py-0.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 rounded-md text-[9.5px] font-bold flex items-center gap-1 transition-colors cursor-pointer border border-orange-500/20"
+                          >
+                            <Sparkles size={10} />
+                            <span>추천</span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {inlineForm.thumbnail ? (
+                            <img
+                              src={inlineForm.thumbnail}
+                              alt="미리보기"
+                              className="w-16 h-12 rounded-lg object-cover border border-white/10 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-16 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-500 shrink-0">
+                              <Camera size={16} />
+                            </div>
+                          )}
+
+                          <label className="py-2.5 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-bold text-zinc-300 flex items-center gap-1.5 cursor-pointer transition-colors shrink-0">
+                            <Upload size={12} className="text-orange-400" />
+                            <span>촬영/선택</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = (ev) => {
+                                    setInlineForm((prev) => ({ ...prev, thumbnail: ev.target?.result as string }));
+                                    toast.success("📷 사진이 성공적으로 반영되었습니다!");
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                            />
+                          </label>
+
+                          <input
+                            type="text"
+                            required
+                            value={inlineForm.thumbnail}
+                            onChange={(e) => setInlineForm({ ...inlineForm, thumbnail: e.target.value })}
+                            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 font-bold text-xs text-white outline-none focus:border-red-500 transition-colors placeholder:text-zinc-500"
+                            placeholder="이미지 URL 경로..."
+                          />
+                        </div>
                       </div>
                       <div>
                         <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-400 mb-2">
@@ -10913,20 +11091,20 @@ const AdminDashboard: React.FC<{
                       />
                     </div>
 
-                    {/* Actions footer */}
-                    <div className="flex gap-4 pt-6 border-t border-white/5">
+                    {/* Actions footer (모바일 스크롤 시에도 즉시 저장 가능하도록 스티키 바 적용) */}
+                    <div className="flex gap-2.5 sm:gap-4 pt-3 sm:pt-6 border-t border-white/10 sticky bottom-0 bg-[#08080a]/95 backdrop-blur-md pb-1 z-10">
                       <button
                         type="button"
                         onClick={() => setInlineEditingArticle(null)}
-                        className="flex-1 py-4 bg-white/5 hover:bg-white/10 rounded-2xl text-white/60 font-bold text-xs transition-colors border border-white/5 cursor-pointer"
+                        className="flex-1 py-3.5 sm:py-4 bg-white/5 hover:bg-white/10 rounded-xl sm:rounded-2xl text-white/70 font-bold text-xs transition-colors border border-white/10 cursor-pointer"
                       >
-                        교정 취소
+                        취소
                       </button>
                       <button
                         type="submit"
-                        className="flex-2 py-4 bg-red-650 hover:bg-red-700 text-white font-black rounded-2xl text-xs transition-all shadow-xl shadow-red-650/10 cursor-pointer text-center"
+                        className="flex-2 py-3.5 sm:py-4 bg-red-650 hover:bg-red-600 text-white font-black rounded-xl sm:rounded-2xl text-xs transition-all shadow-lg shadow-red-650/20 cursor-pointer text-center"
                       >
-                        ✍️ 교정 완료 및 동기화 업링크 발행
+                        ✍️ 수정 완료 및 저장
                       </button>
                     </div>
                   </form>
@@ -13425,31 +13603,41 @@ const Navbar = ({
       </div>
 
       {/* 
-        🌟 Mobile Row 2 (상단 줄바꿈 배치!): High-Visibility Premium Mobile Utility Belt
-        Always prominently displayed in a separate row right under the header for quick, comfortable touch-actions!
+        🌟 Mobile Row 2: High-Visibility Premium Mobile Utility Belt
+        Clean, thumb-friendly touch actions for article writing, article editing/management, admin desk, and auth
       */}
-      <div className={cn(isSimulatedMobileView ? "flex" : "lg:hidden flex", "items-center justify-between px-4 py-2 bg-gradient-to-r from-zinc-50 to-zinc-100/50 dark:from-zinc-900/60 dark:to-zinc-950/60 border-b border-zinc-200/50 dark:border-zinc-850/50 gap-2 select-none font-sans shadow-sm")}>
-        {/* 1. 기사 제보 (Write) */}
+      <div className={cn(isSimulatedMobileView ? "flex" : "lg:hidden flex", "items-center justify-between px-3 py-2 bg-gradient-to-r from-zinc-50 to-zinc-100/50 dark:from-zinc-900/60 dark:to-zinc-950/60 border-b border-zinc-200/50 dark:border-zinc-850/50 gap-1.5 select-none font-sans shadow-sm")}>
+        {/* 1. 기사 작성 (Write) */}
         {onWriteClick && (
           <button
             onClick={onWriteClick}
-            className="flex-1 py-2 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-655 hover:to-rose-700 text-white rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm shadow-red-500/10 border border-red-500/15 text-[11px] font-extrabold"
-            title="기사 제보하기"
+            className="flex-1 py-2 px-1 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-655 hover:to-rose-700 text-white rounded-xl flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm shadow-red-500/10 border border-red-500/15 text-[11px] font-extrabold truncate"
+            title="기사 작성하기"
           >
             <Edit2 size={13} className="text-white shrink-0" />
-            <span>기사제보</span>
+            <span className="truncate">기사작성</span>
           </button>
         )}
 
-        {/* 2. 관리자 데스크 (Admin) */}
+        {/* 2. 내 기사 / 수정 (My Articles / Edit) */}
+        <button
+          onClick={() => onPageChange("soul-center")}
+          className="flex-1 py-2 px-1 bg-gradient-to-b from-amber-50 to-amber-100/60 hover:from-amber-100 hover:to-amber-150 text-amber-900 dark:from-zinc-900 dark:to-zinc-950 dark:text-amber-400 border border-amber-200/60 dark:border-zinc-800 rounded-xl flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs text-[11px] font-extrabold truncate"
+          title="내가 쓴 기사 조회 및 수정"
+        >
+          <FileText size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />
+          <span className="truncate">내 기사/수정</span>
+        </button>
+
+        {/* 3. 관리자 데스크 (Admin) */}
         {onAdminClick && (
           <button
             onClick={onAdminClick}
-            className="flex-1 py-2 bg-gradient-to-b from-indigo-50 to-indigo-100/50 hover:from-indigo-100 hover:to-indigo-150 text-indigo-700 dark:from-zinc-900 dark:to-zinc-950 dark:hover:from-zinc-855 dark:hover:to-zinc-900 dark:text-indigo-400 border border-indigo-100/60 dark:border-zinc-800 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs relative text-[11px] font-extrabold"
-            title="관리자 데스크"
+            className="flex-1 py-2 px-1 bg-gradient-to-b from-indigo-50 to-indigo-100/50 hover:from-indigo-100 hover:to-indigo-150 text-indigo-700 dark:from-zinc-900 dark:to-zinc-950 dark:hover:from-zinc-855 dark:hover:to-zinc-900 dark:text-indigo-400 border border-indigo-100/60 dark:border-zinc-800 rounded-xl flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs relative text-[11px] font-extrabold truncate"
+            title="관리자 기사 관리 데스크"
           >
             <LayoutDashboard size={13} className="text-indigo-500 dark:text-indigo-400 shrink-0" />
-            <span>데스크</span>
+            <span className="truncate">관리자데스크</span>
             {pendingCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border border-white dark:border-zinc-950 shadow-sm animate-pulse">
                 {pendingCount}
@@ -13458,24 +13646,22 @@ const Navbar = ({
           </button>
         )}
 
-        {/* 3. 로그인/로그아웃 (Auth) */}
+        {/* 4. 로그인/로그아웃 (Auth) */}
         {user ? (
           <button
             onClick={onLogout}
-            className="flex-1 py-2 bg-gradient-to-b from-zinc-100 to-zinc-50 hover:from-rose-50 hover:to-rose-100/60 dark:from-zinc-900 dark:to-zinc-950 dark:hover:from-rose-950/45 dark:hover:to-rose-950/20 text-zinc-650 dark:text-zinc-455 hover:text-rose-600 dark:hover:text-rose-400 border border-zinc-200/50 dark:border-zinc-800 hover:border-rose-200/40 dark:hover:border-rose-900/30 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs text-[11px] font-extrabold"
+            className="py-2 px-2.5 bg-gradient-to-b from-zinc-100 to-zinc-50 hover:from-rose-50 hover:to-rose-100/60 dark:from-zinc-900 dark:to-zinc-950 text-zinc-650 dark:text-zinc-455 hover:text-rose-600 dark:hover:text-rose-400 border border-zinc-200/50 dark:border-zinc-800 rounded-xl flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs text-[11px] font-extrabold shrink-0"
             title="로그아웃"
           >
             <LogOut size={13} className="shrink-0" />
-            <span>로그아웃</span>
           </button>
         ) : (
           <button
             onClick={onAuthClick}
-            className="flex-1 py-2 bg-gradient-to-b from-zinc-900 to-zinc-950 hover:from-zinc-805 hover:to-zinc-900 text-white border border-zinc-900 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm text-[11px] font-extrabold"
-            title="로그인 / 회원가입"
+            className="py-2 px-2.5 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900 rounded-xl flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm text-[11px] font-extrabold shrink-0"
+            title="로그인"
           >
             <User size={13} className="text-zinc-300 shrink-0" />
-            <span>로그인</span>
           </button>
         )}
       </div>
@@ -13971,6 +14157,68 @@ const Navbar = ({
               </div>
 
               <div className="p-5 space-y-6 flex-1 overflow-y-auto w-full">
+                {/* 📱 모바일 특화: 기사 작성 & 기사 관리 퀵 허브 */}
+                <div className="bg-gradient-to-br from-red-50 via-orange-50/50 to-amber-50/40 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950 p-4 rounded-2xl border border-red-200/70 dark:border-zinc-800 space-y-3 shadow-sm select-none">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black text-red-655 dark:text-red-400 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Edit3 size={14} className="text-red-500" />
+                      <span>기사 집필 & 기사 관리</span>
+                    </span>
+                    <span className="text-[9px] font-extrabold text-red-600 dark:text-red-400 bg-red-100/70 dark:bg-red-950/50 px-2 py-0.5 rounded-full">
+                      모바일 퀵 메뉴
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* 새 기사 작성 */}
+                    <button
+                      onClick={() => {
+                        if (onWriteClick) onWriteClick();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="p-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-655 hover:to-rose-700 text-white rounded-xl flex flex-col items-center justify-center gap-1.5 font-black text-xs shadow-sm hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Edit2 size={16} />
+                      <span>새 기사 작성</span>
+                    </button>
+
+                    {/* 내가 쓴 기사 & 수정 */}
+                    <button
+                      onClick={() => {
+                        onPageChange("soul-center");
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="p-3 bg-white dark:bg-zinc-900 border border-red-200/80 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl flex flex-col items-center justify-center gap-1.5 font-black text-xs hover:border-red-400 hover:bg-red-50/30 transition-all cursor-pointer shadow-xs active:scale-95"
+                    >
+                      <FileText size={16} className="text-amber-500" />
+                      <span>내 기사 / 수정</span>
+                    </button>
+                  </div>
+
+                  {/* 관리자 기사 관리 데스크 바로가기 */}
+                  {onAdminClick && (
+                    <button
+                      onClick={() => {
+                        onAdminClick();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full py-2.5 px-3.5 bg-zinc-900 hover:bg-black text-white dark:bg-zinc-950 dark:hover:bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-between text-xs font-black transition-all cursor-pointer shadow-xs active:scale-98"
+                    >
+                      <span className="flex items-center gap-2">
+                        <LayoutDashboard size={14} className="text-indigo-400" />
+                        <span>관리자 기사 관리 데스크</span>
+                      </span>
+                      {pendingCount > 0 ? (
+                        <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                          검토대기 {pendingCount}
+                        </span>
+                      ) : (
+                        <ChevronRight size={13} className="text-zinc-400" />
+                      )}
+                    </button>
+                  )}
+                </div>
+
                 {/* 📌 프리미엄 독자 소통 라운지 (모바일용 햄버거 수납형 초간편 통합 위젯) */}
                 <div className="bg-gradient-to-br from-rose-50 to-amber-50/50 dark:from-zinc-900 dark:to-zinc-950 p-4 rounded-2xl border border-rose-100 dark:border-zinc-800 space-y-3 shadow-sm select-none">
                   <div className="flex items-center gap-2">
@@ -14758,6 +15006,7 @@ const IsolPost = ({
   // Mobile-first focus view: only one feature shown at a time on mobile.
   const [mobileTab, setMobileTab] = React.useState<"feed" | "hotclicks" | "community">("feed");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isMobileArticleHubOpen, setIsMobileArticleHubOpen] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(true);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = React.useState(false);
 
@@ -17554,7 +17803,7 @@ const IsolPost = ({
       </main>
 
       {/* 📱 Mobile Bottom Navigation Bar (Sticky, only visible on mobile `lg:hidden`) */}
-      <div className={cn(isSimulatedMobileView ? "fixed" : "lg:hidden fixed", "bottom-0 left-0 right-0 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200/50 dark:border-zinc-800/40 py-2 px-2 flex items-center justify-around z-[100] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] pb-[max(12px,env(safe-area-inset-bottom))]" )}>
+      <div className={cn(isSimulatedMobileView ? "fixed" : "lg:hidden fixed", "bottom-0 left-0 right-0 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200/50 dark:border-zinc-800/40 py-1.5 px-2 flex items-center justify-around z-[100] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] pb-[max(12px,env(safe-area-inset-bottom))]" )}>
         <button
           onClick={() => {
             if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
@@ -17587,6 +17836,20 @@ const IsolPost = ({
           <span className="text-[10px] font-bold">실시간인기</span>
         </button>
 
+        {/* 🌟 원터치 기사센터 (작성/수정/관리 허브) 버튼 */}
+        <button
+          onClick={() => {
+            if (typeof playHapticClick === "function") playHapticClick(700, 0.05);
+            setIsMobileArticleHubOpen(true);
+          }}
+          className="flex flex-col items-center gap-0.5 cursor-pointer transition-all duration-200 px-2 py-1 rounded-xl relative -mt-3.5 group"
+        >
+          <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-red-600 via-orange-500 to-amber-500 text-white flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-105 active:scale-95 transition-transform border-2 border-white dark:border-zinc-900">
+            <Edit3 size={19} className="stroke-[2.5]" />
+          </div>
+          <span className="text-[10.5px] font-black text-orange-600 dark:text-orange-400">기사센터</span>
+        </button>
+
         <button
           onClick={() => {
             if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
@@ -17607,22 +17870,6 @@ const IsolPost = ({
         <button
           onClick={() => {
             if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
-            if (activeCategory === "이솔공방") setActiveCategory("전체기사");
-            setMobileTab("community");
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-          className={cn(
-            "flex flex-col items-center gap-1 cursor-pointer transition-all duration-200 px-2 py-1 rounded-xl",
-            mobileTab === "community" && activeCategory !== "이솔공방" ? "text-red-655 scale-105 font-black bg-red-50/60 dark:bg-red-950/20" : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
-          )}
-        >
-          <Users size={18} className={cn("transition-transform duration-200", mobileTab === "community" && activeCategory !== "이솔공방" ? "text-red-655" : "")} />
-          <span className="text-[10px] font-bold">시민소모임</span>
-        </button>
-
-        <button
-          onClick={() => {
-            if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
             setIsMobileMenuOpen(true);
           }}
           className="flex flex-col items-center gap-1 cursor-pointer text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300 px-2 py-1 rounded-xl"
@@ -17631,6 +17878,196 @@ const IsolPost = ({
           <span className="text-[10px] font-bold">전체메뉴</span>
         </button>
       </div>
+
+      {/* 📱 모바일 기사센터(작성/수정/관리) 원터치 허브 바텀시트 */}
+      <AnimatePresence>
+        {isMobileArticleHubOpen && (
+          <div className="fixed inset-0 z-[150] flex items-end justify-center font-sans">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileArticleHubOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
+            />
+
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 26, stiffness: 260 }}
+              className="relative w-full max-w-lg bg-white dark:bg-zinc-950 rounded-t-[2.2rem] border-t border-zinc-200 dark:border-zinc-800 p-5 pb-8 space-y-4 shadow-2xl z-10 max-h-[85vh] overflow-y-auto"
+            >
+              {/* Top pull indicator */}
+              <div className="w-12 h-1 bg-zinc-300 dark:bg-zinc-700 rounded-full mx-auto" />
+
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-red-600 to-amber-500 text-white flex items-center justify-center shadow-md shadow-orange-500/20">
+                    <Edit3 size={17} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-zinc-900 dark:text-zinc-100">
+                      모바일 기사 센터
+                    </h3>
+                    <p className="text-[11px] text-zinc-400 font-medium">
+                      작성 · 간편 수정 · 관리 데스크를 한 손으로
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileArticleHubOpen(false)}
+                  className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* ⚡ 최근 저장된 임시 초안 복원 카드 (있는 경우 표시) */}
+              {(() => {
+                let savedDraft: any = null;
+                try {
+                  const raw = localStorage.getItem("isol_post_draft_2026");
+                  if (raw) savedDraft = JSON.parse(raw);
+                } catch (e) {}
+
+                if (savedDraft && (savedDraft.title || savedDraft.content)) {
+                  return (
+                    <div className="p-3.5 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-orange-500/30 rounded-2xl flex items-center justify-between gap-3 text-left">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] font-black text-orange-600 dark:text-orange-400 uppercase tracking-widest flex items-center gap-1">
+                          <Zap size={11} className="text-amber-500 animate-pulse" /> 임시 저장된 작성 원고 발견
+                        </span>
+                        <p className="text-xs font-black text-zinc-800 dark:text-zinc-200 truncate mt-0.5">
+                          "{savedDraft.title || '제목 없는 초안'}"
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMobileArticleHubOpen(false);
+                          if (onWriteClick) onWriteClick();
+                        }}
+                        className="px-3 py-2 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-xl text-xs font-black shrink-0 shadow-sm cursor-pointer"
+                      >
+                        이어서 쓰기
+                      </button>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* Primary Actions Grid */}
+              <div className="grid grid-cols-1 gap-2.5">
+                {/* 1. 새 기사 작성 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileArticleHubOpen(false);
+                    if (onWriteClick) onWriteClick();
+                  }}
+                  className="w-full p-4 rounded-2xl bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/20 border border-red-200/80 dark:border-red-900/40 flex items-center justify-between text-left hover:scale-[0.99] transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-red-600 text-white flex items-center justify-center shadow-md shadow-red-600/20 shrink-0 group-hover:scale-105 transition-transform">
+                      <PenTool size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                        새 기사 간편 작성하기
+                        <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-red-600 text-white font-bold">원터치</span>
+                      </h4>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        모바일 간편 모드로 사진 찍고 1분 만에 신속 보도
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className="text-zinc-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+
+                {/* 2. 내가 쓴 기사 / 기사 수정 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileArticleHubOpen(false);
+                    if (onPageChange) onPageChange("soul-center-manage");
+                  }}
+                  className="w-full p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-left hover:scale-[0.99] transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-md shadow-amber-500/20 shrink-0 group-hover:scale-105 transition-transform">
+                      <FileText size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-zinc-900 dark:text-zinc-100">
+                        내가 쓴 기사 목록 & 기사 수정
+                      </h4>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        작성한 기사 확인, 원클릭 10초 퀵 수정 및 보정
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className="text-zinc-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+
+                {/* 3. 관리자 기사 관리 데스크 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileArticleHubOpen(false);
+                    if (onPageChange) onPageChange("admin");
+                  }}
+                  className="w-full p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-left hover:scale-[0.99] transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 shrink-0 group-hover:scale-105 transition-transform">
+                      <ShieldCheck size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                        관리자 기사 관리 데스크
+                        <span className="text-[9.5px] px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold">Admin</span>
+                      </h4>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        승인 대기 기사 검토, 즉시 교정, 긴급 속보 처리
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} className="text-zinc-400 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                </button>
+
+                {/* 4. 스마트폰 지면 미리보기 모드 토글 */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileArticleHubOpen(false);
+                    if (onToggleSimulatedMobileView) onToggleSimulatedMobileView();
+                  }}
+                  className="w-full p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-left hover:scale-[0.99] transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-2xl bg-zinc-800 text-white flex items-center justify-center shrink-0">
+                      <Smartphone size={17} />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-zinc-800 dark:text-zinc-200">
+                        스마트폰 전용 지면 뷰어 {isSimulatedMobileView ? "끄기" : "켜기"}
+                      </h4>
+                      <p className="text-[11px] text-zinc-400">
+                        실제 독자 모바일 단말기 지면 레이아웃으로 확인
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight size={16} className="text-zinc-400 shrink-0" />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* 📱 Mobile Fullscreen Search Overlay */}
       <AnimatePresence>
@@ -19546,6 +19983,8 @@ const SoulCenter = ({
   onEditComplete,
   registerTypeFromHeader,
   clearRegisterTypeFromHeader,
+  initialTab = "write",
+  onPageChange,
 }: {
   user: FirebaseUser | null;
   onAuthClick: () => void;
@@ -19555,6 +19994,8 @@ const SoulCenter = ({
   onEditComplete?: () => void;
   registerTypeFromHeader?: "citizen" | "professional" | null;
   clearRegisterTypeFromHeader?: () => void;
+  initialTab?: "write" | "manage" | "register";
+  onPageChange?: (page: any) => void;
 }) => {
   // Virtual bypass user and reporter profile for test phase
   const currentUser = useMemo(() => {
@@ -19566,7 +20007,7 @@ const SoulCenter = ({
     };
   }, [user]);
 
-  const [isDirectWritingWithoutReg, setIsDirectWritingWithoutReg] = useState(false);
+  const [isDirectWritingWithoutReg, setIsDirectWritingWithoutReg] = useState(true);
 
   // 30대 하이엔드 디자인 및 모바일 최적화 보완 체크리스트 상태 관리
   const [checkedInnovations, setCheckedInnovations] = useState<number[]>([
@@ -19579,41 +20020,44 @@ const SoulCenter = ({
       const found = reporters.find((r) => r.id === user.uid);
       if (found) return found;
     }
-    if (isDirectWritingWithoutReg) {
-      return {
-        id: user?.uid || "guest_citizen_reporter",
-        name: user?.displayName || "시민기자",
-        nickname: "시민기자",
-        bio: "이솔나라 시민 기자입니다.",
-        field: "일반",
-        isProfessional: false,
-        isApproved: true,
-        profileImage: user?.photoURL || "https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?auto=format&fit=crop&q=80&w=200",
-      };
-    }
-    return null;
-  }, [user, reporters, isDirectWritingWithoutReg]);
+    return {
+      id: user?.uid || "guest_citizen_reporter",
+      name: user?.displayName || "시민기자",
+      nickname: "시민기자",
+      bio: "이솔나라 시민 기자입니다.",
+      field: "일반",
+      isProfessional: false,
+      isApproved: true,
+      profileImage: user?.photoURL || "https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?auto=format&fit=crop&q=80&w=200",
+    };
+  }, [user, reporters]);
 
   const isUserRegistered = useMemo(() => {
     if (!user) return false;
     return reporters.some((r) => r.id === user.uid);
   }, [user, reporters]);
 
-  const [unregisteredWriteMode, setUnregisteredWriteMode] = useState<"choose" | "register" | "direct">("choose");
+  const [unregisteredWriteMode, setUnregisteredWriteMode] = useState<"choose" | "register" | "direct">("direct");
 
   React.useEffect(() => {
     if (isUserRegistered) {
       setUnregisteredWriteMode("direct");
     } else {
-      setUnregisteredWriteMode("choose");
+      setUnregisteredWriteMode("direct");
     }
   }, [isUserRegistered]);
 
   const [isRegistering, setIsRegistering] = useState(false);
   const [isWriting, setIsWriting] = useState(true);
-  const [activeTab, setActiveTab] = useState<"write" | "manage">(
-    "write",
+  const [activeTab, setActiveTab] = useState<"write" | "manage" | "register">(
+    initialTab || "write",
   );
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [formData, setFormData] = useState({
     nickname: "",
     bio: "",
@@ -20566,6 +21010,7 @@ const SoulCenter = ({
       setEditingArticle(null);
       setIsEthicsAgreed(false);
       onEditComplete?.();
+      setActiveTab("manage");
       setPostData({
         title: "",
         content: "",
@@ -20586,92 +21031,147 @@ const SoulCenter = ({
     }
   };
 
-  if (isWriting && reporterProfile && (isUserRegistered || isDirectWritingWithoutReg || unregisteredWriteMode === "direct")) {
+  if (activeTab !== "register") {
     return (
-      <div className="min-h-screen pt-32 px-6 md:px-16 pb-20 max-w-4xl mx-auto animate-in fade-in duration-300">
-        <button
-          onClick={() => {
-            setIsWriting(false);
-            if (!isUserRegistered) {
-              setIsDirectWritingWithoutReg(false);
-            }
-            setEditingArticle(null);
-            setIsEthicsAgreed(false);
-            onEditComplete?.();
-            setPostData({
-              title: "",
-              content: "",
-              thumbnail: "",
-              thumbnailName: "",
-              category: "사회/정치",
-              subCategory: "",
-              pdfUrl: "",
-              pdfName: "",
-              authorName: "",
-              authorBio: "",
-              sourceAgency: "이솔 국영 종합 뉴스룸",
-              pressSeal: "standard_citizen",
-            });
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-          className="mb-8 flex items-center gap-2 text-zinc-500 font-bold hover:text-orange-500 transition-colors cursor-pointer"
-        >
-          <ChevronLeft size={20} /> 대시보드로 돌아가기
-        </button>
-
-        <div className="flex gap-4 mb-8">
+      <div className="min-h-screen pt-28 sm:pt-32 px-4 sm:px-6 md:px-16 pb-24 max-w-4xl mx-auto animate-in fade-in duration-300">
+        <div className="flex items-center justify-between mb-6">
           <button
+            onClick={() => {
+              if (onPageChange) {
+                onPageChange("home");
+              } else {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+            }}
+            className="flex items-center gap-2 text-zinc-500 font-bold hover:text-orange-500 transition-colors cursor-pointer text-xs sm:text-sm"
+          >
+            <ChevronLeft size={18} /> 뉴스룸 홈으로 돌아가기
+          </button>
+          {editingArticle && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditingArticle(null);
+                setPostData({
+                  title: "",
+                  content: "",
+                  thumbnail: "",
+                  thumbnailName: "",
+                  category: "사회/정치",
+                  subCategory: "",
+                  pdfUrl: "",
+                  pdfName: "",
+                  authorName: "",
+                  authorBio: "",
+                  sourceAgency: "이솔 국영 종합 뉴스룸",
+                  pressSeal: "standard_citizen",
+                });
+                onEditComplete?.();
+                toast.success("새 기사 작성 모드로 전환되었습니다.");
+              }}
+              className="text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-500/10 px-3 py-1.5 rounded-lg border border-orange-500/20 hover:bg-orange-500/20 transition-all cursor-pointer"
+            >
+              새 기사 쓰기로 전환
+            </button>
+          )}
+        </div>
+
+        {/* 📱 모바일/PC 겸용 상단 3단 탭 전환 바 */}
+        <div className="flex items-center justify-between gap-1.5 sm:gap-2.5 mb-6 bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
+          <button
+            type="button"
             onClick={() => setActiveTab("write")}
             className={cn(
-              "px-6 py-2 rounded-full font-black text-sm transition-all",
+              "flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]",
               activeTab === "write"
-                ? "bg-orange-600 text-white shadow-lg"
-                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400",
+                ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100",
             )}
           >
-            {editingArticle ? "기사 수정" : "기사 작성"}
+            <PenTool size={15} />
+            <span className="truncate">{editingArticle ? "기사 수정" : "새 기사 작성"}</span>
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab("manage")}
             className={cn(
-              "px-6 py-2 rounded-full font-black text-sm transition-all",
+              "flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]",
               activeTab === "manage"
-                ? "bg-orange-600 text-white shadow-lg"
-                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400",
+                ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100",
             )}
           >
-            내가 쓴 기사 {myArticles.length > 0 && `(${myArticles.length})`}
+            <FileText size={15} />
+            <span className="truncate">내가 쓴 기사 {myArticles.length > 0 && `(${myArticles.length})`}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("register")}
+            className={cn(
+              "flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]",
+              (activeTab as string) === "register"
+                ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100",
+            )}
+          >
+            <UserCheck size={15} />
+            <span className="truncate">기자 등록/제휴</span>
           </button>
         </div>
 
         {activeTab === "write" ? (
           <>
-            <header className="mb-12">
-              <h1 className="text-4xl font-black mb-2 tracking-tighter italic text-orange-600 uppercase">
-                {editingArticle ? "Edit Post" : "New Post"}
-              </h1>
-              <p className="text-zinc-500 font-bold tracking-widest uppercase text-xs">
-                세상을 바꾸는 시민의 목소리
-              </p>
-            </header>
-
-            {/* 📱 모바일 터치 최적화 4단계 집필 위저드 내비게이션 바 */}
-            <div className="mb-6 p-3.5 bg-zinc-950 text-white rounded-2xl border border-zinc-800 space-y-2.5 shadow-xl">
-              <div className="flex items-center justify-between text-xs font-black px-1">
-                <span className="text-orange-400 flex items-center gap-1.5">
-                  <Smartphone size={15} className="animate-pulse" />
-                  <span>스마트폰/노트북 통합 집필 위저드</span>
-                </span>
-                <span className="bg-orange-500/20 text-orange-400 px-2.5 py-0.5 rounded-md text-[10.5px] font-mono font-bold">
-                  단계 {mobileWriteStep} / 4
-                </span>
+            {/* ✏️ 기사 수정 중 알림 배너 및 취소 버튼 */}
+            {editingArticle && (
+              <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                    <Edit2 size={18} />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest block">
+                      기사 수정 모드 활성화
+                    </span>
+                    <h4 className="text-xs sm:text-sm font-black text-zinc-900 dark:text-zinc-100 line-clamp-1">
+                      "{editingArticle.title || '기존 기사'}" 수정 중
+                    </h4>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingArticle(null);
+                    setPostData({
+                      title: "",
+                      content: "",
+                      thumbnail: "",
+                      thumbnailName: "",
+                      category: "사회/정치",
+                      subCategory: "",
+                      pdfUrl: "",
+                      pdfName: "",
+                      authorName: "",
+                      authorBio: "",
+                      sourceAgency: "이솔 국영 종합 뉴스룸",
+                      pressSeal: "standard_citizen",
+                    });
+                    toast.success("기사 수정을 취소하고 새 기사 작성으로 전환했습니다.");
+                  }}
+                  className="py-1.5 px-3 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 rounded-xl text-xs font-black transition-colors cursor-pointer shrink-0"
+                >
+                  ✕ 수정 취소 (새 글 쓰기)
+                </button>
               </div>
-              <div className="grid grid-cols-4 gap-1.5">
+            )}
+
+            {/* 📱 모바일/PC 컴팩트 집필 단계 및 간편모드 바 */}
+            <div className="mb-6 p-3 bg-zinc-900 text-white rounded-2xl border border-zinc-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shadow-md">
+              <div className="grid grid-cols-4 gap-1.5 flex-1">
                 {[
-                  { step: 1, title: "1. 헤드라인", desc: "제목/개요" },
-                  { step: 2, title: "2. 미디어", desc: "분류/사진" },
-                  { step: 3, title: "3. 본문/AI", desc: "원고/음성" },
-                  { step: 4, title: "4. 검토/발행", desc: "완성도/송고" }
+                  { step: 1, title: "1.헤드라인", desc: "제목" },
+                  { step: 2, title: "2.분류/사진", desc: "미디어" },
+                  { step: 3, title: "3.본문작성", desc: "원고" },
+                  { step: 4, title: "4.완성검토", desc: "송고" },
                 ].map((s) => (
                   <button
                     key={s.step}
@@ -20681,7 +21181,7 @@ const SoulCenter = ({
                       "py-2 px-1 text-center rounded-xl transition-all cursor-pointer border flex flex-col items-center justify-center gap-0.5",
                       mobileWriteStep === s.step
                         ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white border-orange-400 shadow-md font-black"
-                        : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
+                        : "bg-zinc-800/80 text-zinc-400 border-zinc-700/60 hover:text-zinc-200"
                     )}
                   >
                     <span className="text-[11px] font-extrabold leading-none">{s.title}</span>
@@ -20689,43 +21189,20 @@ const SoulCenter = ({
                   </button>
                 ))}
               </div>
-            </div>
 
-            {/* 📱 스마트폰 간편 작성 모드 전환 스위치 */}
-            <div className="mb-8 p-4.5 bg-zinc-55 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 text-left shadow-sm">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-orange-600 dark:text-orange-450 font-black text-xs uppercase tracking-wider">
-                  <Smartphone size={15} />
-                  스마트폰 간편 작성 모드 (Default Easy Mode)
-                </div>
-                <p className="text-[11.5px] text-zinc-500 dark:text-zinc-450 font-semibold leading-relaxed">
-                  모바일 환경에 최적화하여 불필요하고 복잡한 기기 옵션을 걷어낸 깔끔하고 간편한 집필 모드입니다.
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5 bg-zinc-200/60 dark:bg-zinc-800 p-1 rounded-full shrink-0">
+              <div className="flex items-center justify-end gap-1.5 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-zinc-800">
                 <button
                   type="button"
-                  onClick={() => setIsEasyMode(true)}
+                  onClick={() => setIsEasyMode(!isEasyMode)}
                   className={cn(
-                    "px-4 py-1.5 rounded-full font-black text-[11px] transition-all cursor-pointer",
+                    "px-3 py-2 rounded-xl font-black text-xs transition-all cursor-pointer border flex items-center gap-1.5 w-full sm:w-auto justify-center",
                     isEasyMode
-                      ? "bg-orange-600 text-white shadow-sm"
-                      : "text-zinc-500 dark:text-zinc-400"
+                      ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
+                      : "bg-purple-500/20 border-purple-500/40 text-purple-400"
                   )}
                 >
-                  📱 간편 모드
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEasyMode(false)}
-                  className={cn(
-                    "px-4 py-1.5 rounded-full font-black text-[11px] transition-all cursor-pointer",
-                    !isEasyMode
-                      ? "bg-purple-600 text-white shadow-sm"
-                      : "text-zinc-500 dark:text-zinc-400"
-                  )}
-                >
-                  ⚙️ 전문 모드
+                  <Smartphone size={13} />
+                  <span>{isEasyMode ? "📱 간편 모드 ON" : "⚙️ 전문 모드 ON"}</span>
                 </button>
               </div>
             </div>
@@ -21110,7 +21587,107 @@ const SoulCenter = ({
               <div className="w-full max-w-2xl mx-auto">
                 {/* Column 1: Media & Attachment (Professional Integrated Panel) */}
                 <div className="space-y-6">
-                  null
+                  {/* 📸 대표 보도 사진 (썸네일) 스마트 등록/촬영 패널 */}
+                  <div className="space-y-2 text-left">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                        대표 보도 사진 (썸네일)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const randomId = Math.floor(Math.random() * 1000) + 1;
+                          const autoImg = `https://picsum.photos/seed/${encodeURIComponent(postData.category || "news")}-${randomId}/800/500`;
+                          setPostData((prev) => ({
+                            ...prev,
+                            thumbnail: autoImg,
+                            thumbnailName: "AI 스마트 추천 대표 사진",
+                          }));
+                          toast.success("✨ 기사 분류에 어울리는 대표 사진이 자동 매칭되었습니다!");
+                        }}
+                        className="px-2.5 py-1 bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded-lg text-[10px] font-black flex items-center gap-1 transition-all cursor-pointer border border-orange-500/20"
+                      >
+                        <Sparkles size={11} className="text-orange-500" />
+                        <span>스마트 사진 자동 추천</span>
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-950/40 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                      {postData.thumbnail ? (
+                        <div className="relative w-full sm:w-36 h-24 rounded-xl overflow-hidden border border-zinc-300 dark:border-zinc-700 shrink-0 group">
+                          <img
+                            src={postData.thumbnail}
+                            alt="대표 사진 미리보기"
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPostData((prev) => ({
+                                ...prev,
+                                thumbnail: "",
+                                thumbnailName: "",
+                              }))
+                            }
+                            className="absolute top-1 right-1 p-1 bg-black/70 hover:bg-red-600 text-white rounded-full transition-colors cursor-pointer"
+                            title="사진 제거"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-full sm:w-36 h-24 rounded-xl bg-zinc-150 dark:bg-zinc-850 border border-dashed border-zinc-300 dark:border-zinc-700 flex flex-col items-center justify-center text-zinc-400 gap-1 shrink-0">
+                          <Camera size={20} />
+                          <span className="text-[10px] font-bold">사진 미등록</span>
+                        </div>
+                      )}
+
+                      <div className="flex-1 w-full space-y-2">
+                        <label className="w-full py-2.5 px-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-orange-500 rounded-xl text-xs font-black text-zinc-700 dark:text-zinc-200 flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-xs">
+                          <Upload size={13} className="text-orange-500" />
+                          <span>{postData.thumbnail ? "사진 변경 (카메라/앨범)" : "내 폰 사진/촬영 첨부"}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                if (file.size > 5 * 1024 * 1024) {
+                                  toast.error("사진 용량은 5MB 이하로 등록해주세요.");
+                                  return;
+                                }
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  const dataUrl = ev.target?.result as string;
+                                  setPostData((prev) => ({
+                                    ...prev,
+                                    thumbnail: dataUrl,
+                                    thumbnailName: file.name,
+                                  }));
+                                  toast.success("📷 대표 사진이 성공적으로 등록되었습니다!");
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                        <input
+                          type="url"
+                          value={postData.thumbnail || ""}
+                          onChange={(e) =>
+                            setPostData((prev) => ({
+                              ...prev,
+                              thumbnail: e.target.value,
+                              thumbnailName: "직접 입력 URL",
+                            }))
+                          }
+                          placeholder="또는 이미지 웹 링크 (https://...)"
+                          className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 focus:outline-none focus:border-orange-500 transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
                     <div className="space-y-1.5">
                       <label className="block text-[10px] font-black uppercase tracking-widest text-zinc-450 dark:text-zinc-400">
@@ -21616,6 +22193,38 @@ const SoulCenter = ({
                       </button>
                     </div>
 
+                    {/* 📱 모바일 화면 하단 고정 원터치 액션 바 (스크롤 중에도 즉시 저장/미리보기) */}
+                    <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800 p-2.5 flex items-center gap-2 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] pb-[max(10px,env(safe-area-inset-bottom))]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm("작성/수정을 취소하시겠습니까?")) {
+                            setIsWriting(false);
+                            if (!isUserRegistered) setIsDirectWritingWithoutReg(false);
+                            setEditingArticle(null);
+                          }
+                        }}
+                        className="py-2.5 px-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl text-xs font-black shrink-0 cursor-pointer"
+                      >
+                        취소
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowMobileSimulator(true)}
+                        className="py-2.5 px-3 bg-orange-500/10 text-orange-600 dark:text-orange-400 rounded-xl text-xs font-black flex items-center gap-1 shrink-0 cursor-pointer border border-orange-500/20"
+                      >
+                        <Smartphone size={13} />
+                        <span>지면 뷰</span>
+                      </button>
+                      <button
+                        type="submit"
+                        className="flex-1 py-2.5 px-3 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-700 hover:to-amber-700 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-red-600/30 cursor-pointer"
+                      >
+                        <Zap size={13} className="text-yellow-300 animate-pulse" />
+                        <span>{editingArticle ? "수정 완료" : "즉시 발행"}</span>
+                      </button>
+                    </div>
+
                     {/* AI Proofread Modal */}
                     {showProofreadModal && proofreadResult && (
                       <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
@@ -21979,8 +22588,8 @@ const SoulCenter = ({
                           </div>
                         </div>
 
-                        {/* 모바일/웹 겸용 액션 버트 모음 */}
-                        <div className="flex items-center gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800 shrink-0 justify-end">
+                        {/* 📱 모바일/PC 겸용 직관적 기사 관리 액션 바 */}
+                        <div className="flex items-center gap-1.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800 shrink-0 justify-end w-full sm:w-auto">
                           <button
                             type="button"
                             onClick={() => {
@@ -22002,21 +22611,21 @@ const SoulCenter = ({
                               setIsWriting(true);
                               setActiveTab("write");
                             }}
-                            className="px-3 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-extrabold flex items-center gap-1 cursor-pointer transition-colors shadow-xs"
+                            className="flex-1 sm:flex-initial px-3.5 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-sm"
                             title="전체 에디터로 기사 수정"
                           >
                             <Edit2 size={13} />
-                            <span>상세 수정</span>
+                            <span>기사 수정</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() => setQuickEditArticle(article)}
-                            className="px-3 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-200 rounded-xl text-xs font-extrabold flex items-center gap-1 cursor-pointer transition-colors"
+                            className="px-3 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-xl text-xs font-black flex items-center justify-center gap-1 cursor-pointer transition-colors"
                             title="모바일 터치 퀵 수정"
                           >
-                            <Smartphone size={13} />
-                            <span className="hidden sm:inline">퀵 수정</span>
+                            <Zap size={13} className="text-amber-500" />
+                            <span>퀵 수정</span>
                           </button>
 
                           <button
@@ -22038,7 +22647,7 @@ const SoulCenter = ({
                               });
                               setShowMobileSimulator(true);
                             }}
-                            className="p-2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                            className="p-2.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
                             title="스마트폰 미리보기"
                           >
                             <Eye size={16} />
@@ -22047,7 +22656,7 @@ const SoulCenter = ({
                           <button
                             type="button"
                             onClick={() => handleDeleteNews(article.id)}
-                            className="p-2 text-zinc-400 hover:text-red-500 rounded-xl hover:bg-red-500/10 cursor-pointer"
+                            className="p-2.5 text-zinc-400 hover:text-red-500 rounded-xl hover:bg-red-500/10 cursor-pointer transition-colors"
                             title="기사 삭제"
                           >
                             <Trash2 size={16} />
@@ -22152,6 +22761,7 @@ const SoulCenter = ({
                               { merge: true }
                             );
                             toast.success("✨ 기사 내용이 성공적으로 업데이트되었습니다!", { id: toastId });
+                            onEditComplete?.();
                             setQuickEditArticle(null);
                           } catch (err) {
                             toast.error("저장 중 오류가 발생했습니다.", { id: toastId });
@@ -22173,8 +22783,45 @@ const SoulCenter = ({
   }
 
   return (
-    <div className="min-h-screen pt-32 px-6 md:px-16 pb-20 flex flex-col items-center justify-center text-center">
-      {!reporterProfile ? (
+    <div className="min-h-screen pt-28 sm:pt-32 px-4 sm:px-6 md:px-16 pb-24 flex flex-col items-center justify-center text-center max-w-5xl mx-auto animate-in fade-in duration-300">
+      {/* 📱 상단 3단 탭 전환 바 */}
+      <div className="w-full max-w-4xl flex items-center justify-between gap-1.5 sm:gap-2.5 mb-8 bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("write");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          className="flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]"
+        >
+          <PenTool size={15} />
+          <span className="truncate">{editingArticle ? "기사 수정" : "새 기사 작성"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("manage");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          className="flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]"
+        >
+          <FileText size={15} />
+          <span className="truncate">내가 쓴 기사 {myArticles.length > 0 && `(${myArticles.length})`}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("register");
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+          className="flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]"
+        >
+          <UserCheck size={15} />
+          <span className="truncate">기자 등록/제휴</span>
+        </button>
+      </div>
+
+      {!isUserRegistered ? (
         <>
           <div className="w-24 h-24 bg-purple-500/20 text-purple-500 rounded-full flex items-center justify-center mb-8 border border-purple-500/30 shadow-[0_0_30px_rgba(168,85,247,0.2)]">
             <User size={48} />
@@ -27491,8 +28138,10 @@ function App() {
 
   const isSimulatedMobileView = false;
   const [isAdminView, setIsAdminView] = React.useState(false);
+  const [adminInitialTab, setAdminInitialTab] = React.useState<string>("editorial");
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
   const [registerTypeFromHeader, setRegisterTypeFromHeader] = React.useState<"citizen" | "professional" | null>(null);
+  const [soulCenterTab, setSoulCenterTab] = React.useState<"write" | "manage" | "register">("write");
   const [theme, setTheme] = React.useState(
     () => localStorage.getItem("theme") || "light",
   );
@@ -29051,6 +29700,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
         setIsAdminView={setIsAdminView}
         onEditCitizenNews={(news) => {
           setEditingNews(news);
+          setSoulCenterTab("write");
           setIsAdminView(false);
           setCurrentPage("soul-center");
         }}
@@ -29069,6 +29719,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
         setRagTopK={setRagTopK}
         isLoading={isLoading}
         isSimulatedMobileView={isSimulatedMobileView}
+        initialTab={adminInitialTab}
       />
     );
   }
@@ -29118,7 +29769,10 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
 
       {currentPage !== "isol-post" && (
         <Navbar
-          onAdminClick={() => setIsAdminView(true)}
+          onAdminClick={() => {
+            setAdminInitialTab("editorial");
+            setIsAdminView(true);
+          }}
           onAuthClick={() => setIsAuthModalOpen(true)}
           user={user}
           onLogout={handleLogout}
@@ -29131,12 +29785,21 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           onPageChange={(page, category) => {
             setSelectedNews(null);
             setSelectedWebtoon(null);
-            setIsAdminView(false);
-            if (page === "ombudsman") {
+            if (page === "soul-center-manage") {
+              setSoulCenterTab("manage");
+              setIsAdminView(false);
+              setCurrentPage("soul-center");
+            } else if (page === "admin") {
+              setAdminInitialTab("editorial");
+              setIsAdminView(true);
+            } else if (page === "ombudsman") {
+              setIsAdminView(false);
               setIsOmbudsmanModalOpen(true);
             } else if (page === "isol-post" && category === "hyeonwon-cinema") {
+              setIsAdminView(false);
               setCurrentPage("hyeonwon-cinema");
             } else {
+              setIsAdminView(false);
               setCurrentPage(page);
               setFilterType("all");
               if (category) {
@@ -29148,10 +29811,12 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
           onFilterChange={setFilterType}
           onProfessionalRegClick={() => {
             setRegisterTypeFromHeader("professional");
+            setSoulCenterTab("register");
             setCurrentPage("soul-center");
           }}
           onWriteClick={() => {
             setEditingNews(null);
+            setSoulCenterTab("write");
             setCurrentPage("soul-center");
           }}
           onKakaoClick={handleRealKakaoClick}
@@ -29224,14 +29889,17 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 readerFontSize={readerFontSize}
                 onProfessionalRegClick={() => {
                   setRegisterTypeFromHeader("professional");
+                  setSoulCenterTab("register");
                   setCurrentPage("soul-center");
                 }}
                 onWriteClick={() => {
                   setEditingNews(null);
+                  setSoulCenterTab("write");
                   setCurrentPage("soul-center");
                 }}
                 onEditClick={(news) => {
                   setEditingNews(news);
+                  setSoulCenterTab("write");
                   setCurrentPage("soul-center");
                 }}
                 onAuthClick={() => setIsAuthModalOpen(true)}
@@ -29241,8 +29909,13 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 onPageChange={(page: any, category?: any) => {
                   setSelectedNews(null);
                   setSelectedWebtoon(null);
-                  if (page === "admin") setIsAdminView(true);
-                  else if (page === "ombudsman") setIsOmbudsmanModalOpen(true);
+                  if (page === "soul-center-manage") {
+                    setSoulCenterTab("manage");
+                    setCurrentPage("soul-center");
+                  } else if (page === "admin") {
+                    setAdminInitialTab("editorial");
+                    setIsAdminView(true);
+                  } else if (page === "ombudsman") setIsOmbudsmanModalOpen(true);
                   else if (page === "isol-post" && category === "hyeonwon-cinema") {
                     setCurrentPage("hyeonwon-cinema");
                   } else {
@@ -29392,6 +30065,8 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
                 onEditComplete={() => setEditingNews(null)}
                 registerTypeFromHeader={registerTypeFromHeader}
                 clearRegisterTypeFromHeader={() => setRegisterTypeFromHeader(null)}
+                initialTab={soulCenterTab}
+                onPageChange={setCurrentPage}
               />
             </motion.div>
           )}
@@ -30735,7 +31410,7 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
               setCurrentPage("community");
             } 
           },
-          { id: "soul-center", label: "시민기자", icon: Edit3, action: () => {
+          { id: "soul-center", label: "기사작성/수정", icon: Edit3, action: () => {
               setSelectedNews(null);
               setSelectedWebtoon(null);
               setIsAdminView(false);
