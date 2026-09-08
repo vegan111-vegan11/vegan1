@@ -64,11 +64,14 @@ import {
   Users,
   PenTool,
   Upload,
+  Send,
   XCircle,
   Edit3,
   ExternalLink,
   History,
   LayoutDashboard,
+  LayoutGrid,
+  PenLine,
   Workflow,
   FileCheck,
   FileText,
@@ -174,6 +177,7 @@ import { AdminVerifiedPhotosDashboard } from "./components/AdminVerifiedPhotosDa
 import { CommandPaletteModal } from "./components/CommandPaletteModal";
 import { UIUXImprovementsModal } from "./components/UIUXImprovementsModal";
 import { ArticleBottomSheetModal } from "./components/ArticleBottomSheetModal";
+import { RevisionRequestModal } from "./components/RevisionRequestModal";
 import {
   RagDocument,
   chunkText,
@@ -419,7 +423,12 @@ interface CitizenNews {
   isApproved: boolean;
   status?: "pending" | "approved" | "revision";
   requestedBy?: string;
+  requestedTitle?: string;
   requestedContent?: string;
+  requestedThumbnail?: string;
+  revisionCategory?: string;
+  revisionNote?: string;
+  requestedAt?: any;
   isFeatured?: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -5671,15 +5680,24 @@ const AdminDashboard: React.FC<{
   const approveRevision = async (news: CitizenNews) => {
     const toastId = toast.loading("수정 사항 반영 중...");
     try {
-      await updateDoc(doc(db, "citizen_news", news.id), {
-        content: news.requestedContent || news.content,
+      const updates: Record<string, any> = {
         status: "approved",
         isApproved: true,
         updatedAt: new Date().toISOString(),
+        requestedTitle: null,
         requestedContent: null,
+        requestedThumbnail: null,
         requestedBy: null,
-      });
-      toast.success("수정 사항이 성공적으로 반영되었습니다.", { id: toastId });
+        revisionNote: null,
+        revisionCategory: null,
+        requestedAt: null,
+      };
+      if (news.requestedTitle) updates.title = news.requestedTitle;
+      if (news.requestedContent) updates.content = news.requestedContent;
+      if (news.requestedThumbnail) updates.thumbnail = news.requestedThumbnail;
+
+      await updateDoc(doc(db, "citizen_news", news.id), updates);
+      toast.success("✨ 수정 요청 사항이 성공적으로 기사에 반영 및 승인되었습니다.", { id: toastId });
     } catch (e) {
       console.error("Revision approval failed:", e);
       toast.error("수정 반영 실패.");
@@ -5691,11 +5709,16 @@ const AdminDashboard: React.FC<{
     try {
       await updateDoc(doc(db, "citizen_news", news.id), {
         status: news.isApproved ? "approved" : "pending",
+        requestedTitle: null,
         requestedContent: null,
+        requestedThumbnail: null,
         requestedBy: null,
+        revisionNote: null,
+        revisionCategory: null,
+        requestedAt: null,
         updatedAt: new Date().toISOString(),
       });
-      toast.success("수정 요청이 반려되었습니다.", { id: toastId });
+      toast.success("수정 요청이 안전하게 반려되었습니다.", { id: toastId });
     } catch (e) {
       console.error("Revision rejection failed:", e);
       toast.error("반려 실패.");
@@ -5744,7 +5767,7 @@ const AdminDashboard: React.FC<{
 
     const toastId = toast.loading("기사 정보를 정밀 업데이트 중...");
     try {
-      await updateDoc(doc(db, "citizen_news", inlineEditingArticle.id), {
+      const updates: Record<string, any> = {
         title: inlineForm.title.trim(),
         content: inlineForm.content.trim(),
         author: inlineForm.author.trim(),
@@ -5755,9 +5778,28 @@ const AdminDashboard: React.FC<{
         editorComment: inlineForm.editorComment || null,
         thumbnail: safeThumbnail,
         updatedAt: new Date().toISOString(),
-      });
+      };
 
-      toast.success("기사 교정 및 업데이트가 성공적으로 동기화되었습니다!", { id: toastId });
+      if (inlineEditingArticle.status === "revision") {
+        updates.status = "approved";
+        updates.isApproved = true;
+        updates.requestedContent = null;
+        updates.requestedTitle = null;
+        updates.requestedThumbnail = null;
+        updates.requestedBy = null;
+        updates.revisionNote = null;
+        updates.revisionCategory = null;
+        updates.requestedAt = null;
+      }
+
+      await updateDoc(doc(db, "citizen_news", inlineEditingArticle.id), updates);
+
+      toast.success(
+        inlineEditingArticle.status === "revision"
+          ? "✨ 기사 수정 요청 검토 및 교정이 완료되어 실시간 반영되었습니다!"
+          : "기사 교정 및 업데이트가 성공적으로 동기화되었습니다!",
+        { id: toastId }
+      );
       setInlineEditingArticle(null);
     } catch (error) {
       console.error("Inline edit save error:", error);
@@ -5768,15 +5810,15 @@ const AdminDashboard: React.FC<{
 
   const startInlineEdit = (news: CitizenNews) => {
     setInlineForm({
-      title: news.title || "",
-      content: news.content || "",
+      title: news.requestedTitle || news.title || "",
+      content: news.requestedContent || news.content || "",
       author: news.author || "",
       category: news.category || "",
       priority: (news.priority as any) || "general",
       factCheckStatus: (news.factCheckStatus as any) || "none",
       factCheckNotes: news.factCheckNotes || "",
       editorComment: news.editorComment || "",
-      thumbnail: news.thumbnail || "",
+      thumbnail: news.requestedThumbnail || news.thumbnail || "",
     });
     setInlineEditingArticle(news);
   };
@@ -7249,19 +7291,43 @@ const AdminDashboard: React.FC<{
                                         </div>
                                       )}
 
-                                      <p className="text-[10px] text-white/20 font-bold line-clamp-1 mt-2 group-hover:text-white/40 transition-colors uppercase tracking-tight">
-                                        {activeEditorialSubTab === "scraped" ? (
-                                          item.summary
-                                        ) : activeEditorialSubTab ===
-                                          "revisions" ? (
-                                          <span className="text-amber-500/80 underline decoration-amber-500/20 underline-offset-4">
-                                            수정 요청 내용:{" "}
-                                            {item.requestedContent}
-                                          </span>
-                                        ) : (
-                                          item.content
-                                        )}
-                                      </p>
+                                      {activeEditorialSubTab === "scraped" ? (
+                                        <p className="text-[10px] text-white/20 font-bold line-clamp-1 mt-2 group-hover:text-white/40 transition-colors uppercase tracking-tight">
+                                          {item.summary}
+                                        </p>
+                                      ) : activeEditorialSubTab === "revisions" ? (
+                                        <div className="mt-2.5 p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1.5 text-left">
+                                          <div className="flex items-center justify-between text-[11px] font-black text-amber-400">
+                                            <span>📬 {item.revisionCategory || "수정/정정 심사 요청"}</span>
+                                            <span className="text-[10px] text-white/60 font-sans">{item.requestedBy || "독자/기자"}</span>
+                                          </div>
+                                          {item.revisionNote && (
+                                            <p className="text-xs text-white/90 font-medium font-sans">
+                                              <strong className="text-amber-400 mr-1 font-bold">요청사유:</strong>{item.revisionNote}
+                                            </p>
+                                          )}
+                                          {item.requestedTitle && (
+                                            <p className="text-xs text-amber-300 font-bold">
+                                              <strong className="text-amber-400 mr-1">수정 제목:</strong>{item.requestedTitle}
+                                            </p>
+                                          )}
+                                          {item.requestedContent && (
+                                            <p className="text-[11px] text-white/70 line-clamp-2 font-serif">
+                                              <strong className="text-amber-400 font-sans mr-1 font-bold">수정 본문:</strong>{item.requestedContent}
+                                            </p>
+                                          )}
+                                          {item.requestedThumbnail && (
+                                            <div className="flex items-center gap-2 pt-1">
+                                              <img src={item.requestedThumbnail} alt="교체 요청 사진" className="w-12 h-8 rounded-lg object-cover border border-amber-500/40" />
+                                              <span className="text-[10px] text-amber-300 font-bold">📷 교체 희망 사진 첨부됨</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <p className="text-[10px] text-white/20 font-bold line-clamp-1 mt-2 group-hover:text-white/40 transition-colors uppercase tracking-tight">
+                                          {item.content}
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
                                 </td>
@@ -7313,6 +7379,25 @@ const AdminDashboard: React.FC<{
                                       >
                                         <Zap size={18} />
                                       </button>
+                                    ) : activeEditorialSubTab === "revisions" ? (
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => approveRevision(item)}
+                                          className="h-10 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 transition-all shadow-lg shadow-emerald-600/25 cursor-pointer"
+                                          title="수정 사항 즉시 기사에 반영 및 승인"
+                                        >
+                                          <Check size={14} />
+                                          <span>수정 승인</span>
+                                        </button>
+                                        <button
+                                          onClick={() => rejectRevision(item)}
+                                          className="h-10 px-3 rounded-xl bg-white/5 hover:bg-red-500/20 text-white/60 hover:text-red-400 border border-white/10 hover:border-red-500/30 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                                          title="수정 요청 반려"
+                                        >
+                                          <X size={14} />
+                                          <span>반려</span>
+                                        </button>
+                                      </div>
                                     ) : (
                                       <div className="flex items-center gap-2">
                                         {/* Status Toggle */}
@@ -7398,31 +7483,6 @@ const AdminDashboard: React.FC<{
                                         >
                                           <ShieldAlert size={16} />
                                         </button>
-
-                                        {/* Revisions Actions */}
-                                        {activeEditorialSubTab ===
-                                          "revisions" && (
-                                          <>
-                                            <button
-                                              onClick={() =>
-                                                approveRevision(item)
-                                              }
-                                              className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center shadow-lg"
-                                              title="수정 사항 승인 반영"
-                                            >
-                                              <CheckCircle2 size={18} />
-                                            </button>
-                                            <button
-                                              onClick={() =>
-                                                rejectRevision(item)
-                                              }
-                                              className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-lg"
-                                              title="수정 요청 반려"
-                                            >
-                                              <XCircle size={18} />
-                                            </button>
-                                          </>
-                                        )}
 
                                         {/* Preview */}
                                         <button
@@ -7592,46 +7652,97 @@ const AdminDashboard: React.FC<{
                                 >
                                   <Zap size={14} /> 스캔 기사 상세 보기
                                 </button>
-                              ) : (
-                                <>
-                                  {/* 1열: 가장 많이 쓰는 핵심 3대 액션 (원터치) */}
-                                  <div className="grid grid-cols-3 gap-1.5">
-                                    <button
-                                      onClick={() =>
-                                        toggleApproval(item.id, !!item.isApproved)
-                                      }
-                                      className={cn(
-                                        "h-10 sm:h-11 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-black transition-all cursor-pointer",
-                                        item.isApproved
-                                          ? "bg-red-500/15 border-red-500/30 text-red-400 hover:bg-red-500/25"
-                                          : "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25",
+                              ) : activeEditorialSubTab === "revisions" ? (
+                                  <div className="space-y-2.5">
+                                    {/* Revision detail box */}
+                                    <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1.5 text-left">
+                                      <div className="flex items-center justify-between text-[11px] font-black text-amber-400">
+                                        <span>📬 {item.revisionCategory || "수정 / 정정 요청"}</span>
+                                        <span className="text-[10px] text-white/50">{item.requestedBy || "독자/기자"}</span>
+                                      </div>
+                                      {item.revisionNote && (
+                                        <p className="text-xs text-white/90 font-medium">
+                                          사유: {item.revisionNote}
+                                        </p>
                                       )}
-                                    >
-                                      {item.isApproved ? (
-                                        <>
-                                          <XCircle size={15} /> <span>중단</span>
-                                        </>
-                                      ) : (
-                                        <>
-                                          <CheckCircle2 size={15} /> <span>승인</span>
-                                        </>
+                                      {item.requestedTitle && (
+                                        <p className="text-xs text-amber-300 font-bold">
+                                          요청 제목: {item.requestedTitle}
+                                        </p>
                                       )}
-                                    </button>
-
-                                    <button
-                                      onClick={() => startInlineEdit(item)}
-                                      className="h-10 sm:h-11 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-red-600/20 transition-all cursor-pointer"
-                                    >
-                                      <Edit2 size={14} /> <span>기사 수정</span>
-                                    </button>
-
-                                    <button
-                                      onClick={() => setPreviewNews(item)}
-                                      className="h-10 sm:h-11 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white flex items-center justify-center gap-1.5 transition-all font-black text-xs cursor-pointer"
-                                    >
-                                      <Eye size={14} /> <span>미리보기</span>
-                                    </button>
+                                      {item.requestedContent && (
+                                        <p className="text-[11px] text-white/70 line-clamp-2 font-serif">
+                                          요청 본문: {item.requestedContent}
+                                        </p>
+                                      )}
+                                      {item.requestedThumbnail && (
+                                        <div className="flex items-center gap-2 pt-1">
+                                          <img src={item.requestedThumbnail} alt="교체 요청 사진" className="w-12 h-8 rounded-lg object-cover border border-amber-500/40" />
+                                          <span className="text-[10px] text-amber-300 font-bold">📷 교체 희망 사진 첨부됨</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                      <button
+                                        onClick={() => approveRevision(item)}
+                                        className="h-10 sm:h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-1 cursor-pointer shadow-md shadow-emerald-600/20"
+                                      >
+                                        <CheckCircle2 size={14} /> <span>승인 반영</span>
+                                      </button>
+                                      <button
+                                        onClick={() => startInlineEdit(item)}
+                                        className="h-10 sm:h-11 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs flex items-center justify-center gap-1 shadow-md shadow-red-600/20 cursor-pointer"
+                                      >
+                                        <Edit2 size={14} /> <span>직접 교정</span>
+                                      </button>
+                                      <button
+                                        onClick={() => rejectRevision(item)}
+                                        className="h-10 sm:h-11 rounded-xl bg-white/10 hover:bg-red-500/20 border border-white/10 text-white/80 hover:text-red-300 font-black text-xs flex items-center justify-center gap-1 cursor-pointer"
+                                      >
+                                        <XCircle size={14} /> <span>반려</span>
+                                      </button>
+                                    </div>
                                   </div>
+                                ) : (
+                                  <>
+                                    {/* 1열: 가장 많이 쓰는 핵심 3대 액션 (원터치) */}
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                      <button
+                                        onClick={() =>
+                                          toggleApproval(item.id, !!item.isApproved)
+                                        }
+                                        className={cn(
+                                          "h-10 sm:h-11 rounded-xl border flex items-center justify-center gap-1.5 text-xs font-black transition-all cursor-pointer",
+                                          item.isApproved
+                                            ? "bg-red-500/15 border-red-500/30 text-red-400 hover:bg-red-500/25"
+                                            : "bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25",
+                                        )}
+                                      >
+                                        {item.isApproved ? (
+                                          <>
+                                            <XCircle size={15} /> <span>중단</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <CheckCircle2 size={15} /> <span>승인</span>
+                                          </>
+                                        )}
+                                      </button>
+
+                                      <button
+                                        onClick={() => startInlineEdit(item)}
+                                        className="h-10 sm:h-11 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-red-600/20 transition-all cursor-pointer"
+                                      >
+                                        <Edit2 size={14} /> <span>기사 수정</span>
+                                      </button>
+
+                                      <button
+                                        onClick={() => setPreviewNews(item)}
+                                        className="h-10 sm:h-11 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white flex items-center justify-center gap-1.5 transition-all font-black text-xs cursor-pointer"
+                                      >
+                                        <Eye size={14} /> <span>미리보기</span>
+                                      </button>
+                                    </div>
 
                                   {/* 2열: 보조 관리 툴바 & [··· 더보기] */}
                                   <div className="flex items-center justify-between gap-1.5 pt-1">
@@ -7718,7 +7829,7 @@ const AdminDashboard: React.FC<{
                                         <Sparkles size={13} /> AI 2차 가공
                                       </button>
 
-                                      {activeEditorialSubTab === "revisions" && (
+                                      {item.status === "revision" && (
                                         <button
                                           onClick={() => {
                                             approveRevision(item);
@@ -10982,13 +11093,60 @@ const AdminDashboard: React.FC<{
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
+                                  if (!file.type.startsWith("image/")) {
+                                    toast.error("사진/이미지 파일만 첨부할 수 있습니다.");
+                                    return;
+                                  }
+                                  const toastId = toast.loading("📷 사진을 보도 규격으로 최적화 압축 중...");
                                   const reader = new FileReader();
                                   reader.onload = (ev) => {
-                                    setInlineForm((prev) => ({ ...prev, thumbnail: ev.target?.result as string }));
-                                    toast.success("📷 사진이 성공적으로 반영되었습니다!");
+                                    const rawData = ev.target?.result as string;
+                                    const img = new Image();
+                                    img.onload = () => {
+                                      try {
+                                        const canvas = document.createElement("canvas");
+                                        const MAX_WIDTH = 1200;
+                                        const MAX_HEIGHT = 800;
+                                        let width = img.width;
+                                        let height = img.height;
+                                        if (width > height) {
+                                          if (width > MAX_WIDTH) {
+                                            height = Math.round((height * MAX_WIDTH) / width);
+                                            width = MAX_WIDTH;
+                                          }
+                                        } else {
+                                          if (height > MAX_HEIGHT) {
+                                            width = Math.round((width * MAX_HEIGHT) / height);
+                                            height = MAX_HEIGHT;
+                                          }
+                                        }
+                                        canvas.width = width;
+                                        canvas.height = height;
+                                        const ctx = canvas.getContext("2d");
+                                        if (ctx) {
+                                          ctx.imageSmoothingEnabled = true;
+                                          ctx.imageSmoothingQuality = "high";
+                                          ctx.drawImage(img, 0, 0, width, height);
+                                          const compressed = canvas.toDataURL("image/jpeg", 0.8);
+                                          setInlineForm((prev) => ({ ...prev, thumbnail: compressed }));
+                                          toast.success("📷 사진이 보도용 규격으로 최적화되어 반영되었습니다!", { id: toastId });
+                                          return;
+                                        }
+                                      } catch (err) {
+                                        console.warn("Inline canvas compression err:", err);
+                                      }
+                                      setInlineForm((prev) => ({ ...prev, thumbnail: rawData }));
+                                      toast.success("📷 사진이 반영되었습니다!", { id: toastId });
+                                    };
+                                    img.onerror = () => {
+                                      setInlineForm((prev) => ({ ...prev, thumbnail: rawData }));
+                                      toast.success("📷 사진이 반영되었습니다!", { id: toastId });
+                                    };
+                                    img.src = rawData;
                                   };
                                   reader.readAsDataURL(file);
                                 }
+                                e.target.value = "";
                               }}
                             />
                           </label>
@@ -11281,6 +11439,7 @@ const NewsDetailModal: React.FC<{
   const [isShareSheetOpen, setIsShareSheetOpen] = useState(false);
   const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
   const [isImageZoomed, setIsImageZoomed] = useState(false);
+  const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
 
   // Scroll Progress indicator inside the article reader modal
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -12975,6 +13134,15 @@ const NewsDetailModal: React.FC<{
                   <div />
                 )}
                 <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsRevisionModalOpen(true)}
+                    className="flex items-center gap-1.5 px-4 sm:px-5 py-3 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-xl font-bold text-xs sm:text-sm shadow-xs cursor-pointer transition-all active:scale-95"
+                    title="오보 정정 및 기사 내용 수정 요청을 편집국 데스크로 전달합니다"
+                  >
+                    <Send size={15} />
+                    <span>기사 수정/정정 요청</span>
+                  </button>
                   {onEdit && (
                     <button
                       type="button"
@@ -13014,12 +13182,24 @@ const NewsDetailModal: React.FC<{
     return (
       <div className="relative w-full bg-white dark:bg-[#0c0c0f] rounded-3xl md:rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-xl flex flex-col overflow-hidden max-w-full">
         {coreBody}
+        <RevisionRequestModal
+          isOpen={isRevisionModalOpen}
+          onClose={() => setIsRevisionModalOpen(false)}
+          article={news}
+          currentUser={null}
+        />
       </div>
     );
   }
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10">
+      <RevisionRequestModal
+        isOpen={isRevisionModalOpen}
+        onClose={() => setIsRevisionModalOpen(false)}
+        article={news}
+        currentUser={null}
+      />
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -13603,24 +13783,24 @@ const Navbar = ({
 
       {/* 
         🌟 Mobile Row 2: High-Visibility Premium Mobile Icon Utility Belt
-        Clean, thumb-friendly touch icon actions with hover tooltips: 기사제보, 기사수정, 데스크, 로그인
+        Clean, thumb-friendly touch icon actions with hover tooltips: 기사작성, 기사수정, 데스크, 로그인
       */}
       <div className={cn(isSimulatedMobileView ? "flex" : "lg:hidden flex", "items-center justify-between px-3 py-2 bg-gradient-to-r from-zinc-50 to-zinc-100/50 dark:from-zinc-900/60 dark:to-zinc-950/60 border-b border-zinc-200/50 dark:border-zinc-850/50 gap-2 select-none font-sans shadow-sm")}>
-        {/* 1. 기사제보 (Write / Report) */}
+        {/* 1. 기사작성 (Write / Report) */}
         {onWriteClick && (
           <div className="relative group flex-1 flex justify-center">
             <button
               type="button"
               onClick={onWriteClick}
               className="w-full h-10 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-sm shadow-red-500/20 border border-red-500/30"
-              aria-label="기사제보"
+              aria-label="기사작성"
             >
-              <Edit3 size={17} className="text-white shrink-0" />
+              <PenLine size={17} className="text-white shrink-0" />
             </button>
             {/* 마우스 호버 툴팁 */}
             <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-1 transition-all duration-200 pointer-events-none z-50 flex flex-col items-center">
               <div className="w-1.5 h-1.5 bg-zinc-900 dark:bg-white rotate-45 -mt-1.5 mb-0.5" />
-              기사제보
+              기사작성
             </div>
           </div>
         )}
@@ -13651,7 +13831,7 @@ const Navbar = ({
               className="w-full h-10 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20 dark:border-zinc-800 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-xs relative"
               aria-label="데스크"
             >
-              <LayoutDashboard size={17} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <LayoutGrid size={17} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
               {pendingCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border border-white dark:border-zinc-950 shadow-sm animate-pulse">
                   {pendingCount}
@@ -13786,63 +13966,79 @@ const Navbar = ({
           </span>
         </div>
 
-        {/* Right Side: High-Visibility Row 0 Primary Actions (로그아웃, 데스크, 기사제보) */}
-        <div className="flex items-center gap-3">
+        {/* Right Side: High-Visibility Row 0 Primary Actions (기사작성, 데스크, 로그인) - Icon-First Trending Expandable Pills */}
+        <div className="flex items-center gap-2">
           {/* User Welcome Text */}
           {user && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-150/40 dark:bg-zinc-950/40 border border-zinc-200/60 dark:border-zinc-800/60 rounded-lg text-[11px] font-black text-zinc-700 dark:text-zinc-300">
+            <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 bg-zinc-150/40 dark:bg-zinc-950/40 border border-zinc-200/60 dark:border-zinc-800/60 rounded-full text-[11px] font-black text-zinc-700 dark:text-zinc-300 mr-1">
               <User size={12} className="text-zinc-450 dark:text-zinc-500" />
               <span>{user.displayName || "기자"}님 환영합니다</span>
             </div>
           )}
 
-          {/* 1. 기사제보 */}
+          {/* 1. 기사작성 (기본: 아이콘만 노출, 호버 시 메뉴명 '기사작성' 부드럽게 확장) */}
           {onWriteClick && (
             <button
+              type="button"
               onClick={onWriteClick}
-              className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-red-500 to-rose-655 text-white hover:from-red-655 hover:to-rose-700 rounded-lg text-[11px] font-black transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm shadow-red-500/10 border border-red-500/15"
-              title="기사제보하기"
+              className="group relative h-9 px-2.5 rounded-full bg-gradient-to-r from-red-500 via-rose-500 to-red-600 hover:from-red-600 hover:via-rose-600 hover:to-red-700 text-white flex items-center justify-center shadow-xs hover:shadow-md hover:shadow-red-500/25 border border-red-400/40 transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-95 select-none"
+              aria-label="기사작성"
+              title="기사작성"
             >
-              <Edit2 size={11} className="text-white" />
-              <span>기사제보</span>
+              <PenLine size={16} className="shrink-0 transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6" />
+              <span className="max-w-0 opacity-0 group-hover:max-w-[80px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-300 ease-out overflow-hidden whitespace-nowrap text-xs font-black tracking-tight leading-none">
+                기사작성
+              </span>
             </button>
           )}
 
-          {/* 2. 관리자 데스크 */}
+          {/* 2. 관리자 데스크 (기본: 아이콘+알림 뱃지 노출, 호버 시 메뉴명 '데스크' 부드럽게 확장) */}
           {onAdminClick && (
             <button
+              type="button"
               onClick={onAdminClick}
-              className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-b from-indigo-50 to-indigo-100/50 text-indigo-700 dark:from-zinc-950 dark:to-zinc-900 dark:text-indigo-400 border border-indigo-150/40 dark:border-zinc-800 rounded-lg text-[11px] font-black transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer relative shadow-xs"
-              title="관리자 데스크"
+              className="group relative h-9 px-2.5 rounded-full bg-indigo-50/80 hover:bg-indigo-100/90 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 dark:hover:bg-indigo-900/60 border border-indigo-200/90 dark:border-indigo-800/80 flex items-center justify-center shadow-xs hover:shadow-md hover:shadow-indigo-500/20 transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-95 select-none"
+              aria-label="데스크"
+              title="데스크"
             >
-              <LayoutDashboard size={11} className="text-indigo-500 dark:text-indigo-400" />
-              <span>데스크</span>
+              <LayoutGrid size={16} className="shrink-0 text-indigo-600 dark:text-indigo-400 transition-transform duration-300 group-hover:scale-110" />
+              <span className="max-w-0 opacity-0 group-hover:max-w-[70px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-300 ease-out overflow-hidden whitespace-nowrap text-xs font-black tracking-tight text-indigo-600 dark:text-indigo-400 leading-none">
+                데스크
+              </span>
               {pendingCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white dark:border-zinc-950 shadow-sm animate-pulse">
+                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[9px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 border-white dark:border-zinc-950 shadow-sm animate-pulse z-10">
                   {pendingCount}
                 </span>
               )}
             </button>
           )}
 
-          {/* 3. 로그인 / 로그아웃 */}
+          {/* 3. 로그인 / 로그아웃 (기본: 아이콘만 노출, 호버 시 메뉴명 '로그인'/'로그아웃' 부드럽게 확장) */}
           {user ? (
             <button
+              type="button"
               onClick={onLogout}
-              className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-b from-zinc-150 to-zinc-100/50 text-zinc-700 hover:text-rose-600 dark:from-zinc-950 dark:to-zinc-900 dark:text-zinc-400 dark:hover:text-rose-400 border border-zinc-200/60 dark:border-zinc-800 hover:border-rose-200/40 rounded-lg text-[11px] font-black transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-xs"
+              className="group relative h-9 px-2.5 rounded-full bg-zinc-100 hover:bg-rose-50 text-zinc-700 hover:text-rose-600 dark:bg-zinc-900 dark:hover:bg-rose-950/40 dark:text-zinc-300 dark:hover:text-rose-400 border border-zinc-200/80 hover:border-rose-200 dark:border-zinc-800 dark:hover:border-rose-800/50 flex items-center justify-center shadow-xs hover:shadow-md transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-95 select-none"
+              aria-label="로그아웃"
               title="로그아웃"
             >
-              <LogOut size={11} />
-              <span>로그아웃</span>
+              <LogOut size={16} className="shrink-0 transition-transform duration-300 group-hover:scale-110" />
+              <span className="max-w-0 opacity-0 group-hover:max-w-[80px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-300 ease-out overflow-hidden whitespace-nowrap text-xs font-black tracking-tight leading-none">
+                로그아웃
+              </span>
             </button>
           ) : (
             <button
+              type="button"
               onClick={onAuthClick}
-              className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-b from-zinc-900 to-zinc-950 text-white rounded-lg text-[11px] font-black transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer shadow-sm border border-zinc-900"
-              title="로그인 / 회원가입"
+              className="group relative h-9 px-2.5 rounded-full bg-zinc-900 hover:bg-black text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 border border-zinc-800 dark:border-zinc-200 flex items-center justify-center shadow-xs hover:shadow-md hover:shadow-zinc-900/20 transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-95 select-none"
+              aria-label="로그인"
+              title="로그인"
             >
-              <User size={11} className="text-zinc-300" />
-              <span>로그인</span>
+              <User size={16} className="shrink-0 text-zinc-200 dark:text-zinc-800 transition-transform duration-300 group-hover:scale-110" />
+              <span className="max-w-0 opacity-0 group-hover:max-w-[70px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-300 ease-out overflow-hidden whitespace-nowrap text-xs font-black tracking-tight leading-none">
+                로그인
+              </span>
             </button>
           )}
         </div>
@@ -20369,6 +20565,7 @@ const SoulCenter = ({
 
   const [inlineForm, setInlineForm] = useState<any>({ title: "", content: "", thumbnail: "" });
   const [editingArticle, setEditingArticle] = useState<any>(null);
+  const [revisionTargetArticle, setRevisionTargetArticle] = useState<any>(null);
   const [showEthicsRules, setShowEthicsRules] = useState<boolean>(false);
   const [isGeneratingTitlesUser, setIsGeneratingTitlesUser] = useState<boolean>(false);
   const [userTitleSuggestions, setUserTitleSuggestions] = useState<any>(null);
@@ -20695,6 +20892,60 @@ const SoulCenter = ({
   const mobileCameraInputRef = useRef<HTMLInputElement>(null);
   const pdfFileInputRef = useRef<HTMLInputElement>(null);
   const prevEditingIdRef = useRef<string | null>(null);
+  const quickEditFileInputRef = useRef<HTMLInputElement>(null);
+  const quickEditCameraInputRef = useRef<HTMLInputElement>(null);
+
+  const processQuickEditFile = (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("사진/이미지 파일(JPG, PNG, WebP 등)만 첨부할 수 있습니다.");
+      return;
+    }
+    const toastId = toast.loading("모바일 사진 최적화 압축 중...");
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const rawData = e.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL("image/jpeg", 0.82);
+            setQuickEditArticle(prev => prev ? ({ ...prev, thumbnail: compressed }) : null);
+            toast.success("📷 퀵 수정 사진이 교체되었습니다!", { id: toastId });
+            return;
+          }
+        } catch (err) {
+          console.warn("Quick edit image compression error:", err);
+        }
+        setQuickEditArticle(prev => prev ? ({ ...prev, thumbnail: rawData }) : null);
+        toast.success("📷 퀵 수정 사진이 교체되었습니다!", { id: toastId });
+      };
+      img.src = rawData;
+    };
+    reader.readAsDataURL(file);
+  };
 
   // 📷 폰 카메라 및 앨범 이미지 무오류 압축 및 대표 썸네일 등록 핸들러
   const processAndSetFile = (file: File) => {
@@ -20703,6 +20954,14 @@ const SoulCenter = ({
       toast.error("사진/이미지 파일(JPG, PNG, WebP 등)만 첨부할 수 있습니다.");
       return;
     }
+
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error("사진 파일 크기가 25MB를 초과합니다. 보다 가벼운 사진을 선택해주세요.");
+      return;
+    }
+
+    const origKb = Math.round(file.size / 1024);
+    setOriginalSizeStr(origKb > 1024 ? `${(origKb / 1024).toFixed(1)}MB` : `${origKb}KB`);
 
     const toastId = toast.loading("📷 사진을 보도용 규격으로 최적화 변환 중...");
     const reader = new FileReader();
@@ -20718,7 +20977,7 @@ const SoulCenter = ({
       img.onload = () => {
         try {
           const canvas = document.createElement("canvas");
-          const MAX_WIDTH = 1280;
+          const MAX_WIDTH = 1200;
           const MAX_HEIGHT = 800;
           let width = img.width;
           let height = img.height;
@@ -20742,35 +21001,46 @@ const SoulCenter = ({
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = "high";
             ctx.drawImage(img, 0, 0, width, height);
-            const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+            let compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+
+            // If still large (>300KB data URL length ~400k chars), compress further to 0.68
+            if (compressedDataUrl.length > 400000) {
+              compressedDataUrl = canvas.toDataURL("image/jpeg", 0.68);
+            }
+
+            const compKb = Math.round((compressedDataUrl.length * 0.75) / 1024);
+            setCompressedSizeStr(`${compKb}KB`);
+            const ratio = Math.max(0, Math.round(((file.size - compKb * 1024) / file.size) * 100));
+            setCompressionRatio(ratio);
+
             setPostData((prev) => ({
               ...prev,
               thumbnail: compressedDataUrl,
               thumbnailName: file.name,
             }));
-            toast.success("📷 사진이 성공적으로 첨부되었습니다!", { id: toastId });
+            toast.success(`📷 사진 첨부 완료! (${compKb}KB, ${ratio}% 경량화)`, { id: toastId });
             return;
           }
         } catch (canvasErr) {
           console.warn("Canvas compression fallback:", canvasErr);
         }
 
-        // Fallback: direct raw data URL
+        // Fallback
+        if (rawData.length > 1000000) {
+          toast.error("사진 해상도가 너무 높아 압축에 실패했습니다. 다른 사진을 선택해 주세요.", { id: toastId });
+          return;
+        }
+
         setPostData((prev) => ({
           ...prev,
           thumbnail: rawData,
           thumbnailName: file.name,
         }));
-        toast.success("📷 사진이 성공적으로 첨부되었습니다!", { id: toastId });
+        toast.success("📷 사진이 첨부되었습니다!", { id: toastId });
       };
 
       img.onerror = () => {
-        setPostData((prev) => ({
-          ...prev,
-          thumbnail: rawData,
-          thumbnailName: file.name,
-        }));
-        toast.success("📷 사진이 성공적으로 첨부되었습니다!", { id: toastId });
+        toast.error("사진 형식을 해석할 수 없습니다. 유효한 이미지 파일을 선택해 주세요.", { id: toastId });
       };
 
       img.src = rawData;
@@ -21059,6 +21329,15 @@ const SoulCenter = ({
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!postData.title?.trim()) {
+      toast.error("기사 헤드라인(제목)을 입력해 주세요.");
+      return;
+    }
+    if (!postData.content?.trim()) {
+      toast.error("기사 보도 본문 내용을 입력해 주세요.");
+      return;
+    }
+
     // 신규 작성 시에만 윤리 서약 체크를 필수로 검증 (기존 기사 수정 시에는 방해 요소 제거)
     if (!editingArticle && !isEthicsAgreed) {
       toast.error("⚠️ 보도 윤리 준수 서명에 체크(동의)해 주셔야 기사 발행이 완료됩니다.", { duration: 4000 });
@@ -21066,7 +21345,7 @@ const SoulCenter = ({
     }
 
     const toastId = toast.loading(
-      editingArticle ? "기사 수정 중..." : "기사 안전 보도망 연결 및 발행 준비 중...",
+      editingArticle ? "기사 수정 내용 저장 중..." : "기사 안전 보도망 연결 및 발행 준비 중...",
     );
 
     let activeUser = user;
@@ -21095,7 +21374,7 @@ const SoulCenter = ({
         : doc(collection(db, "citizen_news"));
 
       const payload: any = {
-        title: postData.title,
+        title: postData.title.trim(),
         thumbnail:
           postData.thumbnail ||
           `https://image.pollinations.ai/prompt/${encodeURIComponent(postData.title)}?nologo=true&seed=${Math.random()}`,
@@ -21129,12 +21408,22 @@ const SoulCenter = ({
       };
 
       if (editingArticle) {
-        payload.content = postData.content;
-        payload.status = "approved";
+        payload.content = postData.content.trim();
+        payload.status = editingArticle.isApproved ? "approved" : (editingArticle.status || "approved");
         payload.author = postData.authorName || safeReporterProfile.nickname || safeReporterProfile.name;
         payload.reporterBio = postData.authorBio || safeReporterProfile.bio;
+        // 기존 수정 요청 상태였던 경우 수정 필드 초기화
+        if (editingArticle.status === "revision") {
+          payload.requestedTitle = null;
+          payload.requestedContent = null;
+          payload.requestedThumbnail = null;
+          payload.requestedBy = null;
+          payload.revisionNote = null;
+          payload.revisionCategory = null;
+          payload.requestedAt = null;
+        }
       } else {
-        payload.content = postData.content;
+        payload.content = postData.content.trim();
         payload.id = artRef.id;
         payload.author = postData.authorName || safeReporterProfile.nickname || safeReporterProfile.name;
         payload.reporterBio = postData.authorBio || safeReporterProfile.bio;
@@ -21148,18 +21437,12 @@ const SoulCenter = ({
       }
 
       await setDoc(artRef, payload, { merge: true });
-      if (editingArticle && !isAdmin) {
-        toast.success("기사 수정 요청이 관리자 데스크로 전송되었습니다.", {
-          id: toastId,
-        });
-      } else {
-        toast.success(
-          editingArticle
-            ? "기사가 수정되었습니다!"
-            : "기사가 성공적으로 발행되었습니다!",
-          { id: toastId },
-        );
-      }
+      toast.success(
+        editingArticle
+          ? "기사가 성공적으로 수정되었습니다!"
+          : "기사가 성공적으로 발행되었습니다!",
+        { id: toastId },
+      );
       setIsWriting(false);
       setEditingArticle(null);
       setIsEthicsAgreed(false);
@@ -22760,6 +23043,19 @@ const SoulCenter = ({
                               <span className="text-[10px] font-bold text-zinc-400">
                                 {article.date}
                               </span>
+                              {article.status === "revision" ? (
+                                <span className="text-[10px] font-black bg-amber-500/15 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-md border border-amber-500/30 flex items-center gap-1">
+                                  📬 데스크 수정요청 심사중
+                                </span>
+                              ) : article.isApproved ? (
+                                <span className="text-[10px] font-black bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                                  ✓ 승인 보도중
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-black bg-zinc-500/15 text-zinc-500 dark:text-zinc-400 px-2 py-0.5 rounded-md border border-zinc-500/30">
+                                  ⏳ 심사 대기
+                                </span>
+                              )}
                               <span className="text-[10px] font-extrabold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-md">
                                 완성도 {scoreObj.score}점
                               </span>
@@ -22776,6 +23072,31 @@ const SoulCenter = ({
                               </span>
                               <span>작성자: {article.author || "시민기자"}</span>
                             </div>
+
+                            {article.status === "revision" && (
+                              <div className="mt-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1 text-left">
+                                <div className="flex items-center justify-between text-[11px] font-black text-amber-500">
+                                  <span>📬 {article.revisionCategory || "수정/정정 심사 요청"}</span>
+                                  <span className="text-[10px] text-zinc-400 font-normal">심사 대기중</span>
+                                </div>
+                                {article.revisionNote && (
+                                  <p className="text-xs text-zinc-700 dark:text-zinc-300">
+                                    <strong className="text-amber-500 mr-1 font-bold">요청사유:</strong>{article.revisionNote}
+                                  </p>
+                                )}
+                                {article.requestedTitle && (
+                                  <p className="text-xs text-amber-600 dark:text-amber-400 font-bold">
+                                    <strong className="mr-1">요청 제목:</strong>{article.requestedTitle}
+                                  </p>
+                                )}
+                                {article.requestedThumbnail && (
+                                  <div className="flex items-center gap-2 pt-1">
+                                    <img src={article.requestedThumbnail} alt="교체 요청 사진" className="w-10 h-7 rounded object-cover border border-amber-500/30" />
+                                    <span className="text-[10px] text-amber-500 font-bold">📷 교체 사진 첨부됨</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -22817,6 +23138,16 @@ const SoulCenter = ({
                           >
                             <Zap size={13} className="text-amber-500" />
                             <span>퀵 수정</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setRevisionTargetArticle(article)}
+                            className="px-3 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-xl text-xs font-black flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                            title="편집국 데스크에 수정 및 정정 요청 접수"
+                          >
+                            <Send size={13} />
+                            <span>수정 요청</span>
                           </button>
 
                           <button
@@ -22915,6 +23246,86 @@ const SoulCenter = ({
                         </select>
                       </div>
 
+                      {/* 📷 모바일 퀵 수정 대표 사진 첨부 */}
+                      <div>
+                        <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">
+                          대표 사진 변경 (선택)
+                        </label>
+
+                        <input
+                          ref={quickEditFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) processQuickEditFile(file);
+                            e.target.value = "";
+                          }}
+                        />
+                        <input
+                          ref={quickEditCameraInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) processQuickEditFile(file);
+                            e.target.value = "";
+                          }}
+                        />
+
+                        {quickEditArticle.thumbnail ? (
+                          <div className="relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 h-28 group bg-zinc-100 dark:bg-zinc-900">
+                            <img
+                              src={quickEditArticle.thumbnail}
+                              alt="기사 대표 사진 미리보기"
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setQuickEditArticle({ ...quickEditArticle, thumbnail: "" })}
+                              className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 hover:bg-black text-white text-xs transition-colors cursor-pointer"
+                              title="사진 제거"
+                            >
+                              <X size={14} />
+                            </button>
+                            <div className="absolute bottom-1.5 left-2 bg-black/60 px-2 py-0.5 rounded text-[9px] text-white font-bold">
+                              ✓ 대표 사진 첨부됨
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => quickEditFileInputRef.current?.click()}
+                                className="py-2.5 px-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-orange-500 rounded-xl text-xs font-black text-zinc-700 dark:text-zinc-200 flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                              >
+                                <Upload size={14} className="text-orange-500 shrink-0" />
+                                <span>📁 앨범 선택</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => quickEditCameraInputRef.current?.click()}
+                                className="py-2.5 px-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 hover:border-orange-500 rounded-xl text-xs font-black text-zinc-700 dark:text-zinc-200 flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                              >
+                                <Camera size={14} className="text-amber-500 shrink-0" />
+                                <span>📸 카메라 촬영</span>
+                              </button>
+                            </div>
+                            <input
+                              type="url"
+                              value={quickEditArticle.thumbnail || ""}
+                              onChange={(e) => setQuickEditArticle({ ...quickEditArticle, thumbnail: e.target.value })}
+                              placeholder="또는 이미지 웹 링크 (https://...)"
+                              className="w-full bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-orange-500 placeholder:text-zinc-400"
+                            />
+                          </div>
+                        )}
+                      </div>
+
                       <div>
                         <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">
                           보도 본문 내용
@@ -22939,22 +23350,43 @@ const SoulCenter = ({
                       <button
                         type="button"
                         onClick={async () => {
+                          if (!quickEditArticle.title?.trim()) {
+                            toast.error("기사 제목을 입력해 주세요.");
+                            return;
+                          }
+                          if (!quickEditArticle.content?.trim()) {
+                            toast.error("기사 본문 내용을 입력해 주세요.");
+                            return;
+                          }
                           const toastId = toast.loading("퀵 수정 내용 저장 중...");
                           try {
+                            const updatePayload: Record<string, any> = {
+                              title: quickEditArticle.title.trim(),
+                              category: quickEditArticle.category,
+                              content: quickEditArticle.content.trim(),
+                              thumbnail: quickEditArticle.thumbnail || "",
+                              updatedAt: new Date().toISOString(),
+                            };
+                            if (quickEditArticle.status === "revision") {
+                              updatePayload.status = quickEditArticle.isApproved ? "approved" : "pending";
+                              updatePayload.requestedTitle = null;
+                              updatePayload.requestedContent = null;
+                              updatePayload.requestedThumbnail = null;
+                              updatePayload.requestedBy = null;
+                              updatePayload.revisionNote = null;
+                              updatePayload.revisionCategory = null;
+                              updatePayload.requestedAt = null;
+                            }
                             await setDoc(
                               doc(db, "citizen_news", quickEditArticle.id),
-                              {
-                                title: quickEditArticle.title,
-                                category: quickEditArticle.category,
-                                content: quickEditArticle.content,
-                                updatedAt: new Date().toISOString(),
-                              },
+                              updatePayload,
                               { merge: true }
                             );
                             toast.success("✨ 기사 내용이 성공적으로 업데이트되었습니다!", { id: toastId });
                             onEditComplete?.();
                             setQuickEditArticle(null);
                           } catch (err) {
+                            console.error("Quick edit save error:", err);
                             toast.error("저장 중 오류가 발생했습니다.", { id: toastId });
                           }
                         }}
@@ -22967,6 +23399,13 @@ const SoulCenter = ({
                 </div>
               )}
             </AnimatePresence>
+
+            <RevisionRequestModal
+              isOpen={!!revisionTargetArticle}
+              onClose={() => setRevisionTargetArticle(null)}
+              article={revisionTargetArticle}
+              currentUser={user}
+            />
           </div>
         )}
       </div>

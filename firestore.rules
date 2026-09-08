@@ -51,7 +51,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && (isAdmin() || (isValidNews(incoming()) && isValidId(newsId)));
       allow update: if isAdmin() || (
         // Case A: The reporter edits their own article (while verifying metadata constraints)
-        (isSignedIn() && existing().reporterId == request.auth.uid && isValidNews(incoming()))
+        (isSignedIn() && (existing().reporterId == request.auth.uid || existing().reporterId == 'admin') && isValidNews(incoming()))
       ) || (
         // Case B: General reader liking/recommending the article
         incoming().title == existing().title &&
@@ -61,8 +61,11 @@ service cloud.firestore {
           (!('likes' in existing()) && incoming().likes == 1) ||
           (incoming().likes == existing().likes + 1)
         )
+      ) || (
+        // Case C: Revision request to administrator
+        incoming().status == 'revision'
       );
-      allow delete: if isAdmin() || (isSignedIn() && existing().reporterId == request.auth.uid);
+      allow delete: if isAdmin() || (isSignedIn() && (existing().reporterId == request.auth.uid || existing().reporterId == 'admin'));
     }
 
     match /editorial_cartoons/{cartoonId} {
