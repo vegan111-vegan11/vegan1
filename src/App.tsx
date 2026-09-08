@@ -25,6 +25,7 @@ import {
   Moon,
   Home,
   LogOut,
+  LogIn,
   Mail,
   Lock,
   Github,
@@ -5739,25 +5740,23 @@ const AdminDashboard: React.FC<{
       toast.error("기사 본문 내용을 입력해 주세요.");
       return;
     }
-    if (!inlineForm.thumbnail || !inlineForm.thumbnail.trim()) {
-      toast.error("기사 대표 썸네일 경로를 입력해 주세요.");
-      return;
-    }
+    const safeThumbnail = inlineForm.thumbnail?.trim() || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800";
 
     const toastId = toast.loading("기사 정보를 정밀 업데이트 중...");
     try {
       await updateDoc(doc(db, "citizen_news", inlineEditingArticle.id), {
-        title: inlineForm.title,
-        content: inlineForm.content,
-        author: inlineForm.author,
+        title: inlineForm.title.trim(),
+        content: inlineForm.content.trim(),
+        author: inlineForm.author.trim(),
         category: inlineForm.category,
         priority: inlineForm.priority,
         factCheckStatus: inlineForm.factCheckStatus,
         factCheckNotes: inlineForm.factCheckNotes || null,
         editorComment: inlineForm.editorComment || null,
-        thumbnail: inlineForm.thumbnail || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800",
+        thumbnail: safeThumbnail,
         updatedAt: new Date().toISOString(),
       });
+
       toast.success("기사 교정 및 업데이트가 성공적으로 동기화되었습니다!", { id: toastId });
       setInlineEditingArticle(null);
     } catch (error) {
@@ -13400,7 +13399,7 @@ const Navbar = ({
 
   const pendingCount = citizenNews.filter((n: any) => !n.isApproved && n.status !== "rejected" && n.status !== "revision").length;
 
-  const isWorkshopActive = currentPage === "이솔공방" || (typeof currentPage === "string" && currentPage.startsWith("이솔공방::"));
+  const isWorkshopActive = false;
 
   const [localSearchQuery, setLocalSearchQuery] = React.useState("");
 
@@ -13603,67 +13602,97 @@ const Navbar = ({
       </div>
 
       {/* 
-        🌟 Mobile Row 2: High-Visibility Premium Mobile Utility Belt
-        Clean, thumb-friendly touch actions for article writing, article editing/management, admin desk, and auth
+        🌟 Mobile Row 2: High-Visibility Premium Mobile Icon Utility Belt
+        Clean, thumb-friendly touch icon actions with hover tooltips: 기사제보, 기사수정, 데스크, 로그인
       */}
-      <div className={cn(isSimulatedMobileView ? "flex" : "lg:hidden flex", "items-center justify-between px-3 py-2 bg-gradient-to-r from-zinc-50 to-zinc-100/50 dark:from-zinc-900/60 dark:to-zinc-950/60 border-b border-zinc-200/50 dark:border-zinc-850/50 gap-1.5 select-none font-sans shadow-sm")}>
-        {/* 1. 기사 작성 (Write) */}
+      <div className={cn(isSimulatedMobileView ? "flex" : "lg:hidden flex", "items-center justify-between px-3 py-2 bg-gradient-to-r from-zinc-50 to-zinc-100/50 dark:from-zinc-900/60 dark:to-zinc-950/60 border-b border-zinc-200/50 dark:border-zinc-850/50 gap-2 select-none font-sans shadow-sm")}>
+        {/* 1. 기사제보 (Write / Report) */}
         {onWriteClick && (
-          <button
-            onClick={onWriteClick}
-            className="flex-1 py-2 px-1 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-655 hover:to-rose-700 text-white rounded-xl flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm shadow-red-500/10 border border-red-500/15 text-[11px] font-extrabold truncate"
-            title="기사 작성하기"
-          >
-            <Edit2 size={13} className="text-white shrink-0" />
-            <span className="truncate">기사작성</span>
-          </button>
+          <div className="relative group flex-1 flex justify-center">
+            <button
+              type="button"
+              onClick={onWriteClick}
+              className="w-full h-10 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-sm shadow-red-500/20 border border-red-500/30"
+              aria-label="기사제보"
+            >
+              <Edit3 size={17} className="text-white shrink-0" />
+            </button>
+            {/* 마우스 호버 툴팁 */}
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-1 transition-all duration-200 pointer-events-none z-50 flex flex-col items-center">
+              <div className="w-1.5 h-1.5 bg-zinc-900 dark:bg-white rotate-45 -mt-1.5 mb-0.5" />
+              기사제보
+            </div>
+          </div>
         )}
 
-        {/* 2. 내 기사 / 수정 (My Articles / Edit) */}
-        <button
-          onClick={() => onPageChange("soul-center")}
-          className="flex-1 py-2 px-1 bg-gradient-to-b from-amber-50 to-amber-100/60 hover:from-amber-100 hover:to-amber-150 text-amber-900 dark:from-zinc-900 dark:to-zinc-950 dark:text-amber-400 border border-amber-200/60 dark:border-zinc-800 rounded-xl flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs text-[11px] font-extrabold truncate"
-          title="내가 쓴 기사 조회 및 수정"
-        >
-          <FileText size={13} className="text-amber-600 dark:text-amber-400 shrink-0" />
-          <span className="truncate">내 기사/수정</span>
-        </button>
+        {/* 2. 기사수정 / 내 기사 (My Articles / Edit) */}
+        <div className="relative group flex-1 flex justify-center">
+          <button
+            type="button"
+            onClick={() => onPageChange("soul-center")}
+            className="w-full h-10 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-400 border border-amber-500/20 dark:border-zinc-800 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-xs"
+            aria-label="기사수정"
+          >
+            <FileText size={17} className="text-amber-600 dark:text-amber-400 shrink-0" />
+          </button>
+          {/* 마우스 호버 툴팁 */}
+          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-1 transition-all duration-200 pointer-events-none z-50 flex flex-col items-center">
+            <div className="w-1.5 h-1.5 bg-zinc-900 dark:bg-white rotate-45 -mt-1.5 mb-0.5" />
+            기사수정
+          </div>
+        </div>
 
-        {/* 3. 관리자 데스크 (Admin) */}
+        {/* 3. 데스크 / 관리자 데스크 (Admin Desk) */}
         {onAdminClick && (
-          <button
-            onClick={onAdminClick}
-            className="flex-1 py-2 px-1 bg-gradient-to-b from-indigo-50 to-indigo-100/50 hover:from-indigo-100 hover:to-indigo-150 text-indigo-700 dark:from-zinc-900 dark:to-zinc-950 dark:hover:from-zinc-855 dark:hover:to-zinc-900 dark:text-indigo-400 border border-indigo-100/60 dark:border-zinc-800 rounded-xl flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs relative text-[11px] font-extrabold truncate"
-            title="관리자 기사 관리 데스크"
-          >
-            <LayoutDashboard size={13} className="text-indigo-500 dark:text-indigo-400 shrink-0" />
-            <span className="truncate">관리자데스크</span>
-            {pendingCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border border-white dark:border-zinc-950 shadow-sm animate-pulse">
-                {pendingCount}
-              </span>
-            )}
-          </button>
+          <div className="relative group flex-1 flex justify-center">
+            <button
+              type="button"
+              onClick={onAdminClick}
+              className="w-full h-10 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20 dark:border-zinc-800 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-xs relative"
+              aria-label="데스크"
+            >
+              <LayoutDashboard size={17} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border border-white dark:border-zinc-950 shadow-sm animate-pulse">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+            {/* 마우스 호버 툴팁 */}
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-1 transition-all duration-200 pointer-events-none z-50 flex flex-col items-center">
+              <div className="w-1.5 h-1.5 bg-zinc-900 dark:bg-white rotate-45 -mt-1.5 mb-0.5" />
+              데스크
+            </div>
+          </div>
         )}
 
-        {/* 4. 로그인/로그아웃 (Auth) */}
-        {user ? (
-          <button
-            onClick={onLogout}
-            className="py-2 px-2.5 bg-gradient-to-b from-zinc-100 to-zinc-50 hover:from-rose-50 hover:to-rose-100/60 dark:from-zinc-900 dark:to-zinc-950 text-zinc-650 dark:text-zinc-455 hover:text-rose-600 dark:hover:text-rose-400 border border-zinc-200/50 dark:border-zinc-800 rounded-xl flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs text-[11px] font-extrabold shrink-0"
-            title="로그아웃"
-          >
-            <LogOut size={13} className="shrink-0" />
-          </button>
-        ) : (
-          <button
-            onClick={onAuthClick}
-            className="py-2 px-2.5 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-900 rounded-xl flex items-center justify-center gap-1 transition-all duration-200 cursor-pointer active:scale-95 shadow-sm text-[11px] font-extrabold shrink-0"
-            title="로그인"
-          >
-            <User size={13} className="text-zinc-300 shrink-0" />
-          </button>
-        )}
+        {/* 4. 로그인 / 로그아웃 (Auth) */}
+        <div className="relative group flex-1 flex justify-center">
+          {user ? (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="w-full h-10 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 border border-rose-500/20 dark:border-zinc-800 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-xs"
+              aria-label="로그아웃"
+            >
+              <LogOut size={16} className="shrink-0" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onAuthClick}
+              className="w-full h-10 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-800 dark:border-zinc-200 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-sm"
+              aria-label="로그인"
+            >
+              <LogIn size={16} className="shrink-0" />
+            </button>
+          )}
+          {/* 마우스 호버 툴팁 */}
+          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-1 transition-all duration-200 pointer-events-none z-50 flex flex-col items-center">
+            <div className="w-1.5 h-1.5 bg-zinc-900 dark:bg-white rotate-45 -mt-1.5 mb-0.5" />
+            {user ? "로그아웃" : "로그인"}
+          </div>
+        </div>
       </div>
 
       {/* 
@@ -14382,9 +14411,7 @@ const Navbar = ({
                         <button
                           key={item.id}
                           onClick={() => {
-                            if (item.id === "hyeonwon-cinema") {
-                              onPageChange("hyeonwon-cinema");
-                            } else if (item.id === "manual") {
+                            if (item.id === "manual") {
                               onManualClick();
                             } else if (item.id === "aegis-ai-lab") {
                               onPageChange("aegis-ai-lab");
@@ -15348,6 +15375,9 @@ const IsolPost = ({
         const subCat = initialCategory.split("::")[1];
         setActiveCategory("이솔공방");
         setWorkshopSubCategory(subCat);
+      } else if (initialCategory === "hyeonwon-cinema" || initialCategory === "현원시네마") {
+        setActiveCategory("hyeonwon-cinema");
+        setWorkshopSubCategory("전체");
       } else {
         setActiveCategory(initialCategory);
         setWorkshopSubCategory("전체");
@@ -15452,8 +15482,16 @@ const IsolPost = ({
         onPageChange={(p, c) => {
           if (p === "isol-post") {
             const requestedCat = c || "전체기사";
-            if (requestedCat === "hyeonwon-cinema") {
-              onPageChange("hyeonwon-cinema");
+            if (requestedCat === "hyeonwon-cinema" || requestedCat === "현원시네마") {
+              setActiveCategory("hyeonwon-cinema");
+              setWorkshopSubCategory("전체");
+              setNewsSearchQuery("");
+              setSelectedNews(null);
+              setCustomReaderQueue(null);
+              setMobileTab("feed");
+              setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }, 50);
               return;
             }
             if (requestedCat.startsWith("이솔공방::")) {
@@ -16724,9 +16762,25 @@ const IsolPost = ({
                 {/* Immersive head panel for 이솔공방 */}
                 <div className="bg-gradient-to-r from-teal-50 to-orange-50 dark:from-zinc-900/40 dark:to-zinc-950/40 p-6 md:p-8 rounded-3xl border border-teal-100/40 dark:border-zinc-800 shadow-sm relative overflow-hidden">
                   <div className="relative z-10 max-w-2xl">
-                    <span className="bg-gradient-to-r from-teal-600 to-orange-600 text-white text-[10px] font-black px-3.5 py-1.5 rounded-full uppercase tracking-widest inline-block mb-3 shadow-sm select-none">
-                      이솔나라 오리지널 창작 아카이브
-                    </span>
+                    <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                      <span className="bg-gradient-to-r from-teal-600 to-orange-600 text-white text-[10px] font-black px-3.5 py-1.5 rounded-full uppercase tracking-widest inline-block shadow-sm select-none">
+                        이솔나라 오리지널 창작 아카이브
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveCategory("전체기사");
+                          setWorkshopSubCategory("전체");
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-black shadow-md shadow-red-600/20 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                        title="전체 뉴스로 돌아가기"
+                      >
+                        <Newspaper className="w-3.5 h-3.5" />
+                        <span>전체뉴스로 이동</span>
+                        <ArrowRight className="w-3 h-3 opacity-80" />
+                      </button>
+                    </div>
                     <h2 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-gray-150 tracking-tight mb-2">
                       🎨 이솔공방 (창작 공방)
                     </h2>
@@ -16869,6 +16923,18 @@ const IsolPost = ({
                     })}
                   </div>
                 )}
+              </div>
+            ) : (activeCategory === "hyeonwon-cinema" || activeCategory === "현원시네마") ? (
+              <div className="space-y-6 animate-in fade-in duration-500">
+                <HyeonWonCinema
+                  user={user}
+                  onAuthClick={onAuthClick}
+                  onBackToNews={() => {
+                    setActiveCategory("전체기사");
+                    setWorkshopSubCategory("전체");
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                />
               </div>
             ) : activeCategory === "온에어" ? (
               <div className="space-y-8 animate-fadeIn">
@@ -17807,32 +17873,38 @@ const IsolPost = ({
         <button
           onClick={() => {
             if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
-            if (activeCategory === "이솔공방") setActiveCategory("전체기사");
+            if (activeCategory === "이솔공방" || activeCategory === "hyeonwon-cinema" || activeCategory === "현원시네마") {
+              setActiveCategory("전체기사");
+              setWorkshopSubCategory("전체");
+            }
             setMobileTab("feed");
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           className={cn(
             "flex flex-col items-center gap-1 cursor-pointer transition-all duration-200 px-2 py-1 rounded-xl",
-            mobileTab === "feed" && activeCategory !== "이솔공방" ? "text-red-655 scale-105 font-black bg-red-50/60 dark:bg-red-950/20" : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+            mobileTab === "feed" && activeCategory !== "이솔공방" && activeCategory !== "hyeonwon-cinema" && activeCategory !== "현원시네마" ? "text-red-655 scale-105 font-black bg-red-50/60 dark:bg-red-950/20" : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
           )}
         >
-          <Newspaper size={18} className={cn("transition-transform duration-200", mobileTab === "feed" && activeCategory !== "이솔공방" ? "stroke-[2.5]" : "stroke-2")} />
+          <Newspaper size={18} className={cn("transition-transform duration-200", mobileTab === "feed" && activeCategory !== "이솔공방" && activeCategory !== "hyeonwon-cinema" && activeCategory !== "현원시네마" ? "stroke-[2.5]" : "stroke-2")} />
           <span className="text-[10px] font-bold">뉴스피드</span>
         </button>
 
         <button
           onClick={() => {
             if (typeof playHapticClick === "function") playHapticClick(600, 0.03);
-            if (activeCategory === "이솔공방") setActiveCategory("전체기사");
+            if (activeCategory === "이솔공방" || activeCategory === "hyeonwon-cinema" || activeCategory === "현원시네마") {
+              setActiveCategory("전체기사");
+              setWorkshopSubCategory("전체");
+            }
             setMobileTab("hotclicks");
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           className={cn(
             "flex flex-col items-center gap-1 cursor-pointer transition-all duration-200 px-2 py-1 rounded-xl",
-            mobileTab === "hotclicks" && activeCategory !== "이솔공방" ? "text-red-655 scale-105 font-black bg-red-50/60 dark:bg-red-950/20" : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+            mobileTab === "hotclicks" && activeCategory !== "이솔공방" && activeCategory !== "hyeonwon-cinema" && activeCategory !== "현원시네마" ? "text-red-655 scale-105 font-black bg-red-50/60 dark:bg-red-950/20" : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
           )}
         >
-          <TrendingUp size={18} className={cn("transition-transform duration-200", mobileTab === "hotclicks" && activeCategory !== "이솔공방" ? "stroke-[2.5]" : "stroke-2")} />
+          <TrendingUp size={18} className={cn("transition-transform duration-200", mobileTab === "hotclicks" && activeCategory !== "이솔공방" && activeCategory !== "hyeonwon-cinema" && activeCategory !== "현원시네마" ? "stroke-[2.5]" : "stroke-2")} />
           <span className="text-[10px] font-bold">실시간인기</span>
         </button>
 
@@ -20305,17 +20377,9 @@ const SoulCenter = ({
   const [originalSizeStr, setOriginalSizeStr] = useState<string>("");
   const [compressedSizeStr, setCompressedSizeStr] = useState<string>("");
   const [compressionRatio, setCompressionRatio] = useState<number>(0);
-  const mobileCameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleRotateImage = () => {
     toast.success("📸 사진 수평/수직 왜곡 자동 회전 보정이 완료되었습니다.");
-  };
-
-  const handleMobileCameraChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      processAndSetFile(file);
-    }
   };
 
   const handleGenerateTitlesUser = async () => {
@@ -20628,17 +20692,94 @@ const SoulCenter = ({
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mobileCameraInputRef = useRef<HTMLInputElement>(null);
   const pdfFileInputRef = useRef<HTMLInputElement>(null);
+  const prevEditingIdRef = useRef<string | null>(null);
 
+  // 📷 폰 카메라 및 앨범 이미지 무오류 압축 및 대표 썸네일 등록 핸들러
   const processAndSetFile = (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("사진/이미지 파일(JPG, PNG, WebP 등)만 첨부할 수 있습니다.");
+      return;
+    }
+
+    const toastId = toast.loading("📷 사진을 보도용 규격으로 최적화 변환 중...");
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setPostData((prev) => ({
-        ...prev,
-        thumbnail: reader.result as string,
-        thumbnailName: file.name,
-      }));
+
+    reader.onload = (ev) => {
+      const rawData = ev.target?.result as string;
+      if (!rawData) {
+        toast.error("사진을 읽어오지 못했습니다.", { id: toastId });
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 1280;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+            setPostData((prev) => ({
+              ...prev,
+              thumbnail: compressedDataUrl,
+              thumbnailName: file.name,
+            }));
+            toast.success("📷 사진이 성공적으로 첨부되었습니다!", { id: toastId });
+            return;
+          }
+        } catch (canvasErr) {
+          console.warn("Canvas compression fallback:", canvasErr);
+        }
+
+        // Fallback: direct raw data URL
+        setPostData((prev) => ({
+          ...prev,
+          thumbnail: rawData,
+          thumbnailName: file.name,
+        }));
+        toast.success("📷 사진이 성공적으로 첨부되었습니다!", { id: toastId });
+      };
+
+      img.onerror = () => {
+        setPostData((prev) => ({
+          ...prev,
+          thumbnail: rawData,
+          thumbnailName: file.name,
+        }));
+        toast.success("📷 사진이 성공적으로 첨부되었습니다!", { id: toastId });
+      };
+
+      img.src = rawData;
     };
+
+    reader.onerror = () => {
+      toast.error("사진 파일을 읽는 도중 오류가 발생했습니다.", { id: toastId });
+    };
+
     reader.readAsDataURL(file);
   };
 
@@ -20647,6 +20788,7 @@ const SoulCenter = ({
     if (file) {
       processAndSetFile(file);
     }
+    e.target.value = "";
   };
 
   const handleGenerateImageUser = async () => {
@@ -20724,13 +20866,19 @@ const SoulCenter = ({
 
   useEffect(() => {
     if (externalEditingArticle) {
+       // 이미 해당 기사를 로딩한 상태라면 부모 리렌더링 시 사용자의 입력을 덮어쓰지 않도록 방어
+       if (prevEditingIdRef.current === externalEditingArticle.id) {
+         return;
+       }
+       prevEditingIdRef.current = externalEditingArticle.id;
        setEditingArticle(externalEditingArticle);
+       setIsEthicsAgreed(true);
        setPostData({
-         title: externalEditingArticle.title,
-         content: externalEditingArticle.content,
-         thumbnail: externalEditingArticle.thumbnail,
+         title: externalEditingArticle.title || "",
+         content: externalEditingArticle.content || "",
+         thumbnail: externalEditingArticle.thumbnail || "",
          thumbnailName: (externalEditingArticle as any).thumbnailName || (externalEditingArticle.thumbnail ? "기존 대표 이미지" : ""),
-         category: externalEditingArticle.category,
+         category: externalEditingArticle.category || "사회/정치",
          subCategory: externalEditingArticle.subCategory || "",
          pdfUrl: externalEditingArticle.pdfUrl || "",
          pdfName: externalEditingArticle.pdfName || "",
@@ -20746,6 +20894,8 @@ const SoulCenter = ({
        }
        setIsWriting(true);
        setActiveTab("write");
+    } else {
+      prevEditingIdRef.current = null;
     }
   }, [externalEditingArticle]);
 
@@ -20783,14 +20933,17 @@ const SoulCenter = ({
   }, [formData]);
 
   useEffect(() => {
-    try {
-      if (postData.title || postData.content) {
-        localStorage.setItem("isol_post_draft_2026", JSON.stringify(postData));
-        const now = new Date();
-        const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
-        setLastSavedTime(timeStr);
-      }
-    } catch(e) {}
+    const timer = setTimeout(() => {
+      try {
+        if (postData.title || postData.content) {
+          localStorage.setItem("isol_post_draft_2026", JSON.stringify(postData));
+          const now = new Date();
+          const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+          setLastSavedTime(timeStr);
+        }
+      } catch(e) {}
+    }, 800);
+    return () => clearTimeout(timer);
   }, [postData]);
 
   const handleDeleteNews = async (id: string) => {
@@ -20906,7 +21059,8 @@ const SoulCenter = ({
   const handleSubmitPost = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isEthicsAgreed) {
+    // 신규 작성 시에만 윤리 서약 체크를 필수로 검증 (기존 기사 수정 시에는 방해 요소 제거)
+    if (!editingArticle && !isEthicsAgreed) {
       toast.error("⚠️ 보도 윤리 준수 서명에 체크(동의)해 주셔야 기사 발행이 완료됩니다.", { duration: 4000 });
       return;
     }
@@ -21025,9 +21179,12 @@ const SoulCenter = ({
         sourceAgency: "이솔 국영 종합 뉴스룸",
         pressSeal: "standard_citizen",
       });
-    } catch (error) {
-      console.error(error);
-      toast.error("작업에 실패했습니다.", { id: toastId });
+    } catch (error: any) {
+      console.error("handleSubmitPost error:", error);
+      const errorMsg = error?.message?.includes("permission")
+        ? "보도 권한 승인 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."
+        : "작업 처리 중 네트워크 오류가 발생했습니다. 다시 시도해 주세요.";
+      toast.error(errorMsg, { id: toastId });
     }
   };
 
@@ -21642,49 +21799,83 @@ const SoulCenter = ({
                         </div>
                       )}
 
-                      <div className="flex-1 w-full space-y-2">
-                        <label className="w-full py-2.5 px-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-orange-500 rounded-xl text-xs font-black text-zinc-700 dark:text-zinc-200 flex items-center justify-center gap-1.5 cursor-pointer transition-colors shadow-xs">
-                          <Upload size={13} className="text-orange-500" />
-                          <span>{postData.thumbnail ? "사진 변경 (카메라/앨범)" : "내 폰 사진/촬영 첨부"}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                if (file.size > 5 * 1024 * 1024) {
-                                  toast.error("사진 용량은 5MB 이하로 등록해주세요.");
-                                  return;
-                                }
-                                const reader = new FileReader();
-                                reader.onload = (ev) => {
-                                  const dataUrl = ev.target?.result as string;
-                                  setPostData((prev) => ({
-                                    ...prev,
-                                    thumbnail: dataUrl,
-                                    thumbnailName: file.name,
-                                  }));
-                                  toast.success("📷 대표 사진이 성공적으로 등록되었습니다!");
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          />
-                        </label>
+                      <div className="flex-1 w-full space-y-2.5">
+                        {/* Hidden native inputs for Album & Camera */}
                         <input
-                          type="url"
-                          value={postData.thumbnail || ""}
-                          onChange={(e) =>
-                            setPostData((prev) => ({
-                              ...prev,
-                              thumbnail: e.target.value,
-                              thumbnailName: "직접 입력 URL",
-                            }))
-                          }
-                          placeholder="또는 이미지 웹 링크 (https://...)"
-                          className="w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 focus:outline-none focus:border-orange-500 transition-colors"
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleFileChange}
                         />
+                        <input
+                          ref={mobileCameraInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={handleFileChange}
+                        />
+
+                        {/* Dual Action Buttons: Album & Camera */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="py-2.5 px-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-orange-500 rounded-xl text-xs font-black text-zinc-700 dark:text-zinc-200 flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs active:scale-95"
+                          >
+                            <Upload size={14} className="text-orange-500 shrink-0" />
+                            <span className="truncate">📁 앨범에서 선택</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => mobileCameraInputRef.current?.click()}
+                            className="py-2.5 px-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-orange-500 rounded-xl text-xs font-black text-zinc-700 dark:text-zinc-200 flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs active:scale-95"
+                          >
+                            <Camera size={14} className="text-amber-500 shrink-0" />
+                            <span className="truncate">📸 카메라 촬영</span>
+                          </button>
+                        </div>
+
+                        {/* AI auto generate button & URL Input */}
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="url"
+                            value={postData.thumbnail || ""}
+                            onChange={(e) =>
+                              setPostData((prev) => ({
+                                ...prev,
+                                thumbnail: e.target.value,
+                                thumbnailName: e.target.value ? "웹 이미지 링크" : "",
+                              }))
+                            }
+                            placeholder="또는 이미지 웹 링크 (https://...)"
+                            className="flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 text-xs font-bold text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 focus:outline-none focus:border-orange-500 transition-colors"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleGenerateImageUser}
+                            disabled={isGeneratingImageUser}
+                            className="py-2 px-3 bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/25 rounded-xl text-xs font-black flex items-center gap-1 cursor-pointer transition-all shrink-0 disabled:opacity-50"
+                            title="기사 제목에 어울리는 보도 일러스트를 AI가 자동 생성합니다"
+                          >
+                            <Sparkles size={12} className={isGeneratingImageUser ? "animate-spin" : "text-orange-500"} />
+                            <span className="hidden sm:inline">AI 생성</span>
+                          </button>
+                        </div>
+
+                        {postData.thumbnail && (
+                          <div className="flex items-center justify-between text-[11px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-500/20">
+                            <span className="font-bold truncate">✓ {postData.thumbnailName || "사진 첨부 완료 (보도 규격 최적화)"}</span>
+                            <button
+                              type="button"
+                              onClick={() => setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }))}
+                              className="text-red-500 hover:text-red-700 font-black ml-2 cursor-pointer shrink-0"
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -29795,9 +29986,10 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
             } else if (page === "ombudsman") {
               setIsAdminView(false);
               setIsOmbudsmanModalOpen(true);
-            } else if (page === "isol-post" && category === "hyeonwon-cinema") {
+            } else if (page === "isol-post" && (category === "hyeonwon-cinema" || category === "현원시네마")) {
               setIsAdminView(false);
-              setCurrentPage("hyeonwon-cinema");
+              setCurrentPage("isol-post");
+              setSelectedNewsCategory("hyeonwon-cinema");
             } else {
               setIsAdminView(false);
               setCurrentPage(page);
@@ -30124,6 +30316,11 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
               <HyeonWonCinema
                 user={user}
                 onAuthClick={() => setIsAuthModalOpen(true)}
+                onBackToNews={() => {
+                  setCurrentPage("isol-post");
+                  setSelectedNewsCategory("전체기사");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
               />
             </motion.div>
           )}

@@ -20,7 +20,8 @@ import {
   HelpCircle,
   TrendingUp,
   ArrowRight,
-  ShieldAlert
+  ShieldAlert,
+  Newspaper
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
@@ -30,6 +31,7 @@ import { collection, doc, setDoc, getDocs, query, where, orderBy, limit } from "
 interface HyeonWonCinemaProps {
   user: any;
   onAuthClick: () => void;
+  onBackToNews?: () => void;
 }
 
 interface AuditionResult {
@@ -65,7 +67,7 @@ interface GuestbookMessage {
   };
 }
 
-export default function HyeonWonCinema({ user, onAuthClick }: HyeonWonCinemaProps) {
+export default function HyeonWonCinema({ user, onAuthClick, onBackToNews }: HyeonWonCinemaProps) {
   const [activeSubTab, setActiveSubTab] = useState<"profile" | "filmography" | "cartoons" | "audition" | "guestbook" | "playground">("profile");
   
   // Behind episode board states
@@ -789,10 +791,24 @@ export default function HyeonWonCinema({ user, onAuthClick }: HyeonWonCinemaProp
         <div className="absolute left-10 -bottom-20 w-60 h-60 bg-red-650/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative z-10 max-w-4xl space-y-4">
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded-full">
-            <Flame className="w-3.5 h-3.5 animate-pulse" />
-            이솔나라 거장 시네포트폴리오
-          </span>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded-full">
+              <Flame className="w-3.5 h-3.5 animate-pulse" />
+              이솔나라 거장 시네포트폴리오
+            </span>
+            {onBackToNews && (
+              <button
+                type="button"
+                onClick={onBackToNews}
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-black shadow-md shadow-red-600/25 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                title="전체 뉴스로 돌아가기"
+              >
+                <Newspaper className="w-3.5 h-3.5" />
+                <span>전체뉴스로 이동</span>
+                <ArrowRight className="w-3 h-3 opacity-80" />
+              </button>
+            )}
+          </div>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-black tracking-tight leading-none text-white font-serif">
             🎬 현원 시네마 예술관
           </h2>
@@ -809,6 +825,17 @@ export default function HyeonWonCinema({ user, onAuthClick }: HyeonWonCinemaProp
 
       {/* 🍿 Inner Tab Switcher */}
       <div className="flex border-b border-zinc-900 bg-zinc-950/80 sticky top-0 z-40 backdrop-blur-md overflow-x-auto no-scrollbar scroll-smooth">
+        {onBackToNews && (
+          <button
+            type="button"
+            onClick={onBackToNews}
+            className="py-4.5 px-4 text-xs md:text-sm font-black flex items-center justify-center gap-1.5 border-b-2 border-transparent text-red-400 hover:text-white hover:bg-red-950/40 transition-all cursor-pointer shrink-0 whitespace-nowrap bg-red-950/20"
+            title="전체뉴스로 바로가기"
+          >
+            <Newspaper className="w-4 h-4 text-red-500" />
+            <span>전체뉴스</span>
+          </button>
+        )}
         {[
           { id: "profile", label: "감독 연혁 ∙ 비전", icon: User },
           { id: "filmography", label: "필모그래피 (출연/연출)", icon: Film },
