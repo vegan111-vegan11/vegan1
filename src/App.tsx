@@ -18648,10 +18648,19 @@ const AdminNewsCenter = ({
     if (!news) return;
     const toastId = toast.loading("수정 요청 사항을 기사에 전면 반영 중...");
     try {
+      if (!auth.currentUser) {
+        try {
+          await signInAnonymously(auth);
+        } catch (e) {
+          console.warn("Anonymous auth for admin revision accept:", e);
+        }
+      }
       const updatePayload: Record<string, any> = {
         updatedAt: new Date().toISOString(),
         status: "approved",
         isApproved: true,
+        author: news.author || "시민기자",
+        reporterId: news.reporterId || "admin",
         requestedTitle: null,
         requestedContent: null,
         requestedThumbnail: null,
@@ -18669,7 +18678,7 @@ const AdminNewsCenter = ({
       if (news.requestedThumbnail) {
         updatePayload.thumbnail = news.requestedThumbnail.trim();
       }
-      await updateDoc(doc(db, "citizen_news", news.id), updatePayload);
+      await setDoc(doc(db, "citizen_news", news.id), updatePayload, { merge: true });
       toast.success("✨ 독자/기자의 수정 요청이 승인되어 기사에 전면 반영되었습니다!", { id: toastId });
       if (editingNews?.id === news.id) setEditingNews(null);
       if (reviewingRevisionNews?.id === news.id) setReviewingRevisionNews(null);
@@ -18683,8 +18692,17 @@ const AdminNewsCenter = ({
     if (!news) return;
     const toastId = toast.loading("수정 요청을 반려 처리 중...");
     try {
-      await updateDoc(doc(db, "citizen_news", news.id), {
+      if (!auth.currentUser) {
+        try {
+          await signInAnonymously(auth);
+        } catch (e) {
+          console.warn("Anonymous auth for admin revision reject:", e);
+        }
+      }
+      await setDoc(doc(db, "citizen_news", news.id), {
         status: news.isApproved ? "approved" : "pending",
+        author: news.author || "시민기자",
+        reporterId: news.reporterId || "admin",
         requestedTitle: null,
         requestedContent: null,
         requestedThumbnail: null,
@@ -18693,7 +18711,7 @@ const AdminNewsCenter = ({
         revisionCategory: null,
         requestedAt: null,
         updatedAt: new Date().toISOString(),
-      });
+      }, { merge: true });
       toast.success("수정 요청이 반려되었으며 기존 기사 내용이 유지됩니다.", { id: toastId });
       if (editingNews?.id === news.id) setEditingNews(null);
       if (reviewingRevisionNews?.id === news.id) setReviewingRevisionNews(null);
@@ -19084,7 +19102,9 @@ const AdminNewsCenter = ({
           updatePayload.revisionCategory = null;
           updatePayload.requestedAt = null;
         }
-        await updateDoc(doc(db, "citizen_news", editingNews.id), updatePayload);
+        updatePayload.author = inlineForm.author || editingNews.author || "시민기자";
+        updatePayload.reporterId = editingNews.reporterId || "admin";
+        await setDoc(doc(db, "citizen_news", editingNews.id), updatePayload, { merge: true });
         localStorage.removeItem(`isol_admin_article_draft_${editingNews.id}`);
         toast.success("기사 교정 및 업데이트가 완벽히 저장되었습니다!", { id: toastId });
       }
@@ -19098,9 +19118,21 @@ const AdminNewsCenter = ({
     }
   };
 
-  if (user?.email !== "f8001161@gmail.com")
+  const isAdminAuthorized = !!(user && checkIsAdmin(user.email));
+  if (!isAdminAuthorized)
     return (
-      <div className="p-20 text-center font-black">접근 권한이 없습니다.</div>
+      <div className="min-h-[60vh] flex items-center justify-center p-6">
+        <div className="max-w-md w-full p-8 text-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-xl space-y-3">
+          <div className="w-14 h-14 bg-red-500/10 text-red-500 rounded-2xl mx-auto flex items-center justify-center">
+            <ShieldAlert size={28} />
+          </div>
+          <h3 className="text-base font-black text-zinc-900 dark:text-zinc-100">편집국 관리자 전용 메뉴</h3>
+          <p className="text-xs text-zinc-500 leading-relaxed">
+            이 메뉴는 승인된 관리자 계정만 접근할 수 있습니다.<br />
+            관리자 계정으로 로그인해 주십시오.
+          </p>
+        </div>
+      </div>
     );
 
   const totalArticles = citizenNews.length;
@@ -21790,10 +21822,92 @@ const SoulCenter = ({
     }
   };
 
-  const myArticles = useMemo(
-    () => (currentUser ? citizenNews.filter((n) => n.reporterId === currentUser.uid) : []),
-    [currentUser, citizenNews],
-  );
+  const [showAllArticlesAdmin, setShowAllArticlesAdmin] = useState(false);
+  const isAdminUser = useMemo(() => checkIsAdmin(user?.email || currentUser?.email), [user, currentUser]);
+
+  const myArticles = useMemo(() => {
+    if (!currentUser && !user) return citizenNews.slice(0, 10);
+    const activeUid = currentUser?.uid || user?.uid;
+    const activeEmail = currentUser?.email || user?.email;
+    const activeName = currentUser?.displayName || user?.displayName;
+
+    if (isAdminUser && showAllArticlesAdmin) {
+      return citizenNews;
+    }
+
+    const authored = citizenNews.filter((n) => {
+      if (activeUid && n.reporterId === activeUid) return true;
+      if (activeEmail && n.author === activeEmail.split("@")[0]) return true;
+      if (activeName && n.author === activeName) return true;
+      return false;
+    });
+
+    if (authored.length === 0 && (isAdminUser || !activeUid)) {
+      return citizenNews;
+    }
+    return authored;
+  }, [currentUser, user, citizenNews, isAdminUser, showAllArticlesAdmin]);
+
+  const handleApproveRevisionInSoulCenter = async (news: CitizenNews) => {
+    const toastId = toast.loading("수정 요청 사항 반영 중...");
+    try {
+      if (!auth.currentUser) {
+        try { await signInAnonymously(auth); } catch (e) {}
+      }
+      const updatePayload: Record<string, any> = {
+        status: "approved",
+        isApproved: true,
+        updatedAt: new Date().toISOString(),
+        author: news.author || "시민기자",
+        reporterId: news.reporterId || (auth.currentUser?.uid || "admin"),
+        requestedTitle: null,
+        requestedContent: null,
+        requestedThumbnail: null,
+        requestedBy: null,
+        revisionNote: null,
+        revisionCategory: null,
+        requestedAt: null,
+      };
+      if ((news as any).requestedTitle) updatePayload.title = (news as any).requestedTitle.trim();
+      if ((news as any).requestedContent) updatePayload.content = (news as any).requestedContent.trim();
+      if ((news as any).requestedThumbnail) updatePayload.thumbnail = (news as any).requestedThumbnail.trim();
+
+      await setDoc(doc(db, "citizen_news", news.id), updatePayload, { merge: true });
+      toast.success("✨ 수정 요청 사항이 기사에 전면 반영 및 승인되었습니다!", { id: toastId });
+      onEditComplete?.();
+    } catch (err) {
+      console.error("Revision approval error in SoulCenter:", err);
+      toast.error("수정 반영 중 오류가 발생했습니다.", { id: toastId });
+    }
+  };
+
+  const handleWithdrawRevision = async (news: CitizenNews) => {
+    if (!window.confirm("수정 요청을 철회하시겠습니까? 기존 기사 내용이 유지됩니다.")) return;
+    const toastId = toast.loading("수정 요청 철회 처리 중...");
+    try {
+      if (!auth.currentUser) {
+        try { await signInAnonymously(auth); } catch (e) {}
+      }
+      await setDoc(doc(db, "citizen_news", news.id), {
+        status: news.isApproved ? "approved" : "pending",
+        author: news.author || "시민기자",
+        reporterId: news.reporterId || (auth.currentUser?.uid || "admin"),
+        requestedTitle: null,
+        requestedContent: null,
+        requestedThumbnail: null,
+        requestedBy: null,
+        revisionNote: null,
+        revisionCategory: null,
+        requestedAt: null,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+      toast.success("수정 요청이 정상적으로 철회되었습니다.", { id: toastId });
+      onEditComplete?.();
+    } catch (err) {
+      console.error("Revision withdraw error:", err);
+      toast.error("철회 처리 중 오류가 발생했습니다.", { id: toastId });
+    }
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23529,6 +23643,30 @@ const SoulCenter = ({
                 />
               </div>
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                {isAdminUser && (
+                  <div className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl shrink-0 mr-1 border border-zinc-200 dark:border-zinc-700">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllArticlesAdmin(false)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer",
+                        !showAllArticlesAdmin ? "bg-white dark:bg-zinc-900 text-orange-600 shadow-xs" : "text-zinc-500"
+                      )}
+                    >
+                      내 기사
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAllArticlesAdmin(true)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer",
+                        showAllArticlesAdmin ? "bg-white dark:bg-zinc-900 text-orange-600 shadow-xs" : "text-zinc-500"
+                      )}
+                    >
+                      전체 기사대장 ({citizenNews.length})
+                    </button>
+                  </div>
+                )}
                 {["전체", "사회/정치", "경제/문화", "복지/미래비전", "팩트체크", "리얼포토", "지역"].map((cat) => (
                   <button
                     key={cat}
@@ -23651,6 +23789,35 @@ const SoulCenter = ({
                                     <span className="text-[10px] text-amber-500 font-bold">📷 교체 사진 첨부됨</span>
                                   </div>
                                 )}
+                                <div className="flex items-center gap-2 pt-1.5 border-t border-amber-500/20">
+                                  {isAdminUser ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleApproveRevisionInSoulCenter(article)}
+                                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-black cursor-pointer shadow-xs active:scale-95 flex items-center gap-1"
+                                      >
+                                        <Check size={11} />
+                                        <span>수정 반영 승인</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleWithdrawRevision(article)}
+                                        className="px-2.5 py-1 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10px] font-bold cursor-pointer"
+                                      >
+                                        반려
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleWithdrawRevision(article)}
+                                      className="px-2.5 py-1 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10px] font-bold cursor-pointer"
+                                    >
+                                      수정 요청 철회
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             )}
                           </div>
@@ -23916,15 +24083,25 @@ const SoulCenter = ({
                           }
                           const toastId = toast.loading("퀵 수정 내용 저장 중...");
                           try {
+                            if (!auth.currentUser) {
+                              try {
+                                await signInAnonymously(auth);
+                              } catch (e) {
+                                console.warn("Anonymous auth for quick edit:", e);
+                              }
+                            }
                             const updatePayload: Record<string, any> = {
                               title: quickEditArticle.title.trim(),
                               category: quickEditArticle.category,
                               content: quickEditArticle.content.trim(),
                               thumbnail: quickEditArticle.thumbnail || "",
+                              author: quickEditArticle.author || "시민기자",
+                              reporterId: quickEditArticle.reporterId || (auth.currentUser?.uid || "admin"),
                               updatedAt: new Date().toISOString(),
                             };
                             if (quickEditArticle.status === "revision") {
-                              updatePayload.status = quickEditArticle.isApproved ? "approved" : "pending";
+                              updatePayload.status = "approved";
+                              updatePayload.isApproved = true;
                               updatePayload.requestedTitle = null;
                               updatePayload.requestedContent = null;
                               updatePayload.requestedThumbnail = null;

@@ -26,7 +26,7 @@ service cloud.firestore {
              data.category is string &&
              data.thumbnail is string &&
              data.author is string &&
-             (data.reporterId == request.auth.uid || isAdmin() || data.reporterId == 'admin');
+             (data.reporterId == request.auth.uid || isAdmin() || data.reporterId == 'admin' || !('reporterId' in data));
     }
 
     function isValidCartoon(data) {
@@ -51,7 +51,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && (isAdmin() || (isValidNews(incoming()) && isValidId(newsId)));
       allow update: if isAdmin() || (
         // Case A: The reporter edits their own article (while verifying metadata constraints)
-        (isSignedIn() && (existing().reporterId == request.auth.uid || existing().reporterId == 'admin') && isValidNews(incoming()))
+        (isSignedIn() && (existing().reporterId == request.auth.uid || existing().reporterId == 'admin' || !('reporterId' in existing())) && isValidNews(incoming()))
       ) || (
         // Case B: General reader liking/recommending the article
         incoming().title == existing().title &&
@@ -65,7 +65,7 @@ service cloud.firestore {
         // Case C: Revision request to administrator
         incoming().status == 'revision'
       );
-      allow delete: if isAdmin() || (isSignedIn() && (existing().reporterId == request.auth.uid || existing().reporterId == 'admin'));
+      allow delete: if isAdmin() || (isSignedIn() && (existing().reporterId == request.auth.uid || existing().reporterId == 'admin' || !('reporterId' in existing())));
     }
 
     match /editorial_cartoons/{cartoonId} {

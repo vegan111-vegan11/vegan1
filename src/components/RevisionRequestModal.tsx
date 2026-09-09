@@ -1,8 +1,9 @@
 import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Send, FileText, CheckCircle2, AlertCircle, Sparkles, MessageSquare, User, Tag, Camera, Upload, Image as ImageIcon } from "lucide-react";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { doc, setDoc } from "firebase/firestore";
+import { signInAnonymously } from "firebase/auth";
+import { auth, db } from "../firebase";
 import { toast } from "sonner";
 
 export interface RevisionTargetArticle {
@@ -135,6 +136,13 @@ export const RevisionRequestModal: React.FC<RevisionRequestModalProps> = ({
     const toastId = toast.loading("편집국 데스크로 수정 요청을 접수하는 중...");
 
     try {
+      if (!auth.currentUser) {
+        try {
+          await signInAnonymously(auth);
+        } catch (authErr) {
+          console.warn("Anonymous auth fallback:", authErr);
+        }
+      }
       const newsRef = doc(db, "citizen_news", article.id);
       const requesterIdentifier = requesterName.trim()
         ? `${requesterName.trim()}${requesterContact.trim() ? ` (${requesterContact.trim()})` : ""}`
@@ -142,6 +150,8 @@ export const RevisionRequestModal: React.FC<RevisionRequestModalProps> = ({
 
       const updates: Record<string, any> = {
         status: "revision",
+        author: article.author || "시민기자",
+        reporterId: article.reporterId || "admin",
         revisionCategory: category,
         revisionNote: revisionNote.trim(),
         requestedBy: requesterIdentifier,
@@ -159,7 +169,7 @@ export const RevisionRequestModal: React.FC<RevisionRequestModalProps> = ({
         updates.requestedThumbnail = revisedThumbnail.trim();
       }
 
-      await updateDoc(newsRef, updates);
+      await setDoc(newsRef, updates, { merge: true });
 
       toast.success("✨ 기사 수정 요청이 관리자 데스크로 성공적으로 접수되었습니다. 검토 후 신속히 반영됩니다.", {
         id: toastId,
