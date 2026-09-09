@@ -13809,7 +13809,7 @@ const Navbar = ({
         <div className="relative group flex-1 flex justify-center">
           <button
             type="button"
-            onClick={() => onPageChange("soul-center")}
+            onClick={() => onPageChange("soul-center-manage")}
             className="w-full h-10 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-400 border border-amber-500/20 dark:border-zinc-800 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-xs"
             aria-label="기사수정"
           >
@@ -13818,7 +13818,7 @@ const Navbar = ({
           {/* 마우스 호버 툴팁 */}
           <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-1 transition-all duration-200 pointer-events-none z-50 flex flex-col items-center">
             <div className="w-1.5 h-1.5 bg-zinc-900 dark:bg-white rotate-45 -mt-1.5 mb-0.5" />
-            기사수정
+            내 기사 / 수정
           </div>
         </div>
 
@@ -13991,6 +13991,20 @@ const Navbar = ({
               </span>
             </button>
           )}
+
+          {/* 1-2. 내가 쓴 기사 / 기사 수정 */}
+          <button
+            type="button"
+            onClick={() => onPageChange("soul-center-manage")}
+            className="group relative h-9 px-2.5 rounded-full bg-amber-50/90 hover:bg-amber-100/90 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 dark:hover:bg-amber-900/60 border border-amber-200/90 dark:border-amber-800/80 flex items-center justify-center shadow-xs hover:shadow-md transition-all duration-300 ease-out cursor-pointer hover:-translate-y-0.5 active:translate-y-0 active:scale-95 select-none"
+            aria-label="내 기사 관리"
+            title="내가 쓴 기사 관리 및 수정"
+          >
+            <FileText size={16} className="shrink-0 text-amber-600 dark:text-amber-400 transition-transform duration-300 group-hover:scale-110" />
+            <span className="max-w-0 opacity-0 group-hover:max-w-[85px] group-hover:opacity-100 group-hover:ml-1.5 transition-all duration-300 ease-out overflow-hidden whitespace-nowrap text-xs font-black tracking-tight leading-none">
+              내 기사관리
+            </span>
+          </button>
 
           {/* 2. 관리자 데스크 (기본: 아이콘+알림 뱃지 노출, 호버 시 메뉴명 '데스크' 부드럽게 확장) */}
           {onAdminClick && (
@@ -18561,6 +18575,134 @@ const AdminNewsCenter = ({
   } | null>(null);
   const [previewMode, setPreviewMode] = useState<"edit" | "preview" | "mobile_preview">("edit");
 
+  const adminFileInputRef = useRef<HTMLInputElement>(null);
+  const adminCameraInputRef = useRef<HTMLInputElement>(null);
+  const [reviewingRevisionNews, setReviewingRevisionNews] = useState<CitizenNews | null>(null);
+
+  const processAdminFile = (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("사진/이미지 파일(JPG, PNG, WebP 등)만 첨부할 수 있습니다.");
+      return;
+    }
+    const toastId = toast.loading("📷 관리자 보도 사진 최적화 압축 중...");
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const rawData = e.target?.result as string;
+      if (!rawData) {
+        toast.error("사진을 읽어오지 못했습니다.", { id: toastId });
+        return;
+      }
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, 0, 0, width, height);
+            let compressed = canvas.toDataURL("image/jpeg", 0.82);
+            if (compressed.length > 400000) {
+              compressed = canvas.toDataURL("image/jpeg", 0.68);
+            }
+            setInlineForm(prev => ({ ...prev, thumbnail: compressed }));
+            toast.success("📷 대표 썸네일 사진이 최적화 교체되었습니다!", { id: toastId });
+            return;
+          }
+        } catch (err) {
+          console.warn("Admin image compression error:", err);
+        }
+        setInlineForm(prev => ({ ...prev, thumbnail: rawData }));
+        toast.success("📷 대표 썸네일 사진이 등록되었습니다.", { id: toastId });
+      };
+      img.onerror = () => {
+        toast.error("사진 형식을 해석할 수 없습니다.", { id: toastId });
+      };
+      img.src = rawData;
+    };
+    reader.onerror = () => {
+      toast.error("사진 파일을 읽는 도중 오류가 발생했습니다.", { id: toastId });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAcceptRevision = async (news: CitizenNews) => {
+    if (!news) return;
+    const toastId = toast.loading("수정 요청 사항을 기사에 전면 반영 중...");
+    try {
+      const updatePayload: Record<string, any> = {
+        updatedAt: new Date().toISOString(),
+        status: "approved",
+        isApproved: true,
+        requestedTitle: null,
+        requestedContent: null,
+        requestedThumbnail: null,
+        requestedBy: null,
+        revisionNote: null,
+        revisionCategory: null,
+        requestedAt: null,
+      };
+      if (news.requestedTitle) {
+        updatePayload.title = news.requestedTitle.trim();
+      }
+      if (news.requestedContent) {
+        updatePayload.content = news.requestedContent.trim();
+      }
+      if (news.requestedThumbnail) {
+        updatePayload.thumbnail = news.requestedThumbnail.trim();
+      }
+      await updateDoc(doc(db, "citizen_news", news.id), updatePayload);
+      toast.success("✨ 독자/기자의 수정 요청이 승인되어 기사에 전면 반영되었습니다!", { id: toastId });
+      if (editingNews?.id === news.id) setEditingNews(null);
+      if (reviewingRevisionNews?.id === news.id) setReviewingRevisionNews(null);
+    } catch (err) {
+      console.error("Revision accept error:", err);
+      toast.error("수정 요청 반영 중 오류가 발생했습니다.", { id: toastId });
+    }
+  };
+
+  const handleRejectRevision = async (news: CitizenNews) => {
+    if (!news) return;
+    const toastId = toast.loading("수정 요청을 반려 처리 중...");
+    try {
+      await updateDoc(doc(db, "citizen_news", news.id), {
+        status: news.isApproved ? "approved" : "pending",
+        requestedTitle: null,
+        requestedContent: null,
+        requestedThumbnail: null,
+        requestedBy: null,
+        revisionNote: null,
+        revisionCategory: null,
+        requestedAt: null,
+        updatedAt: new Date().toISOString(),
+      });
+      toast.success("수정 요청이 반려되었으며 기존 기사 내용이 유지됩니다.", { id: toastId });
+      if (editingNews?.id === news.id) setEditingNews(null);
+      if (reviewingRevisionNews?.id === news.id) setReviewingRevisionNews(null);
+    } catch (err) {
+      console.error("Revision reject error:", err);
+      toast.error("반려 처리 중 오류가 발생했습니다.", { id: toastId });
+    }
+  };
+
   const [isGeneratingTitlesAdmin, setIsGeneratingTitlesAdmin] = useState(false);
   const [adminTitleSuggestions, setAdminTitleSuggestions] = useState<{
     sensational: string;
@@ -18923,14 +19065,26 @@ const AdminNewsCenter = ({
         localStorage.removeItem(`isol_admin_article_draft_${editingNews.id}`);
         toast.success("새로운 정론보도 기사가 성공적으로 발행되었습니다!", { id: toastId });
       } else {
-        await updateDoc(doc(db, "citizen_news", editingNews.id), {
+        const updatePayload: Record<string, any> = {
           title: inlineForm.title.trim(),
           content: inlineForm.content.trim(),
           author: inlineForm.author.trim(),
           category: inlineForm.category || "사회/정치",
           thumbnail: inlineForm.thumbnail.trim() || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800",
           updatedAt: new Date().toISOString(),
-        });
+        };
+        if (editingNews.status === "revision" || (editingNews as any).revisionNote || (editingNews as any).requestedTitle) {
+          updatePayload.status = "approved";
+          updatePayload.isApproved = true;
+          updatePayload.requestedTitle = null;
+          updatePayload.requestedContent = null;
+          updatePayload.requestedThumbnail = null;
+          updatePayload.requestedBy = null;
+          updatePayload.revisionNote = null;
+          updatePayload.revisionCategory = null;
+          updatePayload.requestedAt = null;
+        }
+        await updateDoc(doc(db, "citizen_news", editingNews.id), updatePayload);
         localStorage.removeItem(`isol_admin_article_draft_${editingNews.id}`);
         toast.success("기사 교정 및 업데이트가 완벽히 저장되었습니다!", { id: toastId });
       }
@@ -18952,6 +19106,7 @@ const AdminNewsCenter = ({
   const totalArticles = citizenNews.length;
   const unapprovedArticles = citizenNews.filter(n => !n.isApproved).length;
   const featuredArticles = citizenNews.filter(n => n.isFeatured).length;
+  const revisionArticles = citizenNews.filter(n => n.status === "revision" || !!(n as any).revisionNote || !!(n as any).requestedTitle).length;
   const totalReporters = reporters.length;
   const activeReporters = reporters.filter(r => r.isApproved).length;
 
@@ -18966,6 +19121,7 @@ const AdminNewsCenter = ({
     
     const matchesStatus = 
       selectedAdminStatus === "전체" ||
+      (selectedAdminStatus === "수정요청" && (news.status === "revision" || !!(news as any).revisionNote || !!(news as any).requestedTitle)) ||
       (selectedAdminStatus === "승인대기" && !news.isApproved) ||
       (selectedAdminStatus === "승인완료" && news.isApproved) ||
       (selectedAdminStatus === "헤드라인" && news.isFeatured);
@@ -19076,27 +19232,106 @@ const AdminNewsCenter = ({
       </header>
 
       {/* 1. Stats Bento Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8 text-left animate-in fade-in duration-300">
-        <div className="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-          <span className="text-[10px] font-bold text-zinc-400 block uppercase">전체 정론보도 기사</span>
-          <span className="text-2xl font-black text-zinc-900 dark:text-white mt-1 block">{totalArticles}건</span>
-        </div>
-        <div className="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-          <span className="text-[10px] font-bold text-zinc-400 block uppercase">승인 대기 기사</span>
-          <span className="text-2xl font-black text-red-500 mt-1 block">{unapprovedArticles}건</span>
-        </div>
-        <div className="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-          <span className="text-[10px] font-bold text-zinc-400 block uppercase">헤드라인 등록건</span>
-          <span className="text-2xl font-black text-amber-500 mt-1 block">{featuredArticles}건</span>
-        </div>
-        <div className="p-2.5 md:p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-          <span className="text-[10px] font-bold text-zinc-400 block uppercase">등록 기자 명단</span>
-          <span className="text-2xl font-black text-zinc-900 dark:text-white mt-1 block">{totalReporters}명</span>
-        </div>
-        <div className="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 col-span-2 md:col-span-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-8 text-left animate-in fade-in duration-300">
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedAdminStatus("전체");
+            setActiveTab("articles");
+          }}
+          className={cn(
+            "p-4 rounded-2xl border text-left transition-all cursor-pointer hover:border-zinc-400 dark:hover:border-zinc-600 active:scale-95",
+            selectedAdminStatus === "전체" && activeTab === "articles"
+              ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-transparent shadow-md"
+              : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+          )}
+        >
+          <span className="text-[10px] font-bold block uppercase opacity-70">전체 정론보도</span>
+          <span className="text-2xl font-black mt-1 block">{totalArticles}건</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedAdminStatus("수정요청");
+            setActiveTab("articles");
+          }}
+          className={cn(
+            "p-4 rounded-2xl border text-left transition-all cursor-pointer relative active:scale-95",
+            selectedAdminStatus === "수정요청" && activeTab === "articles"
+              ? "bg-amber-500 text-white border-transparent shadow-md shadow-amber-500/20"
+              : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-amber-500/50"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold block uppercase opacity-70">📬 수정요청</span>
+            {revisionArticles > 0 && <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />}
+          </div>
+          <span className={cn("text-2xl font-black mt-1 block", selectedAdminStatus !== "수정요청" && revisionArticles > 0 ? "text-amber-500" : "")}>
+            {revisionArticles}건
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedAdminStatus("승인대기");
+            setActiveTab("articles");
+          }}
+          className={cn(
+            "p-4 rounded-2xl border text-left transition-all cursor-pointer active:scale-95",
+            selectedAdminStatus === "승인대기" && activeTab === "articles"
+              ? "bg-red-600 text-white border-transparent shadow-md shadow-red-600/20"
+              : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-red-500/50"
+          )}
+        >
+          <span className="text-[10px] font-bold block uppercase opacity-70">승인 대기</span>
+          <span className={cn("text-2xl font-black mt-1 block", selectedAdminStatus !== "승인대기" && unapprovedArticles > 0 ? "text-red-500" : "")}>
+            {unapprovedArticles}건
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedAdminStatus("헤드라인");
+            setActiveTab("articles");
+          }}
+          className={cn(
+            "p-4 rounded-2xl border text-left transition-all cursor-pointer active:scale-95",
+            selectedAdminStatus === "헤드라인" && activeTab === "articles"
+              ? "bg-amber-600 text-white border-transparent shadow-md shadow-amber-600/20"
+              : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-amber-500/50"
+          )}
+        >
+          <span className="text-[10px] font-bold block uppercase opacity-70">★ 헤드라인</span>
+          <span className={cn("text-2xl font-black mt-1 block", selectedAdminStatus !== "헤드라인" ? "text-amber-500" : "")}>
+            {featuredArticles}건
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("reporters")}
+          className={cn(
+            "p-4 rounded-2xl border text-left transition-all cursor-pointer active:scale-95",
+            activeTab === "reporters"
+              ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 border-transparent shadow-md"
+              : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-zinc-400"
+          )}
+        >
+          <span className="text-[10px] font-bold block uppercase opacity-70">등록 기자</span>
+          <span className="text-2xl font-black mt-1 block">{totalReporters}명</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("reporters")}
+          className="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 text-left cursor-pointer hover:border-emerald-500/50 transition-all active:scale-95"
+        >
           <span className="text-[10px] font-bold text-zinc-400 block uppercase">자격 승인 기자</span>
           <span className="text-2xl font-black text-emerald-500 mt-1 block">{activeReporters}명</span>
-        </div>
+        </button>
       </div>
 
       {/* 2. Filters & Actions Section */}
@@ -19128,7 +19363,7 @@ const AdminNewsCenter = ({
                 onChange={(e) => setSelectedAdminStatus(e.target.value)}
                 className="px-4 py-3 bg-zinc-50 dark:bg-black border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold text-zinc-700 dark:text-zinc-350 outline-none"
               >
-                {["전체", "승인대기", "승인완료", "헤드라인"].map((stat) => (
+                {["전체", "수정요청", "승인대기", "승인완료", "헤드라인"].map((stat) => (
                   <option key={stat} value={stat}>{stat}</option>
                 ))}
               </select>
@@ -19168,9 +19403,16 @@ const AdminNewsCenter = ({
                             <img src={news.thumbnail} className="w-10 h-10 rounded-lg object-cover bg-zinc-100 border border-zinc-200/40 shrink-0" alt="" />
                           )}
                           <div className="truncate">
-                            <span className="font-extrabold text-sm text-zinc-900 dark:text-white block hover:underline cursor-pointer truncate">
-                              {news.title}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {(news.status === "revision" || (news as any).revisionNote || (news as any).requestedTitle) && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black text-[9px] border border-amber-500/40 shrink-0 animate-pulse">
+                                  📬 수정요청
+                                </span>
+                              )}
+                              <span className="font-extrabold text-sm text-zinc-900 dark:text-white block hover:underline cursor-pointer truncate">
+                                {news.title}
+                              </span>
+                            </div>
                             <span className="text-[10px] text-zinc-400 mt-1 block truncate">
                               {news.content?.substring(0, 80)}...
                             </span>
@@ -19218,6 +19460,20 @@ const AdminNewsCenter = ({
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {(news.status === "revision" || (news as any).revisionNote || (news as any).requestedTitle) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (typeof playHapticClick === "function") playHapticClick(700, 0.06);
+                                setReviewingRevisionNews(news);
+                              }}
+                              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-black flex items-center gap-1 shadow-sm transition-all cursor-pointer shrink-0 active:scale-95"
+                              title="독자/기자의 기사 수정요청 상세 심사"
+                            >
+                              <Send size={10} />
+                              <span>요청심사</span>
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => {
@@ -19233,6 +19489,7 @@ const AdminNewsCenter = ({
                               setPreviewMode("edit");
                             }}
                             className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white rounded-lg transition-all cursor-pointer flex items-center justify-center"
+                            title="기사 편집/수정"
                           >
                             <PenTool size={14} />
                           </button>
@@ -19240,6 +19497,7 @@ const AdminNewsCenter = ({
                             type="button"
                             onClick={() => handleDeleteNews(news.id)}
                             className="p-1.5 hover:bg-red-500/10 text-zinc-400 hover:text-red-500 rounded-lg transition-all cursor-pointer flex items-center justify-center"
+                            title="기사 삭제"
                           >
                             <Trash2 size={14} />
                           </button>
@@ -19585,54 +19843,155 @@ const AdminNewsCenter = ({
                       </div>
                     </div>
 
-                    {/* Thumbnail HIDDEN BY USER REQUEST */}
-                    {false && (
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center">
-                        <label className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
-                          기사 대표 썸네일 경로
-                        </label>
-                        <button
-                          type="button"
-                          onClick={handleGenerateImageAdmin}
-                          disabled={isGeneratingImageAdmin}
-                          className="px-2.5 py-1 bg-orange-500/10 hover:bg-orange-500/20 disabled:opacity-50 text-orange-600 rounded-lg text-[10px] font-black flex items-center gap-1 transition-all cursor-pointer border border-orange-500/15"
-                        >
-                          {isGeneratingImageAdmin ? (
-                            <>
-                              <Loader2 size={10} className="animate-spin mr-1" />
-                              <span>AI 썸네일 생성 중...</span>
-                            </>
-                          ) : (
-                            <>
-                              <ImageIcon size={10} className="mr-1 text-orange-500" />
-                              <span>🎨 AI 썸네일 생성</span>
-                            </>
+                    {/* Hidden inputs for admin photo attachments */}
+                    <input
+                      ref={adminCameraInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) processAdminFile(f);
+                        e.target.value = "";
+                      }}
+                    />
+                    <input
+                      ref={adminFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) processAdminFile(f);
+                        e.target.value = "";
+                      }}
+                    />
+
+                    {/* Revision Alert Banner if this article has pending revision request */}
+                    {(editingNews.status === "revision" || (editingNews as any).revisionNote || (editingNews as any).requestedTitle) && (
+                      <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-zinc-900 dark:text-zinc-100 flex flex-col md:flex-row md:items-center justify-between gap-3 animate-in fade-in">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded bg-amber-500 text-white text-[10px] font-black uppercase">
+                              수정요청 접수건
+                            </span>
+                            <span className="text-xs font-black text-amber-600 dark:text-amber-400">
+                              {(editingNews as any).requestedBy ? `요청자: ${(editingNews as any).requestedBy}` : "독자/기자 수정요청"}
+                            </span>
+                          </div>
+                          {(editingNews as any).revisionNote && (
+                            <p className="text-xs text-zinc-600 dark:text-zinc-300 font-medium">
+                              사유: {(editingNews as any).revisionNote}
+                            </p>
                           )}
-                        </button>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {((editingNews as any).requestedTitle || (editingNews as any).requestedContent || (editingNews as any).requestedThumbnail) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInlineForm(prev => ({
+                                  ...prev,
+                                  title: (editingNews as any).requestedTitle || prev.title,
+                                  content: (editingNews as any).requestedContent || prev.content,
+                                  thumbnail: (editingNews as any).requestedThumbnail || prev.thumbnail,
+                                }));
+                                toast.success("수정요청 원고 내용이 편집기에 채워졌습니다!");
+                              }}
+                              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs transition-all shadow-xs"
+                            >
+                              요청내용 편집기에 적용
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleAcceptRevision(editingNews)}
+                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition-all shadow-xs"
+                          >
+                            요청 즉시 승인
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-4 items-center">
+                    )}
+
+                    {/* Thumbnail Management for Admin */}
+                    <div className="space-y-2 p-4 bg-zinc-50 dark:bg-black/50 rounded-2xl border border-zinc-200/80 dark:border-zinc-800">
+                      <div className="flex flex-wrap justify-between items-center gap-2">
+                        <label className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest pl-1 block">
+                          기사 대표 썸네일 사진 관리
+                        </label>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => adminCameraInputRef.current?.click()}
+                            className="px-2.5 py-1.5 bg-zinc-200/70 hover:bg-zinc-300/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg text-[10.5px] font-black flex items-center gap-1 transition-all cursor-pointer"
+                            title="모바일 카메라로 즉시 촬영"
+                          >
+                            <Camera size={12} className="text-red-500" />
+                            <span>카메라</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => adminFileInputRef.current?.click()}
+                            className="px-2.5 py-1.5 bg-zinc-200/70 hover:bg-zinc-300/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg text-[10.5px] font-black flex items-center gap-1 transition-all cursor-pointer"
+                            title="스마트폰/PC 사진 앨범에서 선택"
+                          >
+                            <Paperclip size={12} className="text-amber-500" />
+                            <span>사진 첨부</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleGenerateImageAdmin}
+                            disabled={isGeneratingImageAdmin}
+                            className="px-2.5 py-1.5 bg-orange-500/10 hover:bg-orange-500/20 disabled:opacity-50 text-orange-600 rounded-lg text-[10.5px] font-black flex items-center gap-1 transition-all cursor-pointer border border-orange-500/15"
+                          >
+                            {isGeneratingImageAdmin ? (
+                              <>
+                                <Loader2 size={12} className="animate-spin mr-1" />
+                                <span>AI 생성 중...</span>
+                              </>
+                            ) : (
+                              <>
+                                <ImageIcon size={12} className="text-orange-500" />
+                                <span>🎨 AI 썸네일 생성</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
                         <input
                           id="admin_edit_input_thumbnail"
                           type="text"
                           value={inlineForm.thumbnail}
                           onChange={(e) => setInlineForm({ ...inlineForm, thumbnail: e.target.value })}
-                          className="flex-1 luxury-3d-input px-5 py-4 text-sm font-bold text-zinc-900 dark:text-white focus:outline-none"
-                          placeholder="https://images.unsplash.com/..."
+                          className="w-full sm:flex-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 text-xs font-bold text-zinc-900 dark:text-white outline-none focus:ring-2 focus:ring-red-500"
+                          placeholder="이미지 URL 직접 입력 또는 위의 카메라/사진 첨부 버튼 이용..."
                         />
-                        {inlineForm.thumbnail && (
-                          <img
-                            src={inlineForm.thumbnail}
-                            className="w-14 h-14 rounded-xl object-cover bg-zinc-100 border border-zinc-200 dark:border-zinc-800 shrink-0"
-                            alt="미리보기"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
-                            }}
-                          />
-                        )}
+                        {inlineForm.thumbnail ? (
+                          <div className="relative group shrink-0">
+                            <img
+                              src={inlineForm.thumbnail}
+                              className="w-16 h-12 rounded-xl object-cover bg-zinc-100 border border-zinc-200 dark:border-zinc-800 shrink-0"
+                              alt="썸네일 미리보기"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setInlineForm({ ...inlineForm, thumbnail: "" })}
+                              className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-md cursor-pointer hover:bg-red-700"
+                              title="사진 삭제"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
-                    )}
 
                     {/* Content */}
                     <div className="space-y-1.5 animate-in fade-in duration-300">
@@ -19883,6 +20242,203 @@ const AdminNewsCenter = ({
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+
+        {/* 5. Revision Request Review Modal for Admin */}
+        {reviewingRevisionNews && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", duration: 0.35 }}
+              className="w-full max-w-4xl bg-white dark:bg-zinc-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-left"
+            >
+              {/* Header */}
+              <div className="px-6 py-5 border-b border-zinc-100 dark:border-zinc-900 bg-amber-50/50 dark:bg-amber-950/20 flex justify-between items-center shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black">
+                    <Send size={18} />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-zinc-900 dark:text-white flex items-center gap-2">
+                      <span>독자/기자의 기사 수정요청 심사</span>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider">
+                        Revision Review
+                      </span>
+                    </h2>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                      수정 요청 사항을 확인하고 즉시 승인 반영하거나 편집기에서 정밀 교정할 수 있습니다.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReviewingRevisionNews(null)}
+                  className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+                {/* Meta info banner */}
+                <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/80 border border-zinc-200/80 dark:border-zinc-800 flex flex-wrap gap-4 items-center justify-between">
+                  <div className="flex flex-wrap gap-3 items-center">
+                    <div>
+                      <span className="text-zinc-400 block text-[10px] font-bold uppercase">요청자</span>
+                      <span className="font-black text-zinc-900 dark:text-white text-xs">
+                        {(reviewingRevisionNews as any).requestedBy || "독자"}
+                      </span>
+                    </div>
+                    {(reviewingRevisionNews as any).revisionCategory && (
+                      <div className="border-l border-zinc-200 dark:border-zinc-800 pl-3">
+                        <span className="text-zinc-400 block text-[10px] font-bold uppercase">사유 분류</span>
+                        <span className="font-bold text-amber-600 dark:text-amber-400 text-xs">
+                          {(reviewingRevisionNews as any).revisionCategory}
+                        </span>
+                      </div>
+                    )}
+                    {(reviewingRevisionNews as any).requestedAt && (
+                      <div className="border-l border-zinc-200 dark:border-zinc-800 pl-3">
+                        <span className="text-zinc-400 block text-[10px] font-bold uppercase">요청 접수 시각</span>
+                        <span className="font-medium text-zinc-600 dark:text-zinc-400 text-xs">
+                          {new Date((reviewingRevisionNews as any).requestedAt).toLocaleString("ko-KR")}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Revision Note / Reason */}
+                {(reviewingRevisionNews as any).revisionNote && (
+                  <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/60">
+                    <span className="text-amber-800 dark:text-amber-400 font-black text-xs block mb-1">
+                      📝 요청 사유 및 독자 코멘트
+                    </span>
+                    <p className="text-zinc-800 dark:text-zinc-200 leading-relaxed whitespace-pre-wrap font-medium">
+                      {(reviewingRevisionNews as any).revisionNote}
+                    </p>
+                  </div>
+                )}
+
+                {/* Side by side comparison: Title */}
+                <div className="space-y-2">
+                  <span className="font-black text-xs text-zinc-700 dark:text-zinc-300 uppercase tracking-wider block">
+                    1. 기사 제목 비교
+                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                      <span className="text-[10px] font-bold text-zinc-400 block mb-1">기존 원본 제목</span>
+                      <p className="font-bold text-zinc-700 dark:text-zinc-300">{reviewingRevisionNews.title}</p>
+                    </div>
+                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block mb-1">수정 요청 제목</span>
+                      <p className="font-extrabold text-zinc-900 dark:text-white">
+                        {(reviewingRevisionNews as any).requestedTitle || reviewingRevisionNews.title}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Side by side comparison: Content */}
+                <div className="space-y-2">
+                  <span className="font-black text-xs text-zinc-700 dark:text-zinc-300 uppercase tracking-wider block">
+                    2. 기사 본문 내용 비교
+                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 max-h-60 overflow-y-auto">
+                      <span className="text-[10px] font-bold text-zinc-400 block mb-1">기존 원본 본문</span>
+                      <p className="font-medium text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                        {reviewingRevisionNews.content}
+                      </p>
+                    </div>
+                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 max-h-60 overflow-y-auto">
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block mb-1">수정 요청 본문</span>
+                      <p className="font-medium text-zinc-900 dark:text-white whitespace-pre-wrap leading-relaxed">
+                        {(reviewingRevisionNews as any).requestedContent || reviewingRevisionNews.content}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Image Comparison if exists */}
+                {((reviewingRevisionNews as any).requestedThumbnail || reviewingRevisionNews.thumbnail) && (
+                  <div className="space-y-2">
+                    <span className="font-black text-xs text-zinc-700 dark:text-zinc-300 uppercase tracking-wider block">
+                      3. 대표 썸네일 사진 비교
+                    </span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="p-3.5 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                        <span className="text-[10px] font-bold text-zinc-400 block mb-2">기존 사진</span>
+                        {reviewingRevisionNews.thumbnail ? (
+                          <img
+                            src={reviewingRevisionNews.thumbnail}
+                            className="w-full h-36 rounded-lg object-cover bg-zinc-200"
+                            alt="기존 사진"
+                          />
+                        ) : (
+                          <span className="text-zinc-400 italic">등록된 사진 없음</span>
+                        )}
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                        <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 block mb-2">수정 요청 사진</span>
+                        {(reviewingRevisionNews as any).requestedThumbnail ? (
+                          <img
+                            src={(reviewingRevisionNews as any).requestedThumbnail}
+                            className="w-full h-36 rounded-lg object-cover bg-zinc-200"
+                            alt="수정 요청 사진"
+                          />
+                        ) : (
+                          <span className="text-zinc-400 italic">변경 요청 사진 없음 (기존 유지)</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons footer */}
+              <div className="p-5 border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-950/20 flex flex-wrap gap-2.5 items-center justify-between shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleRejectRevision(reviewingRevisionNews)}
+                  className="px-4 py-2.5 rounded-xl bg-zinc-100 hover:bg-rose-50 text-zinc-700 hover:text-rose-600 dark:bg-zinc-800 dark:hover:bg-rose-950/30 dark:text-zinc-300 dark:hover:text-rose-400 font-bold text-xs transition-all cursor-pointer border border-zinc-200/80 hover:border-rose-200"
+                >
+                  ✕ 요청 반려 (기존 기사 유지)
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInlineForm({
+                        title: (reviewingRevisionNews as any).requestedTitle || reviewingRevisionNews.title,
+                        content: (reviewingRevisionNews as any).requestedContent || reviewingRevisionNews.content,
+                        author: reviewingRevisionNews.author || "",
+                        category: reviewingRevisionNews.category || "사회/정치",
+                        thumbnail: (reviewingRevisionNews as any).requestedThumbnail || reviewingRevisionNews.thumbnail || "",
+                      });
+                      setEditingNews(reviewingRevisionNews);
+                      setReviewingRevisionNews(null);
+                      setPreviewMode("edit");
+                      toast.success("수정 요청 내용이 편집기에 로드되었습니다.");
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white font-black text-xs transition-all cursor-pointer"
+                  >
+                    ✏️ 편집기에서 열어 다듬기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAcceptRevision(reviewingRevisionNews)}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer active:scale-95"
+                  >
+                    ✨ 수정요청 즉시 승인 및 기사 반영
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}
