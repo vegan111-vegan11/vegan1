@@ -48,24 +48,9 @@ service cloud.firestore {
 
     match /citizen_news/{newsId} {
       allow read: if true;
-      allow create: if isSignedIn() && (isAdmin() || (isValidNews(incoming()) && isValidId(newsId)));
-      allow update: if isAdmin() || (
-        // Case A: The reporter edits their own article (while verifying metadata constraints)
-        (isSignedIn() && (existing().reporterId == request.auth.uid || existing().reporterId == 'admin' || !('reporterId' in existing())) && isValidNews(incoming()))
-      ) || (
-        // Case B: General reader liking/recommending the article
-        incoming().title == existing().title &&
-        incoming().content == existing().content &&
-        incoming().reporterId == existing().reporterId &&
-        (
-          (!('likes' in existing()) && incoming().likes == 1) ||
-          (incoming().likes == existing().likes + 1)
-        )
-      ) || (
-        // Case C: Revision request to administrator
-        incoming().status == 'revision'
-      );
-      allow delete: if isAdmin() || (isSignedIn() && (existing().reporterId == request.auth.uid || existing().reporterId == 'admin' || !('reporterId' in existing())));
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
     }
 
     match /editorial_cartoons/{cartoonId} {

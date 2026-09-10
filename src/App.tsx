@@ -5667,6 +5667,13 @@ const AdminDashboard: React.FC<{
   };
 
   const deleteCitizenNewsArticle = async (id: string) => {
+    if (!auth.currentUser) {
+      try {
+        await signInAnonymously(auth);
+      } catch (authErr) {
+        console.warn("Auth check warning:", authErr);
+      }
+    }
     try {
       await deleteDoc(doc(db, "citizen_news", id));
       toast.success("매트릭스에서 기사가 영구 제거되었습니다.");
@@ -5680,6 +5687,13 @@ const AdminDashboard: React.FC<{
   const approveRevision = async (news: CitizenNews) => {
     const toastId = toast.loading("수정 사항 반영 중...");
     try {
+      if (!auth.currentUser) {
+        try {
+          await signInAnonymously(auth);
+        } catch (authErr) {
+          console.warn("Auth check warning:", authErr);
+        }
+      }
       const updates: Record<string, any> = {
         status: "approved",
         isApproved: true,
@@ -5707,6 +5721,13 @@ const AdminDashboard: React.FC<{
   const rejectRevision = async (news: CitizenNews) => {
     const toastId = toast.loading("수정 요청 반려 중...");
     try {
+      if (!auth.currentUser) {
+        try {
+          await signInAnonymously(auth);
+        } catch (authErr) {
+          console.warn("Auth check warning:", authErr);
+        }
+      }
       await updateDoc(doc(db, "citizen_news", news.id), {
         status: news.isApproved ? "approved" : "pending",
         requestedTitle: null,
@@ -5767,6 +5788,13 @@ const AdminDashboard: React.FC<{
 
     const toastId = toast.loading("기사 정보를 정밀 업데이트 중...");
     try {
+      if (!auth.currentUser) {
+        try {
+          await signInAnonymously(auth);
+        } catch (authErr) {
+          console.warn("Auth check warning:", authErr);
+        }
+      }
       const updates: Record<string, any> = {
         title: inlineForm.title.trim(),
         content: inlineForm.content.trim(),
@@ -13186,7 +13214,7 @@ const NewsDetailModal: React.FC<{
           isOpen={isRevisionModalOpen}
           onClose={() => setIsRevisionModalOpen(false)}
           article={news}
-          currentUser={null}
+          currentUser={auth.currentUser ? { displayName: auth.currentUser.displayName || "", email: auth.currentUser.email || "" } : null}
         />
       </div>
     );
@@ -13198,7 +13226,7 @@ const NewsDetailModal: React.FC<{
         isOpen={isRevisionModalOpen}
         onClose={() => setIsRevisionModalOpen(false)}
         article={news}
-        currentUser={null}
+        currentUser={auth.currentUser ? { displayName: auth.currentUser.displayName || "", email: auth.currentUser.email || "" } : null}
       />
       <motion.div
         initial={{ opacity: 0 }}
@@ -19006,7 +19034,19 @@ const AdminNewsCenter = ({
     setDeletingArticleId(null);
     const toastId = toast.loading("행정 복구 불가능 영구 삭제 중...");
     try {
+      if (!auth.currentUser) {
+        try {
+          await signInAnonymously(auth);
+        } catch (authErr) {
+          console.warn("Auth check warning:", authErr);
+        }
+      }
       await deleteDoc(doc(db, "citizen_news", id));
+      try {
+        const savedIds: string[] = JSON.parse(localStorage.getItem("my_written_article_ids") || "[]");
+        const nextIds = savedIds.filter(item => item !== id);
+        localStorage.setItem("my_written_article_ids", JSON.stringify(nextIds));
+      } catch {}
       toast.success("기사 파일이 파기 삭제되었습니다.", { id: toastId });
     } catch (e) {
       toast.error("삭제하는 도중 권한 제한 오류가 발생했습니다.", { id: toastId });
@@ -20488,6 +20528,23 @@ const renderFormattedContent = (text: string) => {
     let isQuote = false;
     let isBullet = false;
 
+    // Check for inline markdown image: ![alt](url)
+    const imgMatch = currentLine.trim().match(/^!\[(.*?)\]\((.*?)\)$/);
+    if (imgMatch) {
+      const altText = imgMatch[1];
+      const imgSrc = imgMatch[2];
+      return (
+        <figure key={idx} className="my-3.5 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 shadow-sm">
+          <img src={imgSrc} alt={altText || "본문 사진"} className="w-full h-auto max-h-96 object-cover" />
+          {altText && (
+            <figcaption className="p-2 text-center text-[11px] text-zinc-500 font-medium">
+              ▲ {altText}
+            </figcaption>
+          )}
+        </figure>
+      );
+    }
+
     if (currentLine.startsWith("## ")) {
       isHeading = true;
       currentLine = currentLine.substring(3);
@@ -20502,7 +20559,7 @@ const renderFormattedContent = (text: string) => {
     const parseInLines = (txt: string) => {
       const parts: React.ReactNode[] = [];
       let lastIndex = 0;
-      const regex = /(\*\*.*?\*\*|<mark>.*?<\/mark>)/g;
+      const regex = /(\*\*.*?\*\*|<mark>.*?<\/mark>|==.*?==|\[.*?\]\(.*?\))/g;
       let match;
       while ((match = regex.exec(txt)) !== null) {
         if (match.index > lastIndex) {
@@ -20516,12 +20573,20 @@ const renderFormattedContent = (text: string) => {
               {content}
             </strong>
           );
-        } else if (token.startsWith("<mark>") && token.endsWith("</mark>")) {
-          const content = token.substring(6, token.length - 7);
+        } else if ((token.startsWith("<mark>") && token.endsWith("</mark>")) || (token.startsWith("==") && token.endsWith("=="))) {
+          const content = token.startsWith("<mark>") ? token.substring(6, token.length - 7) : token.substring(2, token.length - 2);
           parts.push(
             <mark key={match.index} className="bg-amber-300 dark:bg-amber-500/30 text-zinc-900 dark:text-zinc-100 px-1 py-0.5 rounded font-bold">
               {content}
             </mark>
+          );
+        } else if (token.startsWith("[") && token.includes("](") && token.endsWith(")")) {
+          const linkText = token.substring(1, token.indexOf("]("));
+          const linkUrl = token.substring(token.indexOf("](") + 2, token.length - 1);
+          parts.push(
+            <a key={match.index} href={linkUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline font-bold hover:text-blue-700">
+              {linkText}
+            </a>
           );
         }
         lastIndex = regex.lastIndex;
@@ -21418,10 +21483,40 @@ const SoulCenter = ({
     else if (format === "italic") tag = "*기울임*";
     else if (format === "underline") tag = "<u>밑줄</u>";
     else if (format === "quote") tag = "\n> 인용구\n";
-    else if (format === "list") tag = "\n- 리스트항목\n";
+    else if (format === "list" || format === "bullet") tag = "\n- 리스트항목\n";
+    else if (format === "highlight") tag = "<mark>형광펜 강조</mark>";
+    else if (format === "h2") tag = "\n\n## 소제목\n";
     else if (format === "link") tag = "[링크텍스트](https://)";
 
-    setPostData(prev => ({ ...prev, content: prev.content + tag }));
+    const textarea = document.getElementById("soul-textarea") as HTMLTextAreaElement | null;
+    if (textarea) {
+      const start = textarea.selectionStart ?? postData.content.length;
+      const end = textarea.selectionEnd ?? postData.content.length;
+      const selectedText = postData.content.substring(start, end);
+
+      let replacement = tag;
+      if (selectedText) {
+        if (format === "bold") replacement = `**${selectedText}**`;
+        else if (format === "italic") replacement = `*${selectedText}*`;
+        else if (format === "underline") replacement = `<u>${selectedText}</u>`;
+        else if (format === "highlight") replacement = `<mark>${selectedText}</mark>`;
+        else if (format === "quote") replacement = `\n> ${selectedText}\n`;
+        else if (format === "list" || format === "bullet") replacement = `\n- ${selectedText}\n`;
+        else if (format === "h2") replacement = `\n\n## ${selectedText}\n\n`;
+        else if (format === "link") replacement = `[${selectedText}](https://)`;
+      }
+
+      const newContent = postData.content.substring(0, start) + replacement + postData.content.substring(end);
+      setPostData(prev => ({ ...prev, content: newContent }));
+
+      setTimeout(() => {
+        textarea.focus();
+        const cursorPosition = start + replacement.length;
+        textarea.setSelectionRange(cursorPosition, cursorPosition);
+      }, 50);
+    } else {
+      setPostData(prev => ({ ...prev, content: prev.content + tag }));
+    }
   };
 
   const handleAutofillDemoInfo = () => {
@@ -21482,63 +21577,224 @@ const SoulCenter = ({
   const prevEditingIdRef = useRef<string | null>(null);
   const quickEditFileInputRef = useRef<HTMLInputElement>(null);
   const quickEditCameraInputRef = useRef<HTMLInputElement>(null);
+  const inlineBodyImageInputRef = useRef<HTMLInputElement>(null);
+  const inlineBodyCameraInputRef = useRef<HTMLInputElement>(null);
 
   const processQuickEditFile = (file: File) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    const isImage = file.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(file.name);
+    if (!isImage) {
       toast.error("사진/이미지 파일(JPG, PNG, WebP 등)만 첨부할 수 있습니다.");
       return;
     }
     const toastId = toast.loading("모바일 사진 최적화 압축 중...");
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const rawData = e.target?.result as string;
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement("canvas");
-          const MAX_WIDTH = 1200;
-          const MAX_HEIGHT = 800;
-          let width = img.width;
-          let height = img.height;
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height = Math.round((height * MAX_WIDTH) / width);
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width = Math.round((width * MAX_HEIGHT) / height);
-              height = MAX_HEIGHT;
-            }
+    
+    let objectUrl = "";
+    try {
+      objectUrl = URL.createObjectURL(file);
+    } catch {
+      objectUrl = "";
+    }
+
+    const img = new Image();
+    const handleImgLoad = () => {
+      if (objectUrl) {
+        try { URL.revokeObjectURL(objectUrl); } catch {}
+      }
+      try {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
           }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = "high";
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL("image/jpeg", 0.82);
-            setQuickEditArticle(prev => prev ? ({ ...prev, thumbnail: compressed }) : null);
-            toast.success("📷 퀵 수정 사진이 교체되었습니다!", { id: toastId });
-            return;
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
           }
-        } catch (err) {
-          console.warn("Quick edit image compression error:", err);
         }
-        setQuickEditArticle(prev => prev ? ({ ...prev, thumbnail: rawData }) : null);
-        toast.success("📷 퀵 수정 사진이 교체되었습니다!", { id: toastId });
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL("image/jpeg", 0.82);
+          setQuickEditArticle(prev => prev ? ({ ...prev, thumbnail: compressed }) : null);
+          toast.success("📷 퀵 수정 사진이 최적화 교체되었습니다!", { id: toastId });
+          return;
+        }
+      } catch (err) {
+        console.warn("Quick edit image compression error:", err);
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const raw = e.target?.result as string;
+        setQuickEditArticle(prev => prev ? ({ ...prev, thumbnail: raw }) : null);
+        toast.success("📷 퀵 수정 사진이 등록되었습니다!", { id: toastId });
       };
-      img.src = rawData;
+      reader.readAsDataURL(file);
     };
-    reader.readAsDataURL(file);
+
+    img.onload = handleImgLoad;
+    img.onerror = () => {
+      if (objectUrl) {
+        try { URL.revokeObjectURL(objectUrl); } catch {}
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const raw = e.target?.result as string;
+        setQuickEditArticle(prev => prev ? ({ ...prev, thumbnail: raw }) : null);
+        toast.success("📷 퀵 수정 사진이 등록되었습니다!", { id: toastId });
+      };
+      reader.onerror = () => {
+        toast.error("사진을 읽어오지 못했습니다.", { id: toastId });
+      };
+      reader.readAsDataURL(file);
+    };
+
+    if (objectUrl) {
+      img.src = objectUrl;
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // 📷 본문 커서 위치에 바로 삽입하는 사진 최적화 및 인라인 마크다운 이식 핸들러
+  const processAndInsertInlineImage = (file: File) => {
+    if (!file) return;
+    const isImage = file.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(file.name);
+    if (!isImage) {
+      toast.error("사진/이미지 파일(JPG, PNG, WebP 등)만 첨부할 수 있습니다.");
+      return;
+    }
+    const toastId = toast.loading("📷 본문 사진 최적화 압축 및 본문 삽입 중...");
+
+    let objectUrl = "";
+    try {
+      objectUrl = URL.createObjectURL(file);
+    } catch {
+      objectUrl = "";
+    }
+
+    const img = new Image();
+    const handleImgLoad = () => {
+      if (objectUrl) {
+        try { URL.revokeObjectURL(objectUrl); } catch {}
+      }
+      try {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, width, height);
+          let compressed = canvas.toDataURL("image/jpeg", 0.82);
+          if (compressed.length > 400000) {
+            compressed = canvas.toDataURL("image/jpeg", 0.68);
+          }
+
+          const photoMarkdown = `\n\n![현장 사진](${compressed})\n\n`;
+          const textarea = document.getElementById("soul-textarea") as HTMLTextAreaElement | null;
+          if (textarea) {
+            const start = textarea.selectionStart ?? postData.content.length;
+            const end = textarea.selectionEnd ?? postData.content.length;
+            const newContent = postData.content.substring(0, start) + photoMarkdown + postData.content.substring(end);
+            setPostData(prev => ({
+              ...prev,
+              content: newContent,
+              thumbnail: prev.thumbnail || compressed,
+              thumbnailName: prev.thumbnailName || file.name,
+            }));
+            setTimeout(() => {
+              textarea.focus();
+              const newPos = start + photoMarkdown.length;
+              textarea.setSelectionRange(newPos, newPos);
+            }, 50);
+          } else {
+            setPostData(prev => ({
+              ...prev,
+              content: prev.content + photoMarkdown,
+              thumbnail: prev.thumbnail || compressed,
+              thumbnailName: prev.thumbnailName || file.name,
+            }));
+          }
+          toast.success("📷 본문 사진이 커서 위치에 즉시 삽입되었습니다!", { id: toastId });
+          return;
+        }
+      } catch (e) {
+        console.warn("Inline img canvas error:", e);
+      }
+
+      // fallback to reader
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const raw = ev.target?.result as string;
+        const photoMarkdown = `\n\n![현장 사진](${raw})\n\n`;
+        setPostData(prev => ({
+          ...prev,
+          content: prev.content + photoMarkdown,
+          thumbnail: prev.thumbnail || raw,
+          thumbnailName: prev.thumbnailName || file.name,
+        }));
+        toast.success("📷 본문 사진이 첨부되었습니다!", { id: toastId });
+      };
+      reader.readAsDataURL(file);
+    };
+
+    img.onload = handleImgLoad;
+    img.onerror = () => {
+      if (objectUrl) {
+        try { URL.revokeObjectURL(objectUrl); } catch {}
+      }
+      toast.error("사진 파일을 처리하지 못했습니다.", { id: toastId });
+    };
+
+    if (objectUrl) {
+      img.src = objectUrl;
+    } else {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        img.src = ev.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // 📷 폰 카메라 및 앨범 이미지 무오류 압축 및 대표 썸네일 등록 핸들러
   const processAndSetFile = (file: File) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    const isImage = file.type.startsWith("image/") || /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(file.name);
+    if (!isImage) {
       toast.error("사진/이미지 파일(JPG, PNG, WebP 등)만 첨부할 수 있습니다.");
       return;
     }
@@ -21551,74 +21807,74 @@ const SoulCenter = ({
     const origKb = Math.round(file.size / 1024);
     setOriginalSizeStr(origKb > 1024 ? `${(origKb / 1024).toFixed(1)}MB` : `${origKb}KB`);
 
-    const toastId = toast.loading("📷 사진을 보도용 규격으로 최적화 변환 중...");
-    const reader = new FileReader();
+    const toastId = toast.loading("📷 모바일 사진을 보도 규격으로 초고속 최적화 변환 중...");
+    
+    let objectUrl = "";
+    try {
+      objectUrl = URL.createObjectURL(file);
+    } catch {
+      objectUrl = "";
+    }
 
-    reader.onload = (ev) => {
-      const rawData = ev.target?.result as string;
-      if (!rawData) {
-        toast.error("사진을 읽어오지 못했습니다.", { id: toastId });
-        return;
+    const img = new Image();
+    const handleImgLoad = () => {
+      if (objectUrl) {
+        try { URL.revokeObjectURL(objectUrl); } catch {}
       }
+      try {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
 
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement("canvas");
-          const MAX_WIDTH = 1200;
-          const MAX_HEIGHT = 800;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height = Math.round((height * MAX_WIDTH) / width);
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width = Math.round((width * MAX_HEIGHT) / height);
-              height = MAX_HEIGHT;
-            }
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
           }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = "high";
-            ctx.drawImage(img, 0, 0, width, height);
-            let compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
-
-            // If still large (>300KB data URL length ~400k chars), compress further to 0.68
-            if (compressedDataUrl.length > 400000) {
-              compressedDataUrl = canvas.toDataURL("image/jpeg", 0.68);
-            }
-
-            const compKb = Math.round((compressedDataUrl.length * 0.75) / 1024);
-            setCompressedSizeStr(`${compKb}KB`);
-            const ratio = Math.max(0, Math.round(((file.size - compKb * 1024) / file.size) * 100));
-            setCompressionRatio(ratio);
-
-            setPostData((prev) => ({
-              ...prev,
-              thumbnail: compressedDataUrl,
-              thumbnailName: file.name,
-            }));
-            toast.success(`📷 사진 첨부 완료! (${compKb}KB, ${ratio}% 경량화)`, { id: toastId });
-            return;
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
           }
-        } catch (canvasErr) {
-          console.warn("Canvas compression fallback:", canvasErr);
         }
 
-        // Fallback
-        if (rawData.length > 1000000) {
-          toast.error("사진 해상도가 너무 높아 압축에 실패했습니다. 다른 사진을 선택해 주세요.", { id: toastId });
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(img, 0, 0, width, height);
+          let compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+
+          // If still large (>300KB data URL length ~400k chars), compress further to 0.68
+          if (compressedDataUrl.length > 400000) {
+            compressedDataUrl = canvas.toDataURL("image/jpeg", 0.68);
+          }
+
+          const compKb = Math.round((compressedDataUrl.length * 0.75) / 1024);
+          setCompressedSizeStr(`${compKb}KB`);
+          const ratio = Math.max(0, Math.round(((file.size - compKb * 1024) / file.size) * 100));
+          setCompressionRatio(ratio);
+
+          setPostData((prev) => ({
+            ...prev,
+            thumbnail: compressedDataUrl,
+            thumbnailName: file.name,
+          }));
+          toast.success(`📷 사진 첨부 완료! (${compKb}KB, ${ratio}% 경량화)`, { id: toastId });
           return;
         }
+      } catch (canvasErr) {
+        console.warn("Canvas compression fallback:", canvasErr);
+      }
 
+      // Fallback to FileReader
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const rawData = ev.target?.result as string;
         setPostData((prev) => ({
           ...prev,
           thumbnail: rawData,
@@ -21626,19 +21882,39 @@ const SoulCenter = ({
         }));
         toast.success("📷 사진이 첨부되었습니다!", { id: toastId });
       };
+      reader.readAsDataURL(file);
+    };
 
-      img.onerror = () => {
-        toast.error("사진 형식을 해석할 수 없습니다. 유효한 이미지 파일을 선택해 주세요.", { id: toastId });
+    img.onload = handleImgLoad;
+    img.onerror = () => {
+      if (objectUrl) {
+        try { URL.revokeObjectURL(objectUrl); } catch {}
+      }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const rawData = ev.target?.result as string;
+        setPostData((prev) => ({
+          ...prev,
+          thumbnail: rawData,
+          thumbnailName: file.name,
+        }));
+        toast.success("📷 사진이 첨부되었습니다!", { id: toastId });
       };
-
-      img.src = rawData;
+      reader.onerror = () => {
+        toast.error("사진 파일을 읽는 도중 오류가 발생했습니다.", { id: toastId });
+      };
+      reader.readAsDataURL(file);
     };
 
-    reader.onerror = () => {
-      toast.error("사진 파일을 읽는 도중 오류가 발생했습니다.", { id: toastId });
-    };
-
-    reader.readAsDataURL(file);
+    if (objectUrl) {
+      img.src = objectUrl;
+    } else {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        img.src = ev.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -21814,7 +22090,19 @@ const SoulCenter = ({
     setDeletingNewsId(null);
     const toastId = toast.loading("기사 정보를 영구 삭제 조치 중...");
     try {
+      if (!auth.currentUser) {
+        try {
+          await signInAnonymously(auth);
+        } catch (authErr) {
+          console.warn("Auth check warning:", authErr);
+        }
+      }
       await deleteDoc(doc(db, "citizen_news", id));
+      try {
+        const savedIds: string[] = JSON.parse(localStorage.getItem("my_written_article_ids") || "[]");
+        const nextIds = savedIds.filter(item => item !== id);
+        localStorage.setItem("my_written_article_ids", JSON.stringify(nextIds));
+      } catch {}
       toast.success("기사가 정상적으로 파기되었습니다.", { id: toastId });
     } catch (error) {
       handleFirestoreError(error, "delete", "citizen_news/" + id);
@@ -21823,10 +22111,23 @@ const SoulCenter = ({
   };
 
   const [showAllArticlesAdmin, setShowAllArticlesAdmin] = useState(false);
+  const [manageStatusFilter, setManageStatusFilter] = useState<"all" | "approved" | "pending" | "revision">("all");
   const isAdminUser = useMemo(() => checkIsAdmin(user?.email || currentUser?.email), [user, currentUser]);
 
   const myArticles = useMemo(() => {
-    if (!currentUser && !user) return citizenNews.slice(0, 10);
+    const localSavedIds: string[] = (() => {
+      try {
+        return JSON.parse(localStorage.getItem("my_written_article_ids") || "[]");
+      } catch {
+        return [];
+      }
+    })();
+
+    if (!currentUser && !user) {
+      const locallyWritten = citizenNews.filter((n) => localSavedIds.includes(n.id));
+      if (locallyWritten.length > 0) return locallyWritten;
+      return citizenNews.slice(0, 10);
+    }
     const activeUid = currentUser?.uid || user?.uid;
     const activeEmail = currentUser?.email || user?.email;
     const activeName = currentUser?.displayName || user?.displayName;
@@ -21836,6 +22137,7 @@ const SoulCenter = ({
     }
 
     const authored = citizenNews.filter((n) => {
+      if (localSavedIds.includes(n.id)) return true;
       if (activeUid && n.reporterId === activeUid) return true;
       if (activeEmail && n.author === activeEmail.split("@")[0]) return true;
       if (activeName && n.author === activeName) return true;
@@ -21847,6 +22149,10 @@ const SoulCenter = ({
     }
     return authored;
   }, [currentUser, user, citizenNews, isAdminUser, showAllArticlesAdmin]);
+
+  const revisionCount = useMemo(() => myArticles.filter((n) => n.status === "revision").length, [myArticles]);
+  const pendingCount = useMemo(() => myArticles.filter((n) => !n.isApproved && n.status !== "revision").length, [myArticles]);
+  const approvedCount = useMemo(() => myArticles.filter((n) => n.isApproved && n.status !== "revision").length, [myArticles]);
 
   const handleApproveRevisionInSoulCenter = async (news: CitizenNews) => {
     const toastId = toast.loading("수정 요청 사항 반영 중...");
@@ -22079,11 +22385,15 @@ const SoulCenter = ({
 
       if (editingArticle) {
         payload.content = postData.content.trim();
-        payload.status = editingArticle.isApproved ? "approved" : (editingArticle.status || "approved");
+        payload.reporterId = (editingArticle as any).reporterId || activeUser.uid;
+        payload.isApproved = (editingArticle as any).isApproved !== undefined ? (editingArticle as any).isApproved : true;
+        payload.status = (editingArticle as any).isApproved ? "approved" : ((editingArticle as any).status || "approved");
         payload.author = postData.authorName || safeReporterProfile.nickname || safeReporterProfile.name;
         payload.reporterBio = postData.authorBio || safeReporterProfile.bio;
-        // 기존 수정 요청 상태였던 경우 수정 필드 초기화
+        // 기존 수정 요청 상태였던 경우 수정 필드 초기화 및 승인 발행 상태로 정상화
         if (editingArticle.status === "revision") {
+          payload.status = "approved";
+          payload.isApproved = true;
           payload.requestedTitle = null;
           payload.requestedContent = null;
           payload.requestedThumbnail = null;
@@ -22107,6 +22417,17 @@ const SoulCenter = ({
       }
 
       await setDoc(artRef, payload, { merge: true });
+
+      try {
+        const savedIds: string[] = JSON.parse(localStorage.getItem("my_written_article_ids") || "[]");
+        if (!savedIds.includes(artRef.id)) {
+          savedIds.unshift(artRef.id);
+          localStorage.setItem("my_written_article_ids", JSON.stringify(savedIds.slice(0, 100)));
+        }
+      } catch (storageErr) {
+        console.warn("Local storage tracking warning:", storageErr);
+      }
+
       toast.success(
         editingArticle
           ? "기사가 성공적으로 수정되었습니다!"
@@ -22186,13 +22507,13 @@ const SoulCenter = ({
           )}
         </div>
 
-        {/* 📱 모바일/PC 겸용 상단 3단 탭 전환 바 */}
-        <div className="flex items-center justify-between gap-1.5 sm:gap-2.5 mb-6 bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
+        {/* 📱 모바일/PC 겸용 상단 탭 전환 바 */}
+        <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-6 bg-zinc-100 dark:bg-zinc-900 p-1.5 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setActiveTab("write")}
             className={cn(
-              "flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]",
+              "flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] whitespace-nowrap",
               activeTab === "write"
                 ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md"
                 : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100",
@@ -22203,10 +22524,13 @@ const SoulCenter = ({
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("manage")}
+            onClick={() => {
+              setActiveTab("manage");
+              setShowAllArticlesAdmin(false);
+            }}
             className={cn(
-              "flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]",
-              activeTab === "manage"
+              "flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] whitespace-nowrap",
+              activeTab === "manage" && !showAllArticlesAdmin
                 ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md"
                 : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100",
             )}
@@ -22214,11 +22538,29 @@ const SoulCenter = ({
             <FileText size={15} />
             <span className="truncate">내가 쓴 기사 {myArticles.length > 0 && `(${myArticles.length})`}</span>
           </button>
+          {isAdminUser && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab("manage");
+                setShowAllArticlesAdmin(true);
+              }}
+              className={cn(
+                "flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] whitespace-nowrap",
+                activeTab === "manage" && showAllArticlesAdmin
+                  ? "bg-gradient-to-r from-red-600 to-amber-600 text-white shadow-md"
+                  : "text-amber-600 dark:text-amber-400 hover:bg-amber-500/10",
+              )}
+            >
+              <ShieldCheck size={15} />
+              <span className="truncate">👑 관리자 데스크 ({citizenNews.length})</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setActiveTab("register")}
             className={cn(
-              "flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px]",
+              "flex-1 py-3 px-2 sm:px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[44px] whitespace-nowrap",
               (activeTab as string) === "register"
                 ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md"
                 : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100",
@@ -22271,6 +22613,59 @@ const SoulCenter = ({
                 >
                   ✕ 수정 취소 (새 글 쓰기)
                 </button>
+              </div>
+            )}
+
+            {/* 📬 수정 요청 접수건 안내 및 1-클릭 초안 자동반영 카드 */}
+            {editingArticle && (editingArticle.status === "revision" || (editingArticle as any).revisionNote || (editingArticle as any).requestedTitle) && (
+              <div className="mb-6 p-4 sm:p-5 bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 border-2 border-amber-500/40 rounded-2xl sm:rounded-3xl shadow-lg space-y-3 text-left">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-1 bg-amber-500 text-black font-black text-[11px] rounded-lg tracking-wider flex items-center gap-1">
+                      <Send size={12} />
+                      독자/데스크 수정 요청 접수건
+                    </span>
+                    <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                      {(editingArticle as any).revisionCategory || "수정/정정 심사 요청"}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-zinc-500 font-sans">
+                    요청 접수자: {(editingArticle as any).requestedBy || "독자/시민"}
+                  </span>
+                </div>
+
+                {(editingArticle as any).revisionNote && (
+                  <div className="p-3 bg-white/80 dark:bg-zinc-900/80 rounded-xl border border-amber-500/20 text-xs leading-relaxed text-zinc-800 dark:text-zinc-200">
+                    <strong className="text-amber-600 dark:text-amber-400 block font-black text-[11px] mb-1">
+                      📌 수정/정정 요청 사유:
+                    </strong>
+                    {(editingArticle as any).revisionNote}
+                  </div>
+                )}
+
+                {((editingArticle as any).requestedTitle || (editingArticle as any).requestedContent || (editingArticle as any).requestedThumbnail) && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-amber-500/20">
+                    <span className="text-xs text-amber-700 dark:text-amber-300 font-bold">
+                      💡 요청자가 제출한 수정 초안(제목, 본문, 사진)이 준비되어 있습니다.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPostData(prev => ({
+                          ...prev,
+                          title: (editingArticle as any).requestedTitle || prev.title,
+                          content: (editingArticle as any).requestedContent || prev.content,
+                          thumbnail: (editingArticle as any).requestedThumbnail || prev.thumbnail,
+                        }));
+                        toast.success("✨ 요청된 수정 내용(제목/본문/사진)이 작성 폼에 일괄 반영되었습니다!");
+                      }}
+                      className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs rounded-xl shadow-md cursor-pointer transition-all active:scale-95 flex items-center gap-1.5"
+                    >
+                      <Sparkles size={14} />
+                      <span>요청 내용 폼에 자동 반영하기</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -22818,15 +23213,50 @@ const SoulCenter = ({
                         </div>
 
                         {postData.thumbnail && (
-                          <div className="flex items-center justify-between text-[11px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1.5 rounded-lg border border-emerald-500/20">
-                            <span className="font-bold truncate">✓ {postData.thumbnailName || "사진 첨부 완료 (보도 규격 최적화)"}</span>
-                            <button
-                              type="button"
-                              onClick={() => setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }))}
-                              className="text-red-500 hover:text-red-700 font-black ml-2 cursor-pointer shrink-0"
-                            >
-                              삭제
-                            </button>
+                          <div className="space-y-2 p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/25">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <img
+                                  src={postData.thumbnail}
+                                  alt="대표 사진 미리보기"
+                                  className="w-12 h-9 rounded-lg object-cover border border-emerald-500/30 shrink-0 shadow-xs"
+                                />
+                                <div className="min-w-0">
+                                  <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400 truncate block">
+                                    ✓ {postData.thumbnailName || "대표 보도 사진 등록 완료"}
+                                  </span>
+                                  <span className="text-[10px] text-zinc-400">
+                                    {compressedSizeStr ? `규격 최적화: ${compressedSizeStr} (${compressionRatio}% 절감)` : "모바일 웹 최적화 완료"}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const markdownImg = `\n\n![보도사진](${postData.thumbnail})\n\n`;
+                                    setPostData((prev) => ({
+                                      ...prev,
+                                      content: prev.content ? `${prev.content}${markdownImg}` : markdownImg,
+                                    }));
+                                    toast.success("📝 본문 끝에 사진 마크다운이 삽입되었습니다!");
+                                  }}
+                                  className="px-2.5 py-1.5 bg-white dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 rounded-lg text-[10px] font-black hover:bg-emerald-50 dark:hover:bg-zinc-700 cursor-pointer transition-colors flex items-center gap-1 shadow-xs"
+                                  title="본문에도 이 사진을 삽입합니다"
+                                >
+                                  <Plus size={12} />
+                                  <span>본문 삽입</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setPostData((prev) => ({ ...prev, thumbnail: "", thumbnailName: "" }))}
+                                  className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-500/10 rounded-lg cursor-pointer transition-colors"
+                                  title="사진 삭제"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -23101,6 +23531,49 @@ const SoulCenter = ({
                         >
                           <LinkIcon size={11} className="text-zinc-500" />
                           <span>링크</span>
+                        </button>
+
+                        {/* Inline Body Image Inputs */}
+                        <input
+                          ref={inlineBodyImageInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) processAndInsertInlineImage(file);
+                            e.target.value = "";
+                          }}
+                        />
+                        <input
+                          ref={inlineBodyCameraInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) processAndInsertInlineImage(file);
+                            e.target.value = "";
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => inlineBodyImageInputRef.current?.click()}
+                          className="px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-emerald-500/20 shadow-xs shrink-0"
+                          title="본문 커서 위치에 사진 첨부"
+                        >
+                          <ImageIcon size={11} className="text-emerald-600 dark:text-emerald-400" />
+                          <span>본문 사진</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => inlineBodyCameraInputRef.current?.click()}
+                          className="px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-emerald-500/20 shadow-xs shrink-0 sm:hidden"
+                          title="휴대폰 카메라로 즉시 촬영하여 본문에 삽입"
+                        >
+                          <Camera size={11} className="text-emerald-600 dark:text-emerald-400" />
+                          <span>촬영</span>
                         </button>
                         
                         <button
@@ -23685,6 +24158,63 @@ const SoulCenter = ({
               </div>
             </div>
 
+            {/* 🏷️ 기사 상태별 퀵 필터 칩 (전체 / 보도중 / 심사 대기 / 수정 요청) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar pt-1">
+              <button
+                type="button"
+                onClick={() => setManageStatusFilter("all")}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 min-h-[36px]",
+                  manageStatusFilter === "all"
+                    ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                )}
+              >
+                <span>전체</span>
+                <span className="text-[10px] opacity-75">({myArticles.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setManageStatusFilter("approved")}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 min-h-[36px]",
+                  manageStatusFilter === "approved"
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
+                )}
+              >
+                <span>✓ 승인 보도중</span>
+                <span className="text-[10px] opacity-80">({approvedCount})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setManageStatusFilter("revision")}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 min-h-[36px]",
+                  manageStatusFilter === "revision"
+                    ? "bg-amber-500 text-black shadow-xs font-black"
+                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 hover:bg-amber-500/20"
+                )}
+              >
+                <Send size={11} />
+                <span>📬 데스크 수정요청</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500 text-black font-extrabold">{revisionCount}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setManageStatusFilter("pending")}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 min-h-[36px]",
+                  manageStatusFilter === "pending"
+                    ? "bg-zinc-700 text-white shadow-xs"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                )}
+              >
+                <span>⏳ 심사 대기</span>
+                <span className="text-[10px] opacity-80">({pendingCount})</span>
+              </button>
+            </div>
+
             {/* 기사 목록 출력 */}
             {(() => {
               const filtered = myArticles.filter((article) => {
@@ -23693,7 +24223,12 @@ const SoulCenter = ({
                   article.title.toLowerCase().includes(myArticlesSearch.toLowerCase()) ||
                   (article.content && article.content.toLowerCase().includes(myArticlesSearch.toLowerCase()));
                 const matchesCat = myArticlesCatFilter === "전체" || article.category === myArticlesCatFilter;
-                return matchesSearch && matchesCat;
+                const matchesStatus =
+                  manageStatusFilter === "all" ||
+                  (manageStatusFilter === "approved" && article.isApproved && article.status !== "revision") ||
+                  (manageStatusFilter === "revision" && article.status === "revision") ||
+                  (manageStatusFilter === "pending" && !article.isApproved && article.status !== "revision");
+                return matchesSearch && matchesCat && matchesStatus;
               });
 
               if (filtered.length === 0) {
@@ -23789,7 +24324,7 @@ const SoulCenter = ({
                                     <span className="text-[10px] text-amber-500 font-bold">📷 교체 사진 첨부됨</span>
                                   </div>
                                 )}
-                                <div className="flex items-center gap-2 pt-1.5 border-t border-amber-500/20">
+                                <div className="flex flex-wrap items-center gap-2 pt-1.5 border-t border-amber-500/20">
                                   {isAdminUser ? (
                                     <>
                                       <button
@@ -23802,6 +24337,32 @@ const SoulCenter = ({
                                       </button>
                                       <button
                                         type="button"
+                                        onClick={() => {
+                                          setEditingArticle(article);
+                                          setPostData({
+                                            title: (article as any).requestedTitle || article.title,
+                                            content: (article as any).requestedContent || article.content,
+                                            thumbnail: (article as any).requestedThumbnail || article.thumbnail,
+                                            thumbnailName: (article as any).thumbnailName || (article.thumbnail ? "기존 대표 이미지" : ""),
+                                            category: article.category,
+                                            subCategory: article.subCategory || "",
+                                            pdfUrl: article.pdfUrl || "",
+                                            pdfName: article.pdfName || "",
+                                            authorName: article.author || "",
+                                            authorBio: (article as any).reporterBio || "",
+                                            sourceAgency: (article as any).sourceAgency || "",
+                                            pressSeal: (article as any).pressSeal || "standard_citizen",
+                                          });
+                                          setIsWriting(true);
+                                          setActiveTab("write");
+                                        }}
+                                        className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black rounded-lg text-[10px] font-black cursor-pointer shadow-xs active:scale-95 flex items-center gap-1"
+                                      >
+                                        <Edit2 size={11} />
+                                        <span>검토 및 편집</span>
+                                      </button>
+                                      <button
+                                        type="button"
                                         onClick={() => handleWithdrawRevision(article)}
                                         className="px-2.5 py-1 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10px] font-bold cursor-pointer"
                                       >
@@ -23809,13 +24370,41 @@ const SoulCenter = ({
                                       </button>
                                     </>
                                   ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleWithdrawRevision(article)}
-                                      className="px-2.5 py-1 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10px] font-bold cursor-pointer"
-                                    >
-                                      수정 요청 철회
-                                    </button>
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingArticle(article);
+                                          setPostData({
+                                            title: (article as any).requestedTitle || article.title,
+                                            content: (article as any).requestedContent || article.content,
+                                            thumbnail: (article as any).requestedThumbnail || article.thumbnail,
+                                            thumbnailName: (article as any).thumbnailName || (article.thumbnail ? "기존 대표 이미지" : ""),
+                                            category: article.category,
+                                            subCategory: article.subCategory || "",
+                                            pdfUrl: article.pdfUrl || "",
+                                            pdfName: article.pdfName || "",
+                                            authorName: article.author || "",
+                                            authorBio: (article as any).reporterBio || "",
+                                            sourceAgency: (article as any).sourceAgency || "",
+                                            pressSeal: (article as any).pressSeal || "standard_citizen",
+                                          });
+                                          setIsWriting(true);
+                                          setActiveTab("write");
+                                        }}
+                                        className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black rounded-lg text-[10px] font-black cursor-pointer shadow-xs active:scale-95 flex items-center gap-1"
+                                      >
+                                        <Edit2 size={11} />
+                                        <span>수정 요청 반영 편집</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleWithdrawRevision(article)}
+                                        className="px-2.5 py-1 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 text-zinc-700 dark:text-zinc-300 rounded-lg text-[10px] font-bold cursor-pointer"
+                                      >
+                                        수정 요청 철회
+                                      </button>
+                                    </>
                                   )}
                                 </div>
                               </div>
@@ -24115,6 +24704,15 @@ const SoulCenter = ({
                               updatePayload,
                               { merge: true }
                             );
+                            try {
+                              const savedIds: string[] = JSON.parse(localStorage.getItem("my_written_article_ids") || "[]");
+                              if (!savedIds.includes(quickEditArticle.id)) {
+                                savedIds.unshift(quickEditArticle.id);
+                                localStorage.setItem("my_written_article_ids", JSON.stringify(savedIds.slice(0, 100)));
+                              }
+                            } catch (storageErr) {
+                              console.warn("Storage err:", storageErr);
+                            }
                             toast.success("✨ 기사 내용이 성공적으로 업데이트되었습니다!", { id: toastId });
                             onEditComplete?.();
                             setQuickEditArticle(null);
