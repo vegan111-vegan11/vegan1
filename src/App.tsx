@@ -5710,11 +5710,12 @@ const AdminDashboard: React.FC<{
       if (news.requestedContent) updates.content = news.requestedContent;
       if (news.requestedThumbnail) updates.thumbnail = news.requestedThumbnail;
 
-      await updateDoc(doc(db, "citizen_news", news.id), updates);
+      await setDoc(doc(db, "citizen_news", news.id), updates, { merge: true });
       toast.success("✨ 수정 요청 사항이 성공적으로 기사에 반영 및 승인되었습니다.", { id: toastId });
-    } catch (e) {
+    } catch (e: any) {
       console.error("Revision approval failed:", e);
-      toast.error("수정 반영 실패.");
+      handleFirestoreError(e, "update", "citizen_news/" + news.id);
+      toast.error("수정 사항 승인 반영 중 오류가 발생했습니다.", { id: toastId });
     }
   };
 
@@ -5728,21 +5729,26 @@ const AdminDashboard: React.FC<{
           console.warn("Auth check warning:", authErr);
         }
       }
-      await updateDoc(doc(db, "citizen_news", news.id), {
-        status: news.isApproved ? "approved" : "pending",
-        requestedTitle: null,
-        requestedContent: null,
-        requestedThumbnail: null,
-        requestedBy: null,
-        revisionNote: null,
-        revisionCategory: null,
-        requestedAt: null,
-        updatedAt: new Date().toISOString(),
-      });
+      await setDoc(
+        doc(db, "citizen_news", news.id),
+        {
+          status: news.isApproved ? "approved" : "pending",
+          requestedTitle: null,
+          requestedContent: null,
+          requestedThumbnail: null,
+          requestedBy: null,
+          revisionNote: null,
+          revisionCategory: null,
+          requestedAt: null,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
       toast.success("수정 요청이 안전하게 반려되었습니다.", { id: toastId });
-    } catch (e) {
+    } catch (e: any) {
       console.error("Revision rejection failed:", e);
-      toast.error("반려 실패.");
+      handleFirestoreError(e, "update", "citizen_news/" + news.id);
+      toast.error("수정 요청 반려 처리 중 오류가 발생했습니다.", { id: toastId });
     }
   };
 
@@ -5820,7 +5826,7 @@ const AdminDashboard: React.FC<{
         updates.requestedAt = null;
       }
 
-      await updateDoc(doc(db, "citizen_news", inlineEditingArticle.id), updates);
+      await setDoc(doc(db, "citizen_news", inlineEditingArticle.id), updates, { merge: true });
 
       toast.success(
         inlineEditingArticle.status === "revision"
@@ -19447,139 +19453,296 @@ const AdminNewsCenter = ({
       {/* 3. Main Lists Grid */}
       <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden mb-8">
         {activeTab === "articles" ? (
-          <div className="overflow-x-auto text-left">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                  <th className="px-6 py-4">기사 대표정보</th>
-                  <th className="px-6 py-4">구분</th>
-                  <th className="px-6 py-4">취재 기자</th>
-                  <th className="px-6 py-4">송출 시각</th>
-                  <th className="px-6 py-4">정론 승인제어</th>
-                  <th className="px-6 py-4 text-right">행정 편집제어</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
-                {filteredArticlesList.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-zinc-400 font-bold text-sm">
-                      보도된 기사 데이터가 존재하지 않습니다.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredArticlesList.map((news) => (
-                    <tr key={news.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-950/10 transition-all text-xs font-medium text-zinc-800 dark:text-zinc-250">
-                      <td className="px-6 py-4 max-w-sm">
-                        <div className="flex items-center gap-3">
-                          {news.thumbnail && (
-                            <img src={news.thumbnail} className="w-10 h-10 rounded-lg object-cover bg-zinc-100 border border-zinc-200/40 shrink-0" alt="" />
-                          )}
-                          <div className="truncate">
-                            <div className="flex items-center gap-1.5">
-                              {(news.status === "revision" || (news as any).revisionNote || (news as any).requestedTitle) && (
-                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black text-[9px] border border-amber-500/40 shrink-0 animate-pulse">
-                                  📬 수정요청
-                                </span>
-                              )}
-                              <span className="font-extrabold text-sm text-zinc-900 dark:text-white block hover:underline cursor-pointer truncate">
-                                {news.title}
-                              </span>
-                            </div>
-                            <span className="text-[10px] text-zinc-400 mt-1 block truncate">
-                              {news.content?.substring(0, 80)}...
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-2.5 py-1 rounded-full bg-red-500/10 text-red-500 font-black text-[9px] uppercase tracking-wider">
+          <div>
+            {/* 📱 모바일 최적화 기사 관리 카드 뷰 (Mobile Card List) */}
+            <div className="block md:hidden divide-y divide-zinc-100 dark:divide-zinc-800/60">
+              {filteredArticlesList.length === 0 ? (
+                <div className="p-8 text-center text-zinc-400 font-bold text-sm">
+                  보도된 기사 데이터가 존재하지 않습니다.
+                </div>
+              ) : (
+                filteredArticlesList.map((news) => (
+                  <div key={news.id} className="p-4 space-y-3 hover:bg-zinc-50/50 dark:hover:bg-zinc-950/20 transition-all">
+                    {/* 상단 태그 & 시각 */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="px-2 py-0.5 rounded-md bg-red-500/10 text-red-500 font-black text-[10px] uppercase">
                           {news.category || "정론보도"}
                         </span>
+                        {(news.status === "revision" || (news as any).revisionNote || (news as any).requestedTitle) && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black text-[10px] border border-amber-500/40 animate-pulse">
+                            📬 수정요청
+                          </span>
+                        )}
+                        <span className="text-[10px] font-bold text-zinc-400">
+                          {news.author || "시민기자"}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-zinc-400 font-medium shrink-0">
+                        {news.createdAt ? new Date(news.createdAt).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" }) : "-"}
+                      </span>
+                    </div>
+
+                    {/* 기사 정보: 사진 + 제목 (터치 시 편집기로 바로 연결) */}
+                    <div
+                      onClick={() => {
+                        if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
+                        setInlineForm({
+                          title: news.title || "",
+                          content: news.content || "",
+                          author: news.author || "",
+                          category: news.category || "사회/정치",
+                          thumbnail: news.thumbnail || "",
+                        });
+                        setEditingNews(news);
+                        setPreviewMode("edit");
+                      }}
+                      className="flex items-start gap-3 cursor-pointer group"
+                    >
+                      {news.thumbnail && (
+                        <img
+                          src={news.thumbnail}
+                          className="w-16 h-14 rounded-xl object-cover bg-zinc-100 border border-zinc-200/40 shrink-0 group-hover:scale-105 transition-transform"
+                          alt=""
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-black text-sm text-zinc-900 dark:text-zinc-100 line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
+                          {news.title}
+                        </h4>
+                        <p className="text-[11px] text-zinc-400 line-clamp-1 mt-1 font-serif">
+                          {news.content?.substring(0, 70)}...
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* 하단 모바일 직관적 액션 버튼 그리드 */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleApproval(news.id, news.isApproved)}
+                        className={cn(
+                          "flex-1 py-2 px-2.5 rounded-xl font-black text-xs transition-all cursor-pointer text-center min-h-[38px] flex items-center justify-center gap-1",
+                          news.isApproved
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
+                        )}
+                      >
+                        <CheckCircle2 size={13} className={news.isApproved ? "text-emerald-500" : "text-zinc-400"} />
+                        <span>{news.isApproved ? "보도승인됨" : "승인대기"}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => toggleFeatured(news.id, news.isFeatured)}
+                        className={cn(
+                          "py-2 px-2.5 rounded-xl font-black text-xs transition-all cursor-pointer min-h-[38px] flex items-center justify-center gap-1",
+                          news.isFeatured
+                            ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
+                        )}
+                      >
+                        <Sparkles size={13} className={news.isFeatured ? "text-amber-500" : "text-zinc-400"} />
+                        <span>헤드라인</span>
+                      </button>
+
+                      {(news.status === "revision" || (news as any).revisionNote || (news as any).requestedTitle) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (typeof playHapticClick === "function") playHapticClick(700, 0.06);
+                            setReviewingRevisionNews(news);
+                          }}
+                          className="py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1 shadow-xs transition-all cursor-pointer active:scale-95 min-h-[38px]"
+                        >
+                          <Send size={12} />
+                          <span>요청심사</span>
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
+                          setInlineForm({
+                            title: news.title || "",
+                            content: news.content || "",
+                            author: news.author || "",
+                            category: news.category || "사회/정치",
+                            thumbnail: news.thumbnail || "",
+                          });
+                          setEditingNews(news);
+                          setPreviewMode("edit");
+                        }}
+                        className="p-2 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-xl transition-all cursor-pointer flex items-center justify-center min-h-[38px] min-w-[38px]"
+                        title="기사 편집"
+                      >
+                        <PenTool size={14} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteNews(news.id)}
+                        className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl transition-all cursor-pointer flex items-center justify-center min-h-[38px] min-w-[38px]"
+                        title="기사 삭제"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* 💻 데스크톱 풀 테이블 뷰 (Desktop Table) */}
+            <div className="hidden md:block overflow-x-auto text-left">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                    <th className="px-6 py-4">기사 대표정보</th>
+                    <th className="px-6 py-4">구분</th>
+                    <th className="px-6 py-4">취재 기자</th>
+                    <th className="px-6 py-4">송출 시각</th>
+                    <th className="px-6 py-4">정론 승인제어</th>
+                    <th className="px-6 py-4 text-right">행정 편집제어</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                  {filteredArticlesList.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-12 text-center text-zinc-400 font-bold text-sm">
+                        보도된 기사 데이터가 존재하지 않습니다.
                       </td>
-                      <td className="px-6 py-4 font-black text-zinc-900 dark:text-white">
-                        {news.author || "시민기자"}
-                      </td>
-                      <td className="px-6 py-4 text-zinc-400 font-bold">
-                        {news.createdAt ? new Date(news.createdAt).toLocaleString("ko-KR", { hour12: false }) : "-"}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => toggleApproval(news.id, news.isApproved)}
-                            className={cn(
-                              "px-2.5 py-1 rounded-lg font-black text-[10px] transition-all cursor-pointer",
-                              news.isApproved
-                                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border border-transparent"
+                    </tr>
+                  ) : (
+                    filteredArticlesList.map((news) => (
+                      <tr key={news.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-950/10 transition-all text-xs font-medium text-zinc-800 dark:text-zinc-250">
+                        <td className="px-6 py-4 max-w-sm">
+                          <div className="flex items-center gap-3">
+                            {news.thumbnail && (
+                              <img src={news.thumbnail} className="w-10 h-10 rounded-lg object-cover bg-zinc-100 border border-zinc-200/40 shrink-0" alt="" />
                             )}
-                          >
-                            {news.isApproved ? "보도승인" : "승인대기"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleFeatured(news.id, news.isFeatured)}
-                            className={cn(
-                              "px-2.5 py-1 rounded-lg font-black text-[10px] transition-all cursor-pointer",
-                              news.isFeatured
-                                ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
-                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border border-transparent"
+                            <div className="truncate">
+                              <div className="flex items-center gap-1.5">
+                                {(news.status === "revision" || (news as any).revisionNote || (news as any).requestedTitle) && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black text-[9px] border border-amber-500/40 shrink-0 animate-pulse">
+                                    📬 수정요청
+                                  </span>
+                                )}
+                                <span
+                                  onClick={() => {
+                                    if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
+                                    setInlineForm({
+                                      title: news.title || "",
+                                      content: news.content || "",
+                                      author: news.author || "",
+                                      category: news.category || "사회/정치",
+                                      thumbnail: news.thumbnail || "",
+                                    });
+                                    setEditingNews(news);
+                                    setPreviewMode("edit");
+                                  }}
+                                  className="font-extrabold text-sm text-zinc-900 dark:text-white block hover:underline cursor-pointer truncate"
+                                >
+                                  {news.title}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-zinc-400 mt-1 block truncate">
+                                {news.content?.substring(0, 80)}...
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="px-2.5 py-1 rounded-full bg-red-500/10 text-red-500 font-black text-[9px] uppercase tracking-wider">
+                            {news.category || "정론보도"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-black text-zinc-900 dark:text-white">
+                          {news.author || "시민기자"}
+                        </td>
+                        <td className="px-6 py-4 text-zinc-400 font-bold">
+                          {news.createdAt ? new Date(news.createdAt).toLocaleString("ko-KR", { hour12: false }) : "-"}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleApproval(news.id, news.isApproved)}
+                              className={cn(
+                                "px-2.5 py-1 rounded-lg font-black text-[10px] transition-all cursor-pointer",
+                                news.isApproved
+                                  ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border border-transparent"
+                              )}
+                            >
+                              {news.isApproved ? "보도승인" : "승인대기"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleFeatured(news.id, news.isFeatured)}
+                              className={cn(
+                                "px-2.5 py-1 rounded-lg font-black text-[10px] transition-all cursor-pointer",
+                                news.isFeatured
+                                  ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border border-transparent"
+                              )}
+                            >
+                              ★ 헤드라인
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {(news.status === "revision" || (news as any).revisionNote || (news as any).requestedTitle) && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (typeof playHapticClick === "function") playHapticClick(700, 0.06);
+                                  setReviewingRevisionNews(news);
+                                }}
+                                className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-black flex items-center gap-1 shadow-sm transition-all cursor-pointer shrink-0 active:scale-95"
+                                title="독자/기자의 기사 수정요청 상세 심사"
+                              >
+                                <Send size={10} />
+                                <span>요청심사</span>
+                              </button>
                             )}
-                          >
-                            ★ 헤드라인
-                          </button>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {(news.status === "revision" || (news as any).revisionNote || (news as any).requestedTitle) && (
                             <button
                               type="button"
                               onClick={() => {
-                                if (typeof playHapticClick === "function") playHapticClick(700, 0.06);
-                                setReviewingRevisionNews(news);
+                                if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
+                                setInlineForm({
+                                  title: news.title || "",
+                                  content: news.content || "",
+                                  author: news.author || "",
+                                  category: news.category || "사회/정치",
+                                  thumbnail: news.thumbnail || "",
+                                });
+                                setEditingNews(news);
+                                setPreviewMode("edit");
                               }}
-                              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-[10px] font-black flex items-center gap-1 shadow-sm transition-all cursor-pointer shrink-0 active:scale-95"
-                              title="독자/기자의 기사 수정요청 상세 심사"
+                              className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white rounded-lg transition-all cursor-pointer flex items-center justify-center"
+                              title="기사 편집/수정"
                             >
-                              <Send size={10} />
-                              <span>요청심사</span>
+                              <PenTool size={14} />
                             </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (typeof playHapticClick === "function") playHapticClick(600, 0.05);
-                              setInlineForm({
-                                title: news.title || "",
-                                content: news.content || "",
-                                author: news.author || "",
-                                category: news.category || "사회/정치",
-                                thumbnail: news.thumbnail || "",
-                              });
-                              setEditingNews(news);
-                              setPreviewMode("edit");
-                            }}
-                            className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white rounded-lg transition-all cursor-pointer flex items-center justify-center"
-                            title="기사 편집/수정"
-                          >
-                            <PenTool size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteNews(news.id)}
-                            className="p-1.5 hover:bg-red-500/10 text-zinc-400 hover:text-red-500 rounded-lg transition-all cursor-pointer flex items-center justify-center"
-                            title="기사 삭제"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteNews(news.id)}
+                              className="p-1.5 hover:bg-red-500/10 text-zinc-400 hover:text-red-500 rounded-lg transition-all cursor-pointer flex items-center justify-center"
+                              title="기사 삭제"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : activeTab === "reporters" ? (
           <div className="overflow-x-auto text-left">
@@ -24413,88 +24576,94 @@ const SoulCenter = ({
                         </div>
 
                         {/* 📱 모바일/PC 겸용 직관적 기사 관리 액션 바 */}
-                        <div className="flex items-center gap-1.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800 shrink-0 justify-end w-full sm:w-auto">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingArticle(article);
-                              setPostData({
-                                title: article.title,
-                                content: article.content,
-                                thumbnail: article.thumbnail,
-                                thumbnailName: (article as any).thumbnailName || (article.thumbnail ? "기존 대표 이미지" : ""),
-                                category: article.category,
-                                subCategory: article.subCategory || "",
-                                pdfUrl: article.pdfUrl || "",
-                                pdfName: article.pdfName || "",
-                                authorName: article.author || "",
-                                authorBio: (article as any).reporterBio || "",
-                                sourceAgency: (article as any).sourceAgency || "",
-                                pressSeal: (article as any).pressSeal || "standard_citizen",
-                              });
-                              setIsWriting(true);
-                              setActiveTab("write");
-                            }}
-                            className="flex-1 sm:flex-initial px-3.5 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-sm"
-                            title="전체 에디터로 기사 수정"
-                          >
-                            <Edit2 size={13} />
-                            <span>기사 수정</span>
-                          </button>
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-zinc-100 dark:border-zinc-800 shrink-0 sm:justify-end w-full sm:w-auto">
+                          {/* 모바일 1열: 기사 수정 & 퀵 수정 */}
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingArticle(article);
+                                setPostData({
+                                  title: article.title,
+                                  content: article.content,
+                                  thumbnail: article.thumbnail,
+                                  thumbnailName: (article as any).thumbnailName || (article.thumbnail ? "기존 대표 이미지" : ""),
+                                  category: article.category,
+                                  subCategory: article.subCategory || "",
+                                  pdfUrl: article.pdfUrl || "",
+                                  pdfName: article.pdfName || "",
+                                  authorName: article.author || "",
+                                  authorBio: (article as any).reporterBio || "",
+                                  sourceAgency: (article as any).sourceAgency || "",
+                                  pressSeal: (article as any).pressSeal || "standard_citizen",
+                                });
+                                setIsWriting(true);
+                                setActiveTab("write");
+                              }}
+                              className="flex-1 sm:flex-initial px-3.5 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer transition-all shadow-xs min-h-[42px]"
+                              title="전체 에디터로 기사 수정"
+                            >
+                              <Edit2 size={14} />
+                              <span>기사 수정</span>
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => setQuickEditArticle(article)}
-                            className="px-3 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-xl text-xs font-black flex items-center justify-center gap-1 cursor-pointer transition-colors"
-                            title="모바일 터치 퀵 수정"
-                          >
-                            <Zap size={13} className="text-amber-500" />
-                            <span>퀵 수정</span>
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => setQuickEditArticle(article)}
+                              className="flex-1 sm:flex-initial px-3.5 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer transition-colors min-h-[42px]"
+                              title="모바일 터치 퀵 수정"
+                            >
+                              <Zap size={14} className="text-amber-500" />
+                              <span>퀵 수정</span>
+                            </button>
+                          </div>
 
-                          <button
-                            type="button"
-                            onClick={() => setRevisionTargetArticle(article)}
-                            className="px-3 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-xl text-xs font-black flex items-center justify-center gap-1 cursor-pointer transition-colors"
-                            title="편집국 데스크에 수정 및 정정 요청 접수"
-                          >
-                            <Send size={13} />
-                            <span>수정 요청</span>
-                          </button>
+                          {/* 모바일 2열: 수정요청 & 미리보기 & 삭제 */}
+                          <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <button
+                              type="button"
+                              onClick={() => setRevisionTargetArticle(article)}
+                              className="flex-1 sm:flex-initial px-3 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer transition-colors min-h-[42px]"
+                              title="편집국 데스크에 수정 및 정정 요청 접수"
+                            >
+                              <Send size={13} />
+                              <span>수정 요청</span>
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPostData({
-                                title: article.title,
-                                content: article.content,
-                                thumbnail: article.thumbnail,
-                                thumbnailName: "",
-                                category: article.category,
-                                subCategory: article.subCategory || "",
-                                pdfUrl: "",
-                                pdfName: "",
-                                authorName: article.author || "",
-                                authorBio: "",
-                                sourceAgency: "",
-                                pressSeal: "standard_citizen"
-                              });
-                              setShowMobileSimulator(true);
-                            }}
-                            className="p-2.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors"
-                            title="스마트폰 미리보기"
-                          >
-                            <Eye size={16} />
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPostData({
+                                  title: article.title,
+                                  content: article.content,
+                                  thumbnail: article.thumbnail,
+                                  thumbnailName: "",
+                                  category: article.category,
+                                  subCategory: article.subCategory || "",
+                                  pdfUrl: "",
+                                  pdfName: "",
+                                  authorName: article.author || "",
+                                  authorBio: "",
+                                  sourceAgency: "",
+                                  pressSeal: "standard_citizen"
+                                });
+                                setShowMobileSimulator(true);
+                              }}
+                              className="p-2.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors min-h-[42px] min-w-[42px] flex items-center justify-center border border-zinc-200 dark:border-zinc-800 sm:border-0"
+                              title="스마트폰 미리보기"
+                            >
+                              <Eye size={16} />
+                            </button>
 
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteNews(article.id)}
-                            className="p-2.5 text-zinc-400 hover:text-red-500 rounded-xl hover:bg-red-500/10 cursor-pointer transition-colors"
-                            title="기사 삭제"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteNews(article.id)}
+                              className="p-2.5 text-zinc-400 hover:text-red-500 rounded-xl hover:bg-red-500/10 cursor-pointer transition-colors min-h-[42px] min-w-[42px] flex items-center justify-center border border-zinc-200 dark:border-zinc-800 sm:border-0"
+                              title="기사 삭제"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
