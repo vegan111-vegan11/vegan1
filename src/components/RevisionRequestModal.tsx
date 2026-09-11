@@ -171,6 +171,16 @@ export const RevisionRequestModal: React.FC<RevisionRequestModalProps> = ({
 
       await setDoc(newsRef, updates, { merge: true });
 
+      try {
+        const savedIds: string[] = JSON.parse(localStorage.getItem("my_written_article_ids") || "[]");
+        if (!savedIds.includes(article.id)) {
+          savedIds.unshift(article.id);
+          localStorage.setItem("my_written_article_ids", JSON.stringify(savedIds.slice(0, 100)));
+        }
+      } catch (storageErr) {
+        console.warn("Storage tracking error in RevisionRequestModal:", storageErr);
+      }
+
       toast.success("✨ 기사 수정 요청이 관리자 데스크로 성공적으로 접수되었습니다. 검토 후 신속히 반영됩니다.", {
         id: toastId,
         duration: 4000,

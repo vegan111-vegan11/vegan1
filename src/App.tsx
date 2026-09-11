@@ -4462,12 +4462,17 @@ const AdminDashboard: React.FC<{
 
   useEffect(() => {
     if (initialTab) {
-      setActiveTab(initialTab as any);
+      if (initialTab === "revisions") {
+        setActiveTab("editorial");
+        setActiveEditorialSubTab("revisions");
+      } else {
+        setActiveTab(initialTab as any);
+      }
     }
   }, [initialTab]);
   const [activeEditorialSubTab, setActiveEditorialSubTab] = useState<
     "pending" | "published" | "scraped" | "revisions" | "all"
-  >("pending");
+  >(initialTab === "revisions" ? "revisions" : "pending");
 
   const [adminManualTab, setAdminManualTab] = useState<"intro" | "mobile_guide" | "menu_guide" | "admin_guide" | "faq">("intro");
 
@@ -4528,6 +4533,64 @@ const AdminDashboard: React.FC<{
   // Mobile simplified admin navigation & card action states
   const [showOtherAdminMenus, setShowOtherAdminMenus] = useState(false);
   const [mobileCardMenuId, setMobileCardMenuId] = useState<string | null>(null);
+
+  const inlineFileInputRef = useRef<HTMLInputElement | null>(null);
+  const inlineCameraInputRef = useRef<HTMLInputElement | null>(null);
+
+  const processInlinePhotoFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("사진/이미지 파일만 첨부할 수 있습니다.");
+      return;
+    }
+    const toastId = toast.loading("📷 사진을 보도 규격으로 최적화 압축 중...");
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const rawData = ev.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 1200;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height = Math.round((height * MAX_WIDTH) / width);
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width = Math.round((width * MAX_HEIGHT) / height);
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL("image/jpeg", 0.8);
+            setInlineForm((prev) => ({ ...prev, thumbnail: compressed }));
+            toast.success("📷 사진이 보도용 규격으로 최적화되어 반영되었습니다!", { id: toastId });
+            return;
+          }
+        } catch (err) {
+          console.warn("Inline canvas compression err:", err);
+        }
+        setInlineForm((prev) => ({ ...prev, thumbnail: rawData }));
+        toast.success("📷 사진이 반영되었습니다!", { id: toastId });
+      };
+      img.onerror = () => {
+        setInlineForm((prev) => ({ ...prev, thumbnail: rawData }));
+        toast.success("📷 사진이 반영되었습니다!", { id: toastId });
+      };
+      img.src = rawData;
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Hyeonwon Cinema Admin State
   const [adminComments, setAdminComments] = useState<any[]>([]);
@@ -5341,7 +5404,15 @@ const AdminDashboard: React.FC<{
 
   const toggleApproval = async (id: string, current: boolean) => {
     try {
-      await updateDoc(doc(db, "citizen_news", id), { isApproved: !current });
+      await setDoc(
+        doc(db, "citizen_news", id),
+        {
+          isApproved: !current,
+          status: !current ? "approved" : "pending",
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
       toast.success(
         !current ? "기사가 승인되었습니다." : "승인이 취소되었습니다.",
       );
@@ -5352,7 +5423,14 @@ const AdminDashboard: React.FC<{
 
   const toggleFeatured = async (id: string, current: boolean) => {
     try {
-      await updateDoc(doc(db, "citizen_news", id), { isFeatured: !current });
+      await setDoc(
+        doc(db, "citizen_news", id),
+        {
+          isFeatured: !current,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
       toast.success(
         !current
           ? "헤드라인으로 설정되었습니다."
@@ -5756,13 +5834,17 @@ const AdminDashboard: React.FC<{
     if (!factCheckNews) return;
     const toastId = toast.loading("편집위원회 서명 날인 중...");
     try {
-      await updateDoc(doc(db, "citizen_news", factCheckNews.id), {
-        factCheckStatus: editorForm.factCheckStatus,
-        factCheckNotes: editorForm.factCheckNotes || null,
-        editorComment: editorForm.editorComment || null,
-        priority: editorForm.priority,
-        updatedAt: new Date().toISOString(),
-      });
+      await setDoc(
+        doc(db, "citizen_news", factCheckNews.id),
+        {
+          factCheckStatus: editorForm.factCheckStatus,
+          factCheckNotes: editorForm.factCheckNotes || null,
+          editorComment: editorForm.editorComment || null,
+          priority: editorForm.priority,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
       toast.success("데스크 검토 및 저널리즘 검증이 반영되었습니다.", {
         id: toastId,
       });
@@ -6288,7 +6370,7 @@ const AdminDashboard: React.FC<{
               }}
               className={cn(
                 "py-2 px-1 rounded-xl font-black text-xs transition-all flex flex-col items-center justify-center gap-1 border relative cursor-pointer",
-                activeTab === "editorial"
+                activeTab === "editorial" || (activeTab as string) === "revisions"
                   ? "bg-red-650 text-white border-red-500 shadow-md shadow-red-650/20"
                   : "bg-white/5 text-white/75 border-white/10 hover:bg-white/10"
               )}
@@ -6296,8 +6378,13 @@ const AdminDashboard: React.FC<{
               <Newspaper size={16} />
               <span className="text-[10px] tracking-tight font-black">기사관리/수정</span>
               {citizenNews.filter((n) => !n.isApproved && n.status !== "revision").length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black min-w-4 h-4 px-1 rounded-full flex items-center justify-center border-2 border-zinc-950 animate-pulse">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-black min-w-4 h-4 px-1 rounded-full flex items-center justify-center border-2 border-zinc-950 animate-pulse" title="승인 대기 기사">
                   {citizenNews.filter((n) => !n.isApproved && n.status !== "revision").length}
+                </span>
+              )}
+              {citizenNews.filter((n) => n.status === "revision").length > 0 && (
+                <span className="absolute -bottom-1 -right-1 bg-amber-500 text-black text-[8px] font-black min-w-4 h-4 px-1 rounded-full flex items-center justify-center border border-zinc-950" title="수정/정정 요청">
+                  +{citizenNews.filter((n) => n.status === "revision").length}
                 </span>
               )}
             </button>
@@ -6998,7 +7085,7 @@ const AdminDashboard: React.FC<{
             </div>
           )}
 
-          {activeTab === "editorial" && (
+          {(activeTab === "editorial" || (activeTab as string) === "revisions") && (
             <div className="space-y-6 lg:space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between bg-white/[0.02] border border-white/5 p-3 lg:p-4 rounded-3xl backdrop-blur-xl gap-4">
                 <div className="flex gap-2 p-1 bg-black/40 rounded-2xl border border-white/5 overflow-x-auto -webkit-overflow-scrolling-touch">
@@ -7086,11 +7173,15 @@ const AdminDashboard: React.FC<{
                       const toastId = toast.loading(`${count}개 기사 대규모 일괄 승인발행 중...`);
                       try {
                         for (const art of pendingArticles) {
-                          await updateDoc(doc(db, "citizen_news", art.id), {
-                            isApproved: true,
-                            status: "approved",
-                            updatedAt: new Date().toISOString(),
-                          });
+                          await setDoc(
+                            doc(db, "citizen_news", art.id),
+                            {
+                              isApproved: true,
+                              status: "approved",
+                              updatedAt: new Date().toISOString(),
+                            },
+                            { merge: true }
+                          );
                         }
                         toast.success(`검수 완료! 총 ${count}건의 시민 보도 기사가 공식 뉴스룸에 발행 완료되었습니다.`, { id: toastId });
                       } catch (err) {
@@ -11117,73 +11208,50 @@ const AdminDashboard: React.FC<{
                             </div>
                           )}
 
-                          <label className="py-2.5 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-bold text-zinc-300 flex items-center gap-1.5 cursor-pointer transition-colors shrink-0">
-                            <Upload size={12} className="text-orange-400" />
-                            <span>촬영/선택</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="hidden"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  if (!file.type.startsWith("image/")) {
-                                    toast.error("사진/이미지 파일만 첨부할 수 있습니다.");
-                                    return;
-                                  }
-                                  const toastId = toast.loading("📷 사진을 보도 규격으로 최적화 압축 중...");
-                                  const reader = new FileReader();
-                                  reader.onload = (ev) => {
-                                    const rawData = ev.target?.result as string;
-                                    const img = new Image();
-                                    img.onload = () => {
-                                      try {
-                                        const canvas = document.createElement("canvas");
-                                        const MAX_WIDTH = 1200;
-                                        const MAX_HEIGHT = 800;
-                                        let width = img.width;
-                                        let height = img.height;
-                                        if (width > height) {
-                                          if (width > MAX_WIDTH) {
-                                            height = Math.round((height * MAX_WIDTH) / width);
-                                            width = MAX_WIDTH;
-                                          }
-                                        } else {
-                                          if (height > MAX_HEIGHT) {
-                                            width = Math.round((width * MAX_HEIGHT) / height);
-                                            height = MAX_HEIGHT;
-                                          }
-                                        }
-                                        canvas.width = width;
-                                        canvas.height = height;
-                                        const ctx = canvas.getContext("2d");
-                                        if (ctx) {
-                                          ctx.imageSmoothingEnabled = true;
-                                          ctx.imageSmoothingQuality = "high";
-                                          ctx.drawImage(img, 0, 0, width, height);
-                                          const compressed = canvas.toDataURL("image/jpeg", 0.8);
-                                          setInlineForm((prev) => ({ ...prev, thumbnail: compressed }));
-                                          toast.success("📷 사진이 보도용 규격으로 최적화되어 반영되었습니다!", { id: toastId });
-                                          return;
-                                        }
-                                      } catch (err) {
-                                        console.warn("Inline canvas compression err:", err);
-                                      }
-                                      setInlineForm((prev) => ({ ...prev, thumbnail: rawData }));
-                                      toast.success("📷 사진이 반영되었습니다!", { id: toastId });
-                                    };
-                                    img.onerror = () => {
-                                      setInlineForm((prev) => ({ ...prev, thumbnail: rawData }));
-                                      toast.success("📷 사진이 반영되었습니다!", { id: toastId });
-                                    };
-                                    img.src = rawData;
-                                  };
-                                  reader.readAsDataURL(file);
-                                }
-                                e.target.value = "";
-                              }}
-                            />
-                          </label>
+                          <input
+                            ref={inlineFileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) processInlinePhotoFile(file);
+                              e.target.value = "";
+                            }}
+                          />
+                          <input
+                            ref={inlineCameraInputRef}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) processInlinePhotoFile(file);
+                              e.target.value = "";
+                            }}
+                          />
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => inlineFileInputRef.current?.click()}
+                              className="py-2.5 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-bold text-zinc-300 flex items-center gap-1.5 cursor-pointer transition-colors"
+                              title="사진 보관함에서 선택"
+                            >
+                              <Upload size={12} className="text-orange-400" />
+                              <span>📁 앨범</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => inlineCameraInputRef.current?.click()}
+                              className="py-2.5 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-bold text-zinc-300 flex items-center gap-1.5 cursor-pointer transition-colors"
+                              title="스마트폰 카메라로 촬영"
+                            >
+                              <Camera size={12} className="text-amber-400" />
+                              <span>📸 촬영</span>
+                            </button>
+                          </div>
 
                           <input
                             type="text"
@@ -12248,6 +12316,15 @@ const NewsDetailModal: React.FC<{
                   <span className="bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-lg text-[10px]">
                     🔥 실시간 조회 {news.clicks || 250}회
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsRevisionModalOpen(true)}
+                    className="ml-auto px-2.5 py-1 rounded-lg text-[10px] font-black bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+                    title="기사 오보 정정 또는 내용 수정 요청"
+                  >
+                    <Send size={11} />
+                    <span>기사 수정/정정 요청</span>
+                  </button>
                   <span className="hidden sm:inline bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/50 dark:border-white/5 px-2.5 py-1 rounded-lg text-[9.5px] text-zinc-400 font-medium">
                     ⌨️ 단축키 안내: <kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 py-0.2 rounded text-[8.5px] shadow-xs">Esc</kbd> 닫기, <kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 py-0.2 rounded text-[8.5px] shadow-xs">←</kbd> <kbd className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 py-0.2 rounded text-[8.5px] shadow-xs">→</kbd> 이동
                   </span>
@@ -22700,6 +22777,11 @@ const SoulCenter = ({
           >
             <FileText size={15} />
             <span className="truncate">내가 쓴 기사 {myArticles.length > 0 && `(${myArticles.length})`}</span>
+            {myArticles.some((n) => n.status === "revision") && (
+              <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-black text-[9px] font-black shrink-0 animate-pulse">
+                수정요청
+              </span>
+            )}
           </button>
           {isAdminUser && (
             <button
@@ -22897,6 +22979,67 @@ const SoulCenter = ({
                 >
                   ✍️ 정식 시민기자 등록하기
                 </button>
+              </div>
+            )}
+
+            {editingArticle && (
+              <div className="mb-6 p-4 bg-amber-500/10 dark:bg-amber-500/15 border-2 border-amber-500/40 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left animate-in slide-in-from-top-2 duration-300">
+                <div className="flex items-start sm:items-center gap-2.5">
+                  <span className="p-2 bg-amber-500 text-black rounded-xl font-black shrink-0">
+                    <Edit2 size={16} />
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                        ✏️ 기사 수정 모드 활성화
+                      </span>
+                      {editingArticle.status === "revision" && (
+                        <span className="text-[10px] font-black bg-amber-500 text-black px-1.5 py-0.5 rounded">
+                          수정 요청 반영 중
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 line-clamp-1">
+                      "{editingArticle.title}"
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingArticle(null);
+                      setPostData({
+                        title: "",
+                        content: "",
+                        thumbnail: "",
+                        thumbnailName: "",
+                        category: "사회/정치",
+                        subCategory: "",
+                        pdfUrl: "",
+                        pdfName: "",
+                        authorName: "",
+                        authorBio: "",
+                        sourceAgency: "이솔 국영 종합 뉴스룸",
+                        pressSeal: "standard_citizen",
+                      });
+                      toast.info("새 기사 작성 모드로 전환되었습니다.");
+                    }}
+                    className="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 text-zinc-800 dark:text-zinc-200 rounded-xl text-xs font-black transition-colors cursor-pointer"
+                  >
+                    새 기사 쓰기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingArticle(null);
+                      setActiveTab("manage");
+                    }}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black rounded-xl text-xs font-black transition-colors cursor-pointer"
+                  >
+                    내 기사 목록으로
+                  </button>
+                </div>
               </div>
             )}
 
@@ -23953,15 +24096,19 @@ const SoulCenter = ({
                         type="button"
                         onClick={() => {
                           setIsWriting(false);
-                          if (!isUserRegistered) {
-                            setIsDirectWritingWithoutReg(false);
+                          if (editingArticle) {
+                            setEditingArticle(null);
+                            setActiveTab("manage");
+                          } else {
+                            if (!isUserRegistered) {
+                              setIsDirectWritingWithoutReg(false);
+                            }
                           }
-                          setEditingArticle(null);
                           setIsEthicsAgreed(false);
                         }}
                         className="flex-1 py-4 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-600 dark:text-zinc-300 font-extrabold rounded-2xl text-xs uppercase tracking-wider transition-all cursor-pointer text-center"
                       >
-                        작성 취소 (Cancel)
+                        {editingArticle ? "수정 취소 (내 기사 목록으로)" : "작성 취소 (Cancel)"}
                       </button>
 
                       <button
@@ -23978,15 +24125,20 @@ const SoulCenter = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (window.confirm("작성/수정을 취소하시겠습니까?")) {
+                          if (window.confirm(editingArticle ? "기사 수정을 취소하고 목록으로 돌아가시겠습니까?" : "기사 작성을 취소하시겠습니까?")) {
                             setIsWriting(false);
-                            if (!isUserRegistered) setIsDirectWritingWithoutReg(false);
-                            setEditingArticle(null);
+                            if (editingArticle) {
+                              setEditingArticle(null);
+                              setActiveTab("manage");
+                            } else {
+                              if (!isUserRegistered) setIsDirectWritingWithoutReg(false);
+                            }
+                            setIsEthicsAgreed(false);
                           }
                         }}
                         className="py-2.5 px-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl text-xs font-black shrink-0 cursor-pointer"
                       >
-                        취소
+                        {editingArticle ? "수정취소" : "취소"}
                       </button>
                       <button
                         type="button"
