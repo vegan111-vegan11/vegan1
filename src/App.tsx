@@ -6197,6 +6197,14 @@ const AdminDashboard: React.FC<{
                     id: "editorial",
                     icon: Newspaper,
                     label: "편집국 데스크 (기사 검토)",
+                    badge: citizenNews.filter((n) => !n.isApproved && n.status !== "revision").length,
+                  },
+                  {
+                    id: "revisions",
+                    icon: MessageSquare,
+                    label: "기사 수정 요청 심사",
+                    badge: citizenNews.filter((n) => n.status === "revision").length,
+                    isRevision: true,
                   },
                   { id: "direct_publish", icon: Zap, label: "긴급 속보 타전실" },
                   { id: "webtoons", icon: Tv, label: "문화콘텐츠 제어센터" },
@@ -6212,26 +6220,51 @@ const AdminDashboard: React.FC<{
                     label: "언론윤리 강령 심의",
                   },
                   { id: "grievance", icon: Scale, label: "고충처리 및 정정보도 청구" },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id as any);
-                      setIsSidebarOpen(false);
-                    }}
-                    className={cn(
-                      "w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group",
-                      activeTab === item.id
-                        ? "bg-white text-black shadow-2xl"
-                        : "text-white/30 hover:text-white hover:bg-white/5",
-                    )}
-                  >
-                    <item.icon size={20} />
-                    <span className="text-xs font-black uppercase tracking-widest">
-                      {item.label}
-                    </span>
-                  </button>
-                ))}
+                ].map((item) => {
+                  const isItemActive = item.id === "revisions"
+                    ? (activeTab === "editorial" && activeEditorialSubTab === "revisions")
+                    : item.id === "editorial"
+                      ? (activeTab === "editorial" && activeEditorialSubTab !== "revisions")
+                      : activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        if (item.id === "revisions") {
+                          setActiveTab("editorial");
+                          setActiveEditorialSubTab("revisions");
+                        } else if (item.id === "editorial") {
+                          setActiveTab("editorial");
+                          if (activeEditorialSubTab === "revisions") {
+                            setActiveEditorialSubTab("pending");
+                          }
+                        } else {
+                          setActiveTab(item.id as any);
+                        }
+                        setIsSidebarOpen(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group",
+                        isItemActive
+                          ? "bg-white text-black shadow-2xl"
+                          : "text-white/30 hover:text-white hover:bg-white/5",
+                      )}
+                    >
+                      <item.icon size={20} className={isItemActive && item.isRevision ? "text-amber-500" : ""} />
+                      <span className="text-xs font-black uppercase tracking-widest text-left">
+                        {item.label}
+                      </span>
+                      {Boolean(item.badge && item.badge > 0) && (
+                        <span className={cn(
+                          "ml-auto px-2 py-0.5 rounded-full text-[10px] font-black tracking-normal shrink-0",
+                          item.isRevision ? "bg-amber-500 text-black animate-pulse" : "bg-red-500 text-white"
+                        )}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </nav>
 
               <button
@@ -6275,7 +6308,19 @@ const AdminDashboard: React.FC<{
         <nav className="flex-1 space-y-2">
           {[
             { id: "stats", icon: LayoutDashboard, label: "국영 대시보드 종합 분석" },
-            { id: "editorial", icon: Newspaper, label: "편집국 송고 데스크" },
+            {
+              id: "editorial",
+              icon: Newspaper,
+              label: "편집국 송고 데스크",
+              badge: citizenNews.filter((n) => !n.isApproved && n.status !== "revision").length,
+            },
+            {
+              id: "revisions",
+              icon: MessageSquare,
+              label: "기사 수정 요청 심사",
+              badge: citizenNews.filter((n) => n.status === "revision").length,
+              isRevision: true,
+            },
             { id: "direct_publish", icon: Zap, label: "긴급 속보 전송실" },
             { id: "webtoons", icon: Tv, label: "문화콘텐츠 마스터 센터" },
             { id: "hyeonwon_cinema", icon: Film, label: "현원시네마 통합 통제소" },
@@ -6286,26 +6331,53 @@ const AdminDashboard: React.FC<{
             { id: "site_config", icon: Settings, label: "신문사 공식 규격 설정" },
             { id: "compliance", icon: ShieldCheck, label: "언론 정간물 심의위원회" },
             { id: "grievance", icon: Scale, label: "독자 권익 및 고충정정 센터" },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id as any)}
-              className={cn(
-                "w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group",
-                activeTab === item.id
-                  ? "bg-white text-black shadow-2xl scale-[1.02]"
-                  : "text-white/30 hover:text-white hover:bg-white/5",
-              )}
-            >
-              <item.icon
-                size={20}
-                className={activeTab === item.id ? "text-red-600" : ""}
-              />
-              <span className="text-xs font-black uppercase tracking-widest">
-                {item.label}
-              </span>
-            </button>
-          ))}
+          ].map((item) => {
+            const isItemActive = item.id === "revisions"
+              ? (activeTab === "editorial" && activeEditorialSubTab === "revisions")
+              : item.id === "editorial"
+                ? (activeTab === "editorial" && activeEditorialSubTab !== "revisions")
+                : activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  if (item.id === "revisions") {
+                    setActiveTab("editorial");
+                    setActiveEditorialSubTab("revisions");
+                  } else if (item.id === "editorial") {
+                    setActiveTab("editorial");
+                    if (activeEditorialSubTab === "revisions") {
+                      setActiveEditorialSubTab("pending");
+                    }
+                  } else {
+                    setActiveTab(item.id as any);
+                  }
+                }}
+                className={cn(
+                  "w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group",
+                  isItemActive
+                    ? "bg-white text-black shadow-2xl scale-[1.02]"
+                    : "text-white/30 hover:text-white hover:bg-white/5",
+                )}
+              >
+                <item.icon
+                  size={20}
+                  className={isItemActive ? (item.isRevision ? "text-amber-500" : "text-red-600") : ""}
+                />
+                <span className="text-xs font-black uppercase tracking-widest text-left">
+                  {item.label}
+                </span>
+                {Boolean(item.badge && item.badge > 0) && (
+                  <span className={cn(
+                    "ml-auto px-2 py-0.5 rounded-full text-[10px] font-black tracking-normal shrink-0",
+                    item.isRevision ? "bg-amber-500 text-black animate-pulse" : "bg-red-500 text-white"
+                  )}>
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
         <button
           onClick={onBack}
@@ -11096,6 +11168,60 @@ const AdminDashboard: React.FC<{
 
                   {/* Body Form */}
                   <form onSubmit={handleSaveInlineEdit} className="p-4 sm:p-8 space-y-4 sm:space-y-6 overflow-y-auto max-h-[75vh] no-scrollbar text-left scroll-smooth flex-1">
+                    {/* Revision Request Banner if article was requested to be revised */}
+                    {(inlineEditingArticle.status === "revision" || inlineEditingArticle.revisionNote) && (
+                      <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-2.5 text-left">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 bg-amber-500 text-black text-[10px] font-black rounded-md uppercase tracking-wider">
+                              📬 독자/기자 수정·정정 요청 내역
+                            </span>
+                            {inlineEditingArticle.requestedBy && (
+                              <span className="text-[11px] font-bold text-amber-400">
+                                요청자: {inlineEditingArticle.requestedBy}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInlineForm((prev) => ({
+                                ...prev,
+                                title: inlineEditingArticle.requestedTitle || prev.title,
+                                content: inlineEditingArticle.requestedContent || prev.content,
+                                thumbnail: inlineEditingArticle.requestedThumbnail || prev.thumbnail,
+                              }));
+                              toast.success("✨ 요청된 수정안(제목/본문/사진)을 폼에 자동 반영했습니다!");
+                            }}
+                            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black rounded-xl cursor-pointer transition-all shadow-xs flex items-center gap-1.5 self-start sm:self-auto"
+                          >
+                            <Sparkles size={12} />
+                            <span>요청안 폼 자동 적용</span>
+                          </button>
+                        </div>
+                        {inlineEditingArticle.revisionNote && (
+                          <div className="text-xs text-amber-200 bg-black/40 p-3 rounded-xl border border-amber-500/20">
+                            <span className="font-black text-amber-400">요청 사유: </span>
+                            {inlineEditingArticle.revisionNote}
+                          </div>
+                        )}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] text-zinc-400 pt-1">
+                          <div className="truncate">
+                            <span className="text-zinc-300 font-bold">요청 제목: </span>
+                            {inlineEditingArticle.requestedTitle || "(변경 요청 없음)"}
+                          </div>
+                          <div className="truncate">
+                            <span className="text-zinc-300 font-bold">요청 사진: </span>
+                            {inlineEditingArticle.requestedThumbnail ? "첨부됨" : "(변경 요청 없음)"}
+                          </div>
+                          <div className="truncate">
+                            <span className="text-zinc-300 font-bold">요청 본문: </span>
+                            {inlineEditingArticle.requestedContent ? `${inlineEditingArticle.requestedContent.length}자 수정안` : "(변경 요청 없음)"}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Article Headline */}
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
@@ -11345,8 +11471,69 @@ const AdminDashboard: React.FC<{
                         required
                         value={inlineForm.content}
                         onChange={(e) => setInlineForm({ ...inlineForm, content: e.target.value })}
+                        onPaste={(e) => {
+                          const items = e.clipboardData?.items;
+                          if (!items) return;
+                          for (let i = 0; i < items.length; i++) {
+                            if (items[i].type.startsWith("image/")) {
+                              const file = items[i].getAsFile();
+                              if (file) {
+                                e.preventDefault();
+                                const toastId = toast.loading("📷 붙여넣은 사진을 최적화 압축 중...");
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  const rawData = ev.target?.result as string;
+                                  const img = new Image();
+                                  img.onload = () => {
+                                    try {
+                                      const canvas = document.createElement("canvas");
+                                      const MAX_WIDTH = 1200;
+                                      const MAX_HEIGHT = 800;
+                                      let w = img.width;
+                                      let h = img.height;
+                                      if (w > h && w > MAX_WIDTH) {
+                                        h = Math.round((h * MAX_WIDTH) / w);
+                                        w = MAX_WIDTH;
+                                      } else if (h > MAX_HEIGHT) {
+                                        w = Math.round((w * MAX_HEIGHT) / h);
+                                        h = MAX_HEIGHT;
+                                      }
+                                      canvas.width = w;
+                                      canvas.height = h;
+                                      const ctx = canvas.getContext("2d");
+                                      if (ctx) {
+                                        ctx.imageSmoothingEnabled = true;
+                                        ctx.imageSmoothingQuality = "high";
+                                        ctx.drawImage(img, 0, 0, w, h);
+                                        const compressed = canvas.toDataURL("image/jpeg", 0.8);
+                                        setInlineForm((prev) => ({
+                                          ...prev,
+                                          content: prev.content + `\n\n![보도사진](${compressed})\n\n`,
+                                          thumbnail: prev.thumbnail || compressed,
+                                        }));
+                                        toast.success("📷 붙여넣은 사진이 본문에 삽입되었습니다!", { id: toastId });
+                                        return;
+                                      }
+                                    } catch (err) {
+                                      console.warn("Clipboard paste compression err:", err);
+                                    }
+                                    setInlineForm((prev) => ({
+                                      ...prev,
+                                      content: prev.content + `\n\n![보도사진](${rawData})\n\n`,
+                                      thumbnail: prev.thumbnail || rawData,
+                                    }));
+                                    toast.success("📷 붙여넣은 사진이 본문에 삽입되었습니다!", { id: toastId });
+                                  };
+                                  img.src = rawData;
+                                };
+                                reader.readAsDataURL(file);
+                                break;
+                              }
+                            }
+                          }
+                        }}
                         className="w-full h-96 bg-white/5 border border-white/10 rounded-2xl p-6 text-sm font-semibold text-white outline-none focus:border-red-500 transition-colors placeholder-white/10 leading-relaxed font-sans"
-                        placeholder="기사 상세 본문을 기록해주십시오..."
+                        placeholder="기사 상세 본문을 기록해주십시오... (클립보드 사진 붙여넣기 지원)"
                       />
                     </div>
 
@@ -13689,6 +13876,8 @@ const Navbar = ({
   const [isSupportModalOpen, setIsSupportModalOpen] = React.useState(false);
 
   const pendingCount = citizenNews.filter((n: any) => !n.isApproved && n.status !== "rejected" && n.status !== "revision").length;
+  const revisionCount = citizenNews.filter((n: any) => n.status === "revision").length;
+  const totalDeskAlertCount = pendingCount + revisionCount;
 
   const isWorkshopActive = false;
 
@@ -13893,97 +14082,74 @@ const Navbar = ({
       </div>
 
       {/* 
-        🌟 Mobile Row 2: High-Visibility Premium Mobile Icon Utility Belt
-        Clean, thumb-friendly touch icon actions with hover tooltips: 기사작성, 기사수정, 데스크, 로그인
+        🌟 Mobile Row 2: High-Visibility Premium Mobile Touch Utility Bar
+        Clean, thumb-friendly touch button actions with clear text + icon for mobile users: 기사작성, 기사수정, 데스크, 로그인
       */}
-      <div className={cn(isSimulatedMobileView ? "flex" : "lg:hidden flex", "items-center justify-between px-3 py-2 bg-gradient-to-r from-zinc-50 to-zinc-100/50 dark:from-zinc-900/60 dark:to-zinc-950/60 border-b border-zinc-200/50 dark:border-zinc-850/50 gap-2 select-none font-sans shadow-sm")}>
+      <div className={cn(isSimulatedMobileView ? "flex" : "lg:hidden flex", "items-center justify-between px-2.5 py-2 bg-gradient-to-r from-zinc-50 to-zinc-100/50 dark:from-zinc-900/80 dark:to-zinc-950/80 border-b border-zinc-200/60 dark:border-zinc-850/60 gap-1.5 select-none font-sans shadow-xs")}>
         {/* 1. 기사작성 (Write / Report) */}
         {onWriteClick && (
-          <div className="relative group flex-1 flex justify-center">
-            <button
-              type="button"
-              onClick={onWriteClick}
-              className="w-full h-10 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-sm shadow-red-500/20 border border-red-500/30"
-              aria-label="기사작성"
-            >
-              <PenLine size={17} className="text-white shrink-0" />
-            </button>
-            {/* 마우스 호버 툴팁 */}
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-1 transition-all duration-200 pointer-events-none z-50 flex flex-col items-center">
-              <div className="w-1.5 h-1.5 bg-zinc-900 dark:bg-white rotate-45 -mt-1.5 mb-0.5" />
-              기사작성
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={onWriteClick}
+            className="flex-1 h-10 px-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs border border-red-500/30"
+            aria-label="기사작성"
+          >
+            <PenLine size={14} className="text-white shrink-0" />
+            <span className="text-[11px] font-black tracking-tight whitespace-nowrap">기사작성</span>
+          </button>
         )}
 
         {/* 2. 기사수정 / 내 기사 (My Articles / Edit) */}
-        <div className="relative group flex-1 flex justify-center">
-          <button
-            type="button"
-            onClick={() => onPageChange("soul-center-manage")}
-            className="w-full h-10 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-400 border border-amber-500/20 dark:border-zinc-800 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-xs"
-            aria-label="기사수정"
-          >
-            <FileText size={17} className="text-amber-600 dark:text-amber-400 shrink-0" />
-          </button>
-          {/* 마우스 호버 툴팁 */}
-          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-1 transition-all duration-200 pointer-events-none z-50 flex flex-col items-center">
-            <div className="w-1.5 h-1.5 bg-zinc-900 dark:bg-white rotate-45 -mt-1.5 mb-0.5" />
-            내 기사 / 수정
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => onPageChange("soul-center-manage")}
+          className="flex-1 h-10 px-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-400 border border-amber-500/25 dark:border-zinc-800 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs"
+          aria-label="기사수정"
+        >
+          <FileText size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
+          <span className="text-[11px] font-black tracking-tight whitespace-nowrap">기사수정</span>
+        </button>
 
         {/* 3. 데스크 / 관리자 데스크 (Admin Desk) */}
         {onAdminClick && (
-          <div className="relative group flex-1 flex justify-center">
-            <button
-              type="button"
-              onClick={onAdminClick}
-              className="w-full h-10 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20 dark:border-zinc-800 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-xs relative"
-              aria-label="데스크"
-            >
-              <LayoutGrid size={17} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
-              {pendingCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-red-600 text-white text-[8px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center border border-white dark:border-zinc-950 shadow-sm animate-pulse">
-                  {pendingCount}
-                </span>
-              )}
-            </button>
-            {/* 마우스 호버 툴팁 */}
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-1 transition-all duration-200 pointer-events-none z-50 flex flex-col items-center">
-              <div className="w-1.5 h-1.5 bg-zinc-900 dark:bg-white rotate-45 -mt-1.5 mb-0.5" />
-              데스크
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={onAdminClick}
+            className="flex-1 h-10 px-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400 border border-indigo-500/25 dark:border-zinc-800 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs relative"
+            aria-label="데스크"
+          >
+            <LayoutGrid size={14} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <span className="text-[11px] font-black tracking-tight whitespace-nowrap">데스크</span>
+            {totalDeskAlertCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-gradient-to-r from-rose-500 to-amber-500 text-white text-[8px] font-black min-w-4.5 h-4.5 px-1 rounded-full flex items-center justify-center border border-white dark:border-zinc-950 shadow-sm animate-pulse">
+                {totalDeskAlertCount}
+              </span>
+            )}
+          </button>
         )}
 
         {/* 4. 로그인 / 로그아웃 (Auth) */}
-        <div className="relative group flex-1 flex justify-center">
-          {user ? (
-            <button
-              type="button"
-              onClick={onLogout}
-              className="w-full h-10 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 border border-rose-500/20 dark:border-zinc-800 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-xs"
-              aria-label="로그아웃"
-            >
-              <LogOut size={16} className="shrink-0" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={onAuthClick}
-              className="w-full h-10 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-800 dark:border-zinc-200 flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-95 shadow-sm"
-              aria-label="로그인"
-            >
-              <LogIn size={16} className="shrink-0" />
-            </button>
-          )}
-          {/* 마우스 호버 툴팁 */}
-          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-[10px] font-black rounded-lg shadow-xl whitespace-nowrap opacity-0 group-hover:opacity-100 group-hover:translate-y-0 -translate-y-1 transition-all duration-200 pointer-events-none z-50 flex flex-col items-center">
-            <div className="w-1.5 h-1.5 bg-zinc-900 dark:bg-white rotate-45 -mt-1.5 mb-0.5" />
-            {user ? "로그아웃" : "로그인"}
-          </div>
-        </div>
+        {user ? (
+          <button
+            type="button"
+            onClick={onLogout}
+            className="flex-1 h-10 px-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 border border-rose-500/25 dark:border-zinc-800 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs"
+            aria-label="로그아웃"
+          >
+            <LogOut size={14} className="shrink-0" />
+            <span className="text-[11px] font-black tracking-tight whitespace-nowrap">로그아웃</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onAuthClick}
+            className="flex-1 h-10 px-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-800 dark:border-zinc-200 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 shadow-xs"
+            aria-label="로그인"
+          >
+            <LogIn size={14} className="shrink-0" />
+            <span className="text-[11px] font-black tracking-tight whitespace-nowrap">로그인</span>
+          </button>
+        )}
       </div>
 
       {/* 
@@ -14535,7 +14701,7 @@ const Navbar = ({
                     {/* 내가 쓴 기사 & 수정 */}
                     <button
                       onClick={() => {
-                        onPageChange("soul-center");
+                        onPageChange("soul-center-manage");
                         setIsMobileMenuOpen(false);
                       }}
                       className="p-3 bg-white dark:bg-zinc-900 border border-red-200/80 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl flex flex-col items-center justify-center gap-1.5 font-black text-xs hover:border-red-400 hover:bg-red-50/30 transition-all cursor-pointer shadow-xs active:scale-95"
@@ -14558,9 +14724,9 @@ const Navbar = ({
                         <LayoutDashboard size={14} className="text-indigo-400" />
                         <span>관리자 기사 관리 데스크</span>
                       </span>
-                      {pendingCount > 0 ? (
+                      {totalDeskAlertCount > 0 ? (
                         <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
-                          검토대기 {pendingCount}
+                          {revisionCount > 0 ? `검토·수정 ${totalDeskAlertCount}` : `검토대기 ${pendingCount}`}
                         </span>
                       ) : (
                         <ChevronRight size={13} className="text-zinc-400" />
@@ -22428,7 +22594,6 @@ const SoulCenter = ({
   };
 
   const handleWithdrawRevision = async (news: CitizenNews) => {
-    if (!window.confirm("수정 요청을 철회하시겠습니까? 기존 기사 내용이 유지됩니다.")) return;
     const toastId = toast.loading("수정 요청 철회 처리 중...");
     try {
       if (!auth.currentUser) {
@@ -22447,7 +22612,7 @@ const SoulCenter = ({
         requestedAt: null,
         updatedAt: new Date().toISOString(),
       }, { merge: true });
-      toast.success("수정 요청이 정상적으로 철회되었습니다.", { id: toastId });
+      toast.success("기사 수정 요청이 철회되고 기존 기사가 유지됩니다.", { id: toastId });
       onEditComplete?.();
     } catch (err) {
       console.error("Revision withdraw error:", err);
@@ -23206,6 +23371,59 @@ const SoulCenter = ({
 
               {/* Form Content */}
               <div className="space-y-4">
+                {editingArticle && (editingArticle.status === "revision" || editingArticle.revisionNote) && (
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-2.5 text-left">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 bg-amber-500 text-black text-[10px] font-black rounded-md uppercase tracking-wider">
+                          📬 수정·정정 요청 내역
+                        </span>
+                        {editingArticle.requestedBy && (
+                          <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                            요청자: {editingArticle.requestedBy}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPostData((prev) => ({
+                            ...prev,
+                            title: editingArticle.requestedTitle || prev.title,
+                            content: editingArticle.requestedContent || prev.content,
+                            thumbnail: editingArticle.requestedThumbnail || prev.thumbnail,
+                          }));
+                          toast.success("✨ 요청된 수정안(제목/본문/사진)을 편집 폼에 자동 반영했습니다!");
+                        }}
+                        className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-black text-xs font-black rounded-xl cursor-pointer transition-all shadow-xs flex items-center gap-1.5 self-start sm:self-auto"
+                      >
+                        <Sparkles size={12} />
+                        <span>요청안 폼 자동 적용</span>
+                      </button>
+                    </div>
+                    {editingArticle.revisionNote && (
+                      <div className="text-xs text-amber-900 dark:text-amber-200 bg-black/5 dark:bg-black/30 p-2.5 rounded-xl border border-amber-500/20">
+                        <span className="font-bold">사유: </span>
+                        {editingArticle.revisionNote}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] text-zinc-500 dark:text-zinc-400 pt-1">
+                      <div className="truncate">
+                        <span className="font-bold">요청 제목: </span>
+                        {editingArticle.requestedTitle || "(변경 요청 없음)"}
+                      </div>
+                      <div className="truncate">
+                        <span className="font-bold">요청 사진: </span>
+                        {editingArticle.requestedThumbnail ? "첨부됨" : "(변경 요청 없음)"}
+                      </div>
+                      <div className="truncate">
+                        <span className="font-bold">요청 본문: </span>
+                        {editingArticle.requestedContent ? `${editingArticle.requestedContent.length}자 수정안` : "(변경 요청 없음)"}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
                   <div className="flex items-center gap-2">
                     <label className="block text-xs font-black uppercase tracking-widest text-zinc-400">
@@ -24014,6 +24232,20 @@ const SoulCenter = ({
                         id="soul-textarea"
                         value={postData.content}
                         onChange={(e) => setPostData({ ...postData, content: e.target.value })}
+                        onPaste={(e) => {
+                          const items = e.clipboardData?.items;
+                          if (!items) return;
+                          for (let i = 0; i < items.length; i++) {
+                            if (items[i].type.startsWith("image/")) {
+                              const file = items[i].getAsFile();
+                              if (file) {
+                                e.preventDefault();
+                                processAndInsertInlineImage(file);
+                                break;
+                              }
+                            }
+                          }
+                        }}
                         className={cn(
                           "w-full bg-zinc-50 dark:bg-black/20 border border-zinc-200 dark:border-zinc-805 rounded-2xl px-4 py-4 font-semibold text-zinc-900 dark:text-zinc-105 focus:outline-none focus:border-orange-500 transition-colors h-80 font-serif leading-relaxed",
                           editorFontSize === "sm" ? "text-[11px]" :
@@ -24021,7 +24253,7 @@ const SoulCenter = ({
                           editorFontSize === "lg" ? "text-sm" :
                           "text-base"
                         )}
-                        placeholder="이곳에 보도 본문을 기재해주세요. (최소 10자 이상, 6하원칙 준수 권장)"
+                        placeholder="이곳에 보도 본문을 기재해주세요. (최소 10자 이상, 6하원칙 준수 권장, 캡처 사진 붙여넣기 지원)"
                       />
 
                       <div className="flex justify-between items-center bg-zinc-50 dark:bg-zinc-950/40 p-3 rounded-xl border border-zinc-100 dark:border-zinc-850">
@@ -24121,20 +24353,20 @@ const SoulCenter = ({
                     </div>
 
                     {/* 📱 모바일 화면 하단 고정 원터치 액션 바 (스크롤 중에도 즉시 저장/미리보기) */}
-                    <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800 p-2.5 flex items-center gap-2 shadow-[0_-4px_16px_rgba(0,0,0,0.12)] pb-[max(10px,env(safe-area-inset-bottom))]">
+                    <div className="sm:hidden fixed bottom-0 left-0 right-0 z-[120] bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800 p-2.5 flex items-center gap-2 shadow-[0_-4px_16px_rgba(0,0,0,0.15)] pb-[max(12px,env(safe-area-inset-bottom))]">
                       <button
                         type="button"
                         onClick={() => {
-                          if (window.confirm(editingArticle ? "기사 수정을 취소하고 목록으로 돌아가시겠습니까?" : "기사 작성을 취소하시겠습니까?")) {
-                            setIsWriting(false);
-                            if (editingArticle) {
-                              setEditingArticle(null);
-                              setActiveTab("manage");
-                            } else {
-                              if (!isUserRegistered) setIsDirectWritingWithoutReg(false);
-                            }
-                            setIsEthicsAgreed(false);
+                          setIsWriting(false);
+                          if (editingArticle) {
+                            setEditingArticle(null);
+                            setActiveTab("manage");
+                            toast.info("기사 수정이 취소되었습니다.");
+                          } else {
+                            if (!isUserRegistered) setIsDirectWritingWithoutReg(false);
+                            toast.info("기사 작성이 취소되었습니다.");
                           }
+                          setIsEthicsAgreed(false);
                         }}
                         className="py-2.5 px-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-xl text-xs font-black shrink-0 cursor-pointer"
                       >
@@ -24849,6 +25081,42 @@ const SoulCenter = ({
                     </div>
 
                     <div className="space-y-3 text-left">
+                      {(quickEditArticle.status === "revision" || quickEditArticle.revisionNote) && (
+                        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl space-y-2 text-left">
+                          <div className="flex items-center justify-between">
+                            <span className="px-2 py-0.5 bg-amber-500 text-black text-[10px] font-black rounded-md uppercase tracking-wider">
+                              📬 수정·정정 요청 내역
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setQuickEditArticle({
+                                  ...quickEditArticle,
+                                  title: quickEditArticle.requestedTitle || quickEditArticle.title,
+                                  content: quickEditArticle.requestedContent || quickEditArticle.content,
+                                  thumbnail: quickEditArticle.requestedThumbnail || quickEditArticle.thumbnail,
+                                });
+                                toast.success("✨ 요청된 수정안(제목/본문/사진)을 폼에 자동 반영했습니다!");
+                              }}
+                              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-black rounded-lg cursor-pointer transition-all shadow-xs flex items-center gap-1"
+                            >
+                              <Zap size={11} />
+                              <span>요청안 자동 적용</span>
+                            </button>
+                          </div>
+                          {quickEditArticle.revisionNote && (
+                            <p className="text-xs text-amber-800 dark:text-amber-200 bg-black/5 dark:bg-black/30 p-2 rounded-xl">
+                              <span className="font-bold text-amber-600 dark:text-amber-400">사유:</span> {quickEditArticle.revisionNote}
+                            </p>
+                          )}
+                          {quickEditArticle.requestedBy && (
+                            <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                              요청자: {quickEditArticle.requestedBy}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
                       <div>
                         <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1">
                           기사 헤드라인
@@ -33657,87 +33925,89 @@ ${matchedRAG.map((ctx, i) => `[참조 ${i+1}] 문서명: ${ctx.title} (카테고
       </div>
 
       {/* Sticky Bottom Navigation Bar for Mobile Thumbs */}
-      <div className={cn(
-        "fixed bottom-0 z-[80] bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border-t border-gray-100 dark:border-white/5 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] px-2 py-1.5 flex justify-around items-center transition-all",
-        isSimulatedMobileView
-          ? "w-full lg:max-w-[420px] left-1/2 -translate-x-1/2 rounded-b-[36px]"
-          : "left-0 right-0 w-full lg:hidden"
-      )}>
-        {[
-          { id: "home", label: "홈", icon: Globe, action: () => {
-              setSelectedNews(null);
-              setSelectedWebtoon(null);
-              setIsAdminView(false);
-              setIsOmbudsmanModalOpen(false);
-              setSelectedNewsCategory("전체기사");
-              setCurrentPage("isol-post");
-            } 
-          },
-          { id: "isol-post", label: "포스트", icon: Newspaper, action: () => {
-              setSelectedNews(null);
-              setSelectedWebtoon(null);
-              setIsAdminView(false);
-              setIsOmbudsmanModalOpen(false);
-              setSelectedNewsCategory("전체기사");
-              setCurrentPage("isol-post");
-            } 
-          },
-          { id: "webtoon", label: "웹툰", icon: GalleryVertical, action: () => {
-              setSelectedNews(null);
-              setSelectedWebtoon(null);
-              setIsAdminView(false);
-              setIsOmbudsmanModalOpen(false);
-              setCurrentPage("webtoon");
-            } 
-          },
-          { id: "community", label: "소모임", icon: Users, action: () => {
-              setSelectedNews(null);
-              setSelectedWebtoon(null);
-              setIsAdminView(false);
-              setIsOmbudsmanModalOpen(false);
-              setCurrentPage("community");
-            } 
-          },
-          { id: "soul-center", label: "기사작성/수정", icon: Edit3, action: () => {
-              setSelectedNews(null);
-              setSelectedWebtoon(null);
-              setIsAdminView(false);
-              setIsOmbudsmanModalOpen(false);
-              setCurrentPage("soul-center");
-            } 
-          },
-          { id: "ombudsman", label: "민원/권익", icon: Scale, action: () => {
-              setIsOmbudsmanModalOpen(true);
-            } 
-          },
-        ].map((tab) => {
-          const isActive = currentPage === tab.id || (tab.id === "ombudsman" && isOmbudsmanModalOpen);
-          const TabIcon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                playHapticClick(isActive ? 600 : 800, 0.04);
-                tab.action();
-              }}
-              className={cn(
-                "flex flex-col items-center justify-center flex-1 py-1.5 rounded-xl transition-all relative",
-                isActive ? "text-red-600" : "text-zinc-400 dark:text-zinc-650"
-              )}
-            >
-              <TabIcon size={20} className={cn("transition-transform", isActive && "scale-110")} />
-              <span className="text-[9px] font-black tracking-tight mt-1">{tab.label}</span>
-              {isActive && (
-                <motion.div
-                  layoutId="activeTabIndicator"
-                  className="absolute bottom-0 w-8 h-1 bg-red-600 rounded-full"
-                  transition={{ type: "spring", stiffness: 305, damping: 30 }}
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {!isAdminView && currentPage !== "soul-center" && (
+        <div className={cn(
+          "fixed bottom-0 z-[80] bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border-t border-gray-100 dark:border-white/5 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] px-2 py-1.5 flex justify-around items-center transition-all",
+          isSimulatedMobileView
+            ? "w-full lg:max-w-[420px] left-1/2 -translate-x-1/2 rounded-b-[36px]"
+            : "left-0 right-0 w-full lg:hidden"
+        )}>
+          {[
+            { id: "home", label: "홈", icon: Globe, action: () => {
+                setSelectedNews(null);
+                setSelectedWebtoon(null);
+                setIsAdminView(false);
+                setIsOmbudsmanModalOpen(false);
+                setSelectedNewsCategory("전체기사");
+                setCurrentPage("isol-post");
+              } 
+            },
+            { id: "isol-post", label: "포스트", icon: Newspaper, action: () => {
+                setSelectedNews(null);
+                setSelectedWebtoon(null);
+                setIsAdminView(false);
+                setIsOmbudsmanModalOpen(false);
+                setSelectedNewsCategory("전체기사");
+                setCurrentPage("isol-post");
+              } 
+            },
+            { id: "webtoon", label: "웹툰", icon: GalleryVertical, action: () => {
+                setSelectedNews(null);
+                setSelectedWebtoon(null);
+                setIsAdminView(false);
+                setIsOmbudsmanModalOpen(false);
+                setCurrentPage("webtoon");
+              } 
+            },
+            { id: "community", label: "소모임", icon: Users, action: () => {
+                setSelectedNews(null);
+                setSelectedWebtoon(null);
+                setIsAdminView(false);
+                setIsOmbudsmanModalOpen(false);
+                setCurrentPage("community");
+              } 
+            },
+            { id: "soul-center", label: "기사작성/수정", icon: Edit3, action: () => {
+                setSelectedNews(null);
+                setSelectedWebtoon(null);
+                setIsAdminView(false);
+                setIsOmbudsmanModalOpen(false);
+                setCurrentPage("soul-center");
+              } 
+            },
+            { id: "ombudsman", label: "민원/권익", icon: Scale, action: () => {
+                setIsOmbudsmanModalOpen(true);
+              } 
+            },
+          ].map((tab) => {
+            const isActive = currentPage === tab.id || (tab.id === "ombudsman" && isOmbudsmanModalOpen);
+            const TabIcon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  playHapticClick(isActive ? 600 : 800, 0.04);
+                  tab.action();
+                }}
+                className={cn(
+                  "flex flex-col items-center justify-center flex-1 py-1.5 rounded-xl transition-all relative",
+                  isActive ? "text-red-600" : "text-zinc-400 dark:text-zinc-650"
+                )}
+              >
+                <TabIcon size={20} className={cn("transition-transform", isActive && "scale-110")} />
+                <span className="text-[9px] font-black tracking-tight mt-1">{tab.label}</span>
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTabIndicator"
+                    className="absolute bottom-0 w-8 h-1 bg-red-600 rounded-full"
+                    transition={{ type: "spring", stiffness: 305, damping: 30 }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* 🚀 10대 UI/UX 보완점 및 최신 트렌드 리포트 모달 */}
       <UIUXImprovementsModal

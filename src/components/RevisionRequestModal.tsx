@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Send, FileText, CheckCircle2, AlertCircle, Sparkles, MessageSquare, User, Tag, Camera, Upload, Image as ImageIcon } from "lucide-react";
 import { doc, setDoc } from "firebase/firestore";
@@ -46,6 +46,20 @@ export const RevisionRequestModal: React.FC<RevisionRequestModalProps> = ({
   const [requesterContact, setRequesterContact] = useState(currentUser?.email || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showContentEditor, setShowContentEditor] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && article) {
+      setRevisedTitle(article.title || "");
+      setRevisedContent(article.content || "");
+      setRevisedThumbnail(article.thumbnail || "");
+      setRevisionNote("");
+      setShowContentEditor(false);
+      if (currentUser) {
+        setRequesterName(currentUser.displayName || (currentUser.email ? currentUser.email.split("@")[0] : ""));
+        setRequesterContact(currentUser.email || "");
+      }
+    }
+  }, [isOpen, article, currentUser]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -219,7 +233,7 @@ export const RevisionRequestModal: React.FC<RevisionRequestModalProps> = ({
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="relative w-full max-w-xl bg-white dark:bg-[#111116] border border-zinc-200 dark:border-zinc-800 rounded-3xl sm:rounded-[2rem] shadow-2xl p-5 sm:p-7 z-10 overflow-hidden space-y-5 my-auto"
+          className="relative w-full max-w-xl bg-white dark:bg-[#111116] border border-zinc-200 dark:border-zinc-800 rounded-3xl sm:rounded-[2rem] shadow-2xl p-4 sm:p-7 z-10 space-y-4 sm:space-y-5 my-auto max-h-[92vh] overflow-y-auto"
         >
           {/* Top Header */}
           <div className="flex items-start justify-between border-b border-zinc-100 dark:border-zinc-800/80 pb-4">
@@ -466,7 +480,7 @@ export const RevisionRequestModal: React.FC<RevisionRequestModalProps> = ({
             </div>
 
             {/* Bottom Actions */}
-            <div className="flex items-center gap-2.5 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+            <div className="flex items-center gap-2.5 pt-3 border-t border-zinc-100 dark:border-zinc-800 sticky bottom-0 bg-white/95 dark:bg-[#111116]/95 backdrop-blur-md pb-1 z-10">
               <button
                 type="button"
                 onClick={onClose}
