@@ -5,6 +5,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { signInAnonymously } from "firebase/auth";
 import { auth, db } from "../firebase";
 import { toast } from "sonner";
+import { compressImage, isImageFile } from "../utils/imageUtils";
 
 export interface RevisionTargetArticle {
   id: string;
@@ -64,10 +65,10 @@ export const RevisionRequestModal: React.FC<RevisionRequestModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImageFile = (file: File) => {
+  const handleImageFile = async (file: File) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("이미지 파일(JPG, PNG, WebP 등)만 첨부할 수 있습니다.");
+    if (!isImageFile(file)) {
+      toast.error("사진/이미지 파일(JPG, PNG, WebP 등)만 첨부할 수 있습니다.");
       return;
     }
     if (file.size > 25 * 1024 * 1024) {
@@ -75,66 +76,22 @@ export const RevisionRequestModal: React.FC<RevisionRequestModalProps> = ({
       return;
     }
     const toastId = toast.loading("📷 교체용 사진을 최적화 압축 중...");
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const rawData = e.target?.result as string;
-      if (!rawData) {
-        toast.error("사진 데이터를 읽어오지 못했습니다.", { id: toastId });
-        return;
-      }
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const canvas = document.createElement("canvas");
-          const MAX_WIDTH = 1200;
-          const MAX_HEIGHT = 800;
-          let width = img.width;
-          let height = img.height;
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height = Math.round((height * MAX_WIDTH) / width);
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width = Math.round((width * MAX_HEIGHT) / height);
-              height = MAX_HEIGHT;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          if (ctx) {
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = "high";
-            ctx.drawImage(img, 0, 0, width, height);
-            let compressed = canvas.toDataURL("image/jpeg", 0.8);
-            if (compressed.length > 400000) {
-              compressed = canvas.toDataURL("image/jpeg", 0.65);
-            }
-            setRevisedThumbnail(compressed);
-            toast.success("📷 교체용 사진이 성공적으로 최적화 첨부되었습니다!", { id: toastId });
-            return;
-          }
-        } catch (err) {
-          console.warn("Canvas compression error:", err);
-        }
-        if (rawData.length > 900000) {
-          toast.error("사진 해상도가 너무 높아 압축에 실패했습니다. 다른 사진을 선택해 주세요.", { id: toastId });
-          return;
-        }
-        setRevisedThumbnail(rawData);
-        toast.success("📷 교체용 사진이 첨부되었습니다.", { id: toastId });
-      };
-      img.onerror = () => {
-        toast.error("사진 형식을 해석할 수 없습니다. 유효한 이미지 파일을 선택해 주세요.", { id: toastId });
-      };
-      img.src = rawData;
-    };
-    reader.onerror = () => {
-      toast.error("사진 파일을 읽는 도중 오류가 발생했습니다.", { id: toastId });
-    };
-    reader.readAsDataURL(file);
+    try {
+      const result = await compressImage(file, {
+        maxWidth: 1200,
+        maxHeight: 800,
+        quality: 0.82,
+        secondaryQuality: 0.68,
+      });
+      setRevisedThumbnail(result.dataUrl);
+      toast.success(
+        `📷 교체용 사진 첨부 완료 (${result.compressedSizeStr}, ${result.compressionRatio}% 최적화)`,
+        { id: toastId }
+      );
+    } catch (err: any) {
+      console.warn("Revision image error:", err);
+      toast.error(err?.message || "사진을 처리하지 못했습니다.", { id: toastId });
+    }
   };
 
   if (!isOpen || !article) return null;
