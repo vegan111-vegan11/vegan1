@@ -10,7 +10,8 @@ import {
   User,
   ExternalLink,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  Send
 } from "lucide-react";
 export interface CitizenNewsArticle {
   id: string;
@@ -34,12 +35,14 @@ interface ArticleBottomSheetModalProps {
   isOpen?: boolean;
   onClose: () => void;
   onReadFull: (article: any) => void;
+  onRequestRevision?: (article: any) => void;
 }
 
 export const ArticleBottomSheetModal: React.FC<ArticleBottomSheetModalProps> = ({
   article,
   onClose,
   onReadFull,
+  onRequestRevision,
 }) => {
   const [isPlayingTTS, setIsPlayingTTS] = useState(false);
   const [showAiSummary, setShowAiSummary] = useState(true);
@@ -172,7 +175,21 @@ export const ArticleBottomSheetModal: React.FC<ArticleBottomSheetModalProps> = (
           </p>
 
           {/* Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {onRequestRevision && (
+              <button
+                type="button"
+                onClick={() => {
+                  onRequestRevision(article);
+                  onClose();
+                }}
+                className="px-4 py-3.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 rounded-2xl text-xs font-black flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                title="기사 내용 수정 및 오탈자 정정 요청"
+              >
+                <Send size={13} />
+                <span>수정 요청</span>
+              </button>
+            )}
             <button
               onClick={() => {
                 onReadFull(article);
